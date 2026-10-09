@@ -1,23 +1,51 @@
 # Deploy ke Vercel + Neon
 
-Panduan ini membawa Tarékah dari repository ke alamat publik. Urutannya penting: database dulu, lalu OAuth, baru Vercel, karena Vercel butuh nilai dari dua yang pertama.
+Panduan ini membawa Tarékah dari repository ke alamat publik.
 
-Yang dibutuhkan: akun [Vercel](https://vercel.com), akun [Neon](https://neon.tech), akun GitHub, dan project Google Cloud.
+Urutannya: project Vercel dulu, supaya domainnya diketahui; lalu database; lalu OAuth, yang butuh domain itu; baru deploy yang sesungguhnya.
 
-## 1. Database di Neon
+Yang dibutuhkan: akun [Vercel](https://vercel.com), akun GitHub, dan project Google Cloud. Akun Neon dibuat lewat Vercel di langkah 2, atau pakai yang sudah ada.
 
-1. Buat project baru di Neon. Pilih region terdekat dengan region Vercel yang akan dipakai (untuk pengguna di Indonesia: Singapore di keduanya).
-2. Buka **Connect** dan salin dua connection string:
-   - **Pooled** (host mengandung `-pooler`) untuk `DATABASE_URL`. Dipakai aplikasi saat berjalan.
-   - **Direct** (tanpa `-pooler`) untuk `DATABASE_URL_UNPOOLED`. Dipakai untuk migration.
+## 1. Project di Vercel
 
-Kalau project dihubungkan lewat integrasi Neon di Vercel Marketplace, kedua variabel itu diisi otomatis dengan nama yang sama, dan setiap preview deployment mendapat branch database sendiri.
+1. **Add New → Project**, impor repository GitHub.
+2. Tentukan **Project Name**. Nama ini menjadi domain production: `<nama-project>.vercel.app`. Catat; dipakai di langkah 3.
+3. Framework terdeteksi sebagai Next.js. Biarkan pengaturan lain apa adanya dan klik Deploy.
 
-## 2. OAuth untuk production
+Deploy pertama ini gagal dengan "Missing or invalid environment variables". Itu wajar: variabelnya baru diisi di langkah berikutnya. Yang dicari dari langkah ini hanya project dan domainnya.
+
+Pilih region function yang dekat dengan pengguna (Settings → Functions; untuk Indonesia: Singapore, `sin1`).
+
+## 2. Database Neon
+
+Pilih salah satu.
+
+### A. Lewat integrasi Vercel (disarankan)
+
+1. Di project Vercel, buka tab **Storage → Create Database → Neon**.
+2. Pilih region yang sama dengan region function (Singapore).
+3. Hubungkan ke project, untuk environment Production dan Preview.
+
+Integrasi mengisi `DATABASE_URL` (pooled) dan `DATABASE_URL_UNPOOLED` (direct) secara otomatis, dengan nama yang persis dipakai aplikasi. Kalau opsi branch per preview diaktifkan, setiap preview deployment mendapat branch database sendiri.
+
+Ini membuat project Neon baru yang dikelola dan ditagih lewat Vercel, terpisah dari project Neon yang dipakai di lokal. Pemisahan itu disengaja: data pengembangan dan production tidak bercampur.
+
+### B. Project Neon yang sudah ada, manual
+
+Di Neon, buka **Connect** dan salin dua connection string, lalu isi di Vercel pada Settings → Environment Variables:
+
+| Variabel                | Nilai                                                                   |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `DATABASE_URL`          | **Pooled** (host mengandung `-pooler`). Dipakai aplikasi saat berjalan. |
+| `DATABASE_URL_UNPOOLED` | **Direct** (tanpa `-pooler`). Dipakai untuk migration.                  |
+
+Jangan pakai branch Neon yang sama dengan `.env.local`; buat branch atau project tersendiri untuk production.
+
+## 3. OAuth untuk production
 
 Buat kredensial terpisah dari yang dipakai di lokal. GitHub hanya menerima satu callback URL per OAuth app, jadi app lokal tidak bisa dipakai ulang.
 
-Ganti `<domain>` dengan domain production, misalnya `tarekah.vercel.app`.
+Ganti `<domain>` dengan domain dari langkah 1, misalnya `tarekah.vercel.app`.
 
 **GitHub** — Settings → Developer settings → OAuth Apps → New OAuth App
 
@@ -30,26 +58,21 @@ Ganti `<domain>` dengan domain production, misalnya `tarekah.vercel.app`.
 - Authorized redirect URIs: `https://<domain>/api/auth/callback/google`
 - Di **OAuth consent screen**, ubah status dari Testing ke In production. Selama masih Testing, hanya akun yang didaftarkan sebagai test user yang bisa masuk.
 
-Domain baru diketahui setelah deploy pertama. Dua jalan: tentukan nama project Vercel lebih dulu (domainnya `<nama-project>.vercel.app`), atau deploy dulu lalu perbarui callback URL sesudahnya.
+## 4. Environment variable sisanya
 
-## 3. Project di Vercel
+Di Vercel, Settings → Environment Variables, untuk environment Production:
 
-1. **Add New → Project**, impor repository GitHub. Framework terdeteksi sebagai Next.js; biarkan pengaturan build default kecuali yang disebut di langkah 4.
-2. Isi **Environment Variables** untuk environment Production:
+| Variabel                               | Nilai                                                              |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| `AUTH_SECRET`                          | Hasil `npx auth secret`. Buat yang baru, jangan pakai milik lokal. |
+| `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | Dari OAuth app production                                          |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Dari OAuth client production                                       |
 
-   | Variabel                               | Nilai                                                              |
-   | -------------------------------------- | ------------------------------------------------------------------ |
-   | `DATABASE_URL`                         | Neon, pooled                                                       |
-   | `DATABASE_URL_UNPOOLED`                | Neon, direct                                                       |
-   | `AUTH_SECRET`                          | Hasil `npx auth secret`. Buat yang baru, jangan pakai milik lokal. |
-   | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | Dari OAuth app production                                          |
-   | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Dari OAuth client production                                       |
+Bersama dua variabel database dari langkah 2, totalnya tujuh.
 
-   `AUTH_TRUST_HOST` tidak perlu diisi: Auth.js mempercayai host secara otomatis di Vercel. `AUTH_URL` juga tidak perlu.
+`AUTH_TRUST_HOST` tidak perlu diisi: Auth.js mempercayai host secara otomatis di Vercel. `AUTH_URL` juga tidak perlu.
 
-3. Jangan deploy dulu sebelum langkah 4 selesai, supaya tabel sudah ada saat aplikasi pertama kali dibuka.
-
-## 4. Migration
+## 5. Migration
 
 Pilih salah satu.
 
@@ -59,7 +82,7 @@ Pilih salah satu.
 npm run db:migrate && npm run build
 ```
 
-Migration yang belum jalan diterapkan sebelum build. Kalau migration gagal, deploy gagal dan versi lama tetap melayani. Dengan integrasi Neon, preview deployment memigrasi branch database miliknya sendiri, bukan production.
+Migration yang belum jalan diterapkan sebelum build. Kalau migration gagal, deploy gagal dan versi lama tetap melayani. Dengan branch per preview, preview deployment memigrasi branch database miliknya sendiri, bukan production.
 
 **Manual dari lokal.** Jalankan dengan connection string direct milik production:
 
@@ -71,9 +94,11 @@ Nilai di environment mengalahkan `.env.local`. Ingat untuk mengulanginya setiap 
 
 Di kedua cara, migration harus kompatibel dengan kode yang sedang berjalan: tambah kolom dulu, hapus kolom di deploy berikutnya.
 
-## 5. Deploy dan periksa
+## 6. Deploy ulang dan periksa
 
-Deploy, lalu periksa di alamat production:
+Di tab Deployments, pilih deploy terakhir → **Redeploy** (atau push commit baru). Variabel dan build command baru hanya berlaku untuk deploy yang dibuat setelah diubah.
+
+Lalu periksa di alamat production:
 
 - [ ] Halaman depan terbuka; `/dashboard` tanpa login mengalihkan ke `/login`.
 - [ ] Masuk dengan GitHub berhasil dan mendarat di dashboard.
@@ -85,13 +110,17 @@ Deploy, lalu periksa di alamat production:
 
 Setelah itu, tambahkan alamatnya di bagian Demo pada `README.md`.
 
+## Domain sendiri
+
+Kalau nanti memakai domain sendiri (Settings → Domains), tambahkan callback URL dengan domain itu di OAuth app GitHub dan OAuth client Google. GitHub hanya menampung satu callback, jadi ganti yang lama; Google bisa menampung keduanya.
+
 ## Preview deployment
 
 Login OAuth tidak berfungsi di URL preview (`<project>-<hash>.vercel.app`) karena callback URL-nya tidak terdaftar di GitHub dan Google. Preview tetap berguna untuk memeriksa build dan halaman publik. Kalau butuh login di preview, daftarkan satu domain preview tetap (branch domain) sebagai callback di OAuth app tersendiri dan isi variabelnya untuk environment Preview.
 
 ## Memakai Supabase
 
-Aplikasi berbicara dengan PostgreSQL biasa lewat driver `pg`, jadi Supabase bisa menggantikan Neon tanpa perubahan kode. Yang berbeda hanya connection string, di Supabase pada **Connect**:
+Aplikasi berbicara dengan PostgreSQL biasa lewat driver `pg`, jadi Supabase bisa menggantikan Neon tanpa perubahan kode. Langkah 2 diganti dengan mengisi dua variabel ini dari **Connect** di Supabase:
 
 | Variabel                | Supabase                                                                          |
 | ----------------------- | --------------------------------------------------------------------------------- |
@@ -102,12 +131,13 @@ Fitur Supabase lain (Auth, Row Level Security, Storage) tidak dipakai: login tet
 
 ## Masalah yang sering muncul
 
-| Gejala                                                                                                    | Penyebab dan perbaikan                                                                                                                         |
-| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `redirect_uri_mismatch` (Google) atau "The redirect_uri is not associated with this application" (GitHub) | Callback URL di OAuth app tidak sama persis dengan domain yang dibuka. Periksa `https`, domain, dan path `/api/auth/callback/<provider>`.      |
-| Halaman login menampilkan pesan `OAuthAccountNotLinked`                                                   | Email itu sudah terdaftar lewat provider lain. Masuk dengan provider yang pertama kali dipakai.                                                |
-| `UntrustedHost`                                                                                           | Aplikasi berjalan di luar Vercel tanpa `AUTH_TRUST_HOST=true`.                                                                                 |
-| Build gagal dengan "Missing or invalid environment variables"                                             | `DATABASE_URL` atau `AUTH_SECRET` (minimal 32 karakter) belum diisi untuk environment yang sedang di-build.                                    |
-| `relation "users" does not exist`                                                                         | Migration belum dijalankan terhadap database itu. Lihat langkah 4.                                                                             |
-| Google menolak dengan "Access blocked"                                                                    | Consent screen masih Testing dan akun tersebut bukan test user.                                                                                |
-| Data yang diubah langsung di database tidak muncul                                                        | Halaman di-cache per pengguna dan hanya dibatalkan oleh Server Action. Ubah data lewat aplikasi, atau tunggu cache kedaluwarsa (hitungan jam). |
+| Gejala                                                                                                    | Penyebab dan perbaikan                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build gagal dengan "Missing or invalid environment variables"                                             | `DATABASE_URL` atau `AUTH_SECRET` (minimal 32 karakter) belum diisi untuk environment yang sedang di-build. Wajar pada deploy pertama (langkah 1). |
+| Variabel sudah diisi tapi deploy masih gagal dengan pesan yang sama                                       | Deploy itu dibuat sebelum variabel diisi. Redeploy.                                                                                                |
+| `redirect_uri_mismatch` (Google) atau "The redirect_uri is not associated with this application" (GitHub) | Callback URL di OAuth app tidak sama persis dengan domain yang dibuka. Periksa `https`, domain, dan path `/api/auth/callback/<provider>`.          |
+| Halaman login menampilkan pesan `OAuthAccountNotLinked`                                                   | Email itu sudah terdaftar lewat provider lain. Masuk dengan provider yang pertama kali dipakai.                                                    |
+| `UntrustedHost`                                                                                           | Aplikasi berjalan di luar Vercel tanpa `AUTH_TRUST_HOST=true`.                                                                                     |
+| `relation "users" does not exist`                                                                         | Migration belum dijalankan terhadap database itu. Lihat langkah 5.                                                                                 |
+| Google menolak dengan "Access blocked"                                                                    | Consent screen masih Testing dan akun tersebut bukan test user.                                                                                    |
+| Data yang diubah langsung di database tidak muncul                                                        | Halaman di-cache per pengguna dan hanya dibatalkan oleh Server Action. Ubah data lewat aplikasi, atau tunggu cache kedaluwarsa (hitungan jam).     |
