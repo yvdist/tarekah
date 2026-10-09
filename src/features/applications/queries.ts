@@ -23,6 +23,10 @@ export type ApplicationDetail = NonNullable<
   Awaited<ReturnType<typeof findApplicationByUserId>>
 > & { followUp: FollowUpState };
 
+export type ApplicationExportRow = Awaited<
+  ReturnType<typeof listExportRowsByUserId>
+>[number];
+
 // The follow-up state depends on the clock, so it is worked out here, at
 // request time and outside the cached list: it is neither cached nor
 // recomputed on the client.
@@ -38,6 +42,13 @@ export async function getApplications(): Promise<ApplicationListItem[]> {
     ...row,
     followUp: getFollowUpState(row, settings, now),
   }));
+}
+
+// Every application with all of its columns, oldest first, for the CSV export.
+export async function getApplicationsForExport() {
+  const user = await requireUser();
+
+  return listExportRowsByUserId(user.id);
 }
 
 // Choices for linking something to an application, for example a contact.
@@ -145,6 +156,62 @@ async function listApplicationsByUserId(userId: string) {
     )
     .where(eq(applications.userId, userId))
     .orderBy(desc(applications.createdAt));
+}
+
+async function listExportRowsByUserId(userId: string) {
+  "use cache";
+  cacheTag(
+    `applications:${userId}`,
+    `companies:${userId}`,
+    `documents:${userId}`,
+  );
+  cacheLife("hours");
+
+  return db
+    .select({
+      companyName: companies.name,
+      position: applications.position,
+      status: applications.status,
+      source: applications.source,
+      sourceDetail: applications.sourceDetail,
+      workType: applications.workType,
+      location: applications.location,
+      salaryMin: applications.salaryMin,
+      salaryMax: applications.salaryMax,
+      salaryCurrency: applications.salaryCurrency,
+      appliedAt: applications.appliedAt,
+      statusChangedAt: applications.statusChangedAt,
+      lastFollowedUpAt: applications.lastFollowedUpAt,
+      cvLabel: cvDocuments.label,
+      coverLetterLabel: coverLetterDocuments.label,
+      jobUrl: applications.jobUrl,
+      notes: applications.notes,
+      createdAt: applications.createdAt,
+    })
+    .from(applications)
+    .innerJoin(
+      companies,
+      and(
+        eq(companies.id, applications.companyId),
+        eq(companies.userId, userId),
+      ),
+    )
+    .leftJoin(
+      cvDocuments,
+      and(
+        eq(cvDocuments.id, applications.cvDocumentId),
+        eq(cvDocuments.userId, userId),
+      ),
+    )
+    .leftJoin(
+      coverLetterDocuments,
+      and(
+        eq(coverLetterDocuments.id, applications.coverLetterDocumentId),
+        eq(coverLetterDocuments.userId, userId),
+      ),
+    )
+    .where(eq(applications.userId, userId))
+    .orderBy(asc(applications.createdAt));
 }
 
 async function findApplicationByUserId(userId: string, id: string) {
