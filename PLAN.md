@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 3, Fase 4 dan Fase 5 selesai.** Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql` dan `drizzle/0001_follow_up.sql`. Berikutnya: Fase 3b.
+Status: **Fase 0 sampai 3 dan Fase 4 sampai 6 selesai.** Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql` dan `drizzle/0001_follow_up.sql`. Berikutnya: Fase 3b.
 
 ## Keputusan
 
@@ -204,31 +204,38 @@ documents 1─N applications                  dua FK: cv_document_id, cover_lett
 
 ### Query dashboard
 
-Tidak ada tabel agregat; semua dihitung saat dibaca dan di-cache per user.
+Tidak ada tabel agregat; semua dihitung di SQL saat dibaca (`src/features/dashboard/queries.ts`) dan di-cache per user.
 
-- **Funnel:** `count(distinct application_id)` per `to_status` dari `application_status_events`.
-- **Response rate per sumber:** lamaran yang punya event ke `screening`, `technical_test`, `interview`, `offer` atau `rejected`, dibagi lamaran yang punya event ke `applied`, dikelompokkan per `applications.source`.
-- **Lamaran per minggu:** `count(*)` per `date_trunc('week', applied_at)`.
+Kohort adalah lamaran dengan `applied_at` di rentang yang dipilih (`?range=30d|90d|ytd` atau `?from=&to=`). Tanpa filter, semua lamaran masuk, termasuk wishlist tanpa tanggal.
+
+Transisi status bebas (mundur, lompat tahap, lamaran dicatat langsung di tahap lanjut), jadi tahap dihitung dari peringkat tertinggi yang pernah dicapai, bukan dari `to_status` satu per satu. Peringkat per event: `applied` 1, `screening` 2, `technical_test` 3, `interview` 4, `offer` 5; `rejected` dan `ghosted` 1; `wishlist` 0. `stage` lamaran adalah `max` peringkat atas semua event-nya.
+
+- **Terkirim:** `stage >= 1`. Penyebut semua rate.
+- **Direspons:** punya event ke `screening`, `technical_test`, `interview`, `offer` atau `rejected`. `ghosted` bukan respons.
+- **Funnel:** tahap ke-k adalah jumlah lamaran dengan `stage >= k`.
+- **Per sumber dan per versi CV:** response rate (direspons / terkirim) dan conversion ke interview (`stage >= 4` / terkirim), dikelompokkan per `applications.source` atau `cv_document_id`.
+- **Waktu respons:** rata-rata selisih event `applied` pertama dan event respons pertama sesudahnya. Lamaran tanpa event `applied` atau tanpa respons tidak dihitung.
+- **Lamaran per minggu:** `count(*)` per `date_trunc('week', applied_at)` untuk 12 minggu terakhir; minggu kosong diisi lewat `generate_series`. Tidak mengikuti filter.
 
 ## Route
 
-| Route                     | Akses  | Isi                                                                                                                                   |
-| ------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                       | publik | Landing page                                                                                                                          |
-| `/login`                  | publik | Tombol masuk GitHub dan Google                                                                                                        |
-| `/api/auth/[...nextauth]` | publik | Handler Auth.js                                                                                                                       |
-| `/dashboard`              | login  | Panel "Perlu Follow-up" (sudah ada); funnel, response rate per sumber, lamaran per minggu (fase 8)                                    |
-| `/board`                  | login  | Kanban: kolom per status, drag-and-drop antar kolom mengubah status dan menulis riwayat; kolom Ditolak dan Tanpa kabar bisa diciutkan |
-| `/applications`           | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort                                                                         |
-| `/applications/new`       | login  | Form lamaran baru                                                                                                                     |
-| `/applications/[id]`      | login  | Detail: data lamaran, ubah status, riwayat status, versi dokumen yang dipakai, catatan interview, kontak terhubung                    |
-| `/applications/[id]/edit` | login  | Form edit                                                                                                                             |
-| `/companies`              | login  | Daftar perusahaan dengan jumlah lamaran                                                                                               |
-| `/companies/[id]`         | login  | Detail perusahaan: lamaran dan kontak                                                                                                 |
-| `/contacts`               | login  | Daftar dan kelola kontak, tautkan ke lamaran                                                                                          |
-| `/documents`              | login  | Versi CV dan cover letter: tambah, edit, arsipkan, hapus; jumlah pemakaian per versi                                                  |
-| `/questions`              | login  | Semua pertanyaan interview dari seluruh lamaran; cari (`?q=`) dan filter tahap (`?stage=`) di URL                                     |
-| `/settings`               | login  | Profil, batas hari follow-up dan saran Tanpa kabar, keluar, hapus akun                                                                |
+| Route                     | Akses  | Isi                                                                                                                                                                   |
+| ------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                       | publik | Landing page                                                                                                                                                          |
+| `/login`                  | publik | Tombol masuk GitHub dan Google                                                                                                                                        |
+| `/api/auth/[...nextauth]` | publik | Handler Auth.js                                                                                                                                                       |
+| `/dashboard`              | login  | Panel "Perlu Follow-up"; statistik dengan filter rentang tanggal di URL: kartu ringkasan, funnel, rate per sumber dan per versi CV, waktu respons, lamaran per minggu |
+| `/board`                  | login  | Kanban: kolom per status, drag-and-drop antar kolom mengubah status dan menulis riwayat; kolom Ditolak dan Tanpa kabar bisa diciutkan                                 |
+| `/applications`           | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort                                                                                                         |
+| `/applications/new`       | login  | Form lamaran baru                                                                                                                                                     |
+| `/applications/[id]`      | login  | Detail: data lamaran, ubah status, riwayat status, versi dokumen yang dipakai, catatan interview, kontak terhubung                                                    |
+| `/applications/[id]/edit` | login  | Form edit                                                                                                                                                             |
+| `/companies`              | login  | Daftar perusahaan dengan jumlah lamaran                                                                                                                               |
+| `/companies/[id]`         | login  | Detail perusahaan: lamaran dan kontak (baca saja)                                                                                                                     |
+| `/contacts`               | login  | Daftar dan kelola kontak, tautkan ke lamaran                                                                                                                          |
+| `/documents`              | login  | Versi CV dan cover letter: tambah, edit, arsipkan, hapus; jumlah pemakaian per versi                                                                                  |
+| `/questions`              | login  | Semua pertanyaan interview dari seluruh lamaran; cari (`?q=`) dan filter tahap (`?stage=`) di URL                                                                     |
+| `/settings`               | login  | Profil, batas hari follow-up dan saran Tanpa kabar, keluar, hapus akun                                                                                                |
 
 Interview dan perubahan status dikelola di halaman detail lamaran, tanpa route sendiri. Kontak dibuat dan diedit di `/contacts`; di detail lamaran kontak yang ada bisa dihubungkan atau dilepas.
 
@@ -243,7 +250,7 @@ Interview dan perubahan status dikelola di halaman detail lamaran, tanpa route s
 | 3b   | Daftar: filter dan sort di URL                                                                                                                                      | Filter dan sort bertahan saat halaman dimuat ulang                                                 |
 | 4    | Follow-up: batas hari per user, penanda di board/tabel/detail, panel "Perlu Follow-up", saran Tanpa kabar, tombol "Sudah follow-up"                                 | Lamaran lama tanpa perubahan tertandai dan bisa ditindaklanjuti                                    |
 | 5    | Dokumen, interview, kontak: versi CV/cover letter dan pilihannya per lamaran; catatan interview ber-markdown; halaman `/questions`; kontak dan tautannya ke lamaran | Versi dokumen, interview dan kontak tampil di detail lamaran; pertanyaan terkumpul dan bisa dicari |
-| 6    | Dashboard statistik; halaman perusahaan (`/companies`, `/companies/[id]`)                                                                                           | Tiga grafik tampil dari data nyata; perusahaan menampilkan lamaran dan kontaknya                   |
-| 7    | Polish: empty/loading/error state, data demo, test Vitest untuk schema Zod dan logika murni, README portfolio, deploy Vercel + Neon                                 | Aplikasi live dan bisa didemokan                                                                   |
+| 6    | Dashboard statistik; halaman perusahaan (`/companies`, `/companies/[id]`); seed data demo (`npm run db:seed`)                                                       | Tiga grafik tampil dari data nyata; perusahaan menampilkan lamaran dan kontaknya                   |
+| 7    | Polish: empty/loading/error state, test Vitest untuk schema Zod dan logika murni, README portfolio, deploy Vercel + Neon                                            | Aplikasi live dan bisa didemokan                                                                   |
 
 Setiap fase ditutup dengan `npm run lint && npm run typecheck && npm run format:check && npm run build`.

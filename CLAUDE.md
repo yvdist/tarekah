@@ -37,10 +37,12 @@ Before calling work done: `npm run lint && npm run typecheck && npm run format:c
 npm run db:generate   # diff src/db/schema against drizzle/ and write a new SQL migration
 npm run db:migrate    # apply pending migrations to DATABASE_URL_UNPOOLED
 npm run db:studio     # Drizzle Studio
+npm run db:seed -- <email> [--reset]   # demo data for one existing user
 ```
 
 - Workflow: edit `src/db/schema/*` → `db:generate` → review the generated SQL → `db:migrate` → commit schema and `drizzle/` together.
 - Never use `drizzle-kit push`, and never edit a migration that has already been applied; add a new one.
+- `scripts/seed.ts` fills an account that already signed in once. It refuses to run when that user has data unless `--reset` is passed, which deletes that user's companies, documents, applications and contacts first. It writes straight to the database, so cached pages do not see it: restart the server afterwards.
 - `drizzle.config.ts` loads `.env.local` itself (drizzle-kit runs outside Next.js) and uses the direct, unpooled connection string. The app at runtime uses the pooled `DATABASE_URL`.
 
 ## Git workflow
@@ -59,13 +61,14 @@ Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · T
 
 `next-auth@latest` is still v4 and does not support this Next.js version; stay on the `beta` tag.
 
-The database driver is `pg` with `attachDatabasePool` from `@vercel/functions`, which is what Neon recommends on Vercel Fluid compute. The pool lives in `src/db/index.ts`; do not create another one.
+The database driver is `pg` with `attachDatabasePool` from `@vercel/functions`, which is what Neon recommends on Vercel Fluid compute. The pool lives in `src/db/index.ts`; do not create another one. The one exception is `scripts/seed.ts`, which runs outside Next.js and opens its own short-lived connection.
 
 ## Folder structure
 
 ```
 drizzle/                      generated SQL migrations (committed)
 drizzle.config.ts
+scripts/seed.ts               demo data; the only code outside src/ that talks to the database
 src/
   app/
     (marketing)/              public landing page
@@ -111,6 +114,7 @@ These three are not negotiable.
 - To cache per-user data, the exported query resolves the user and passes `user.id` into an unexported `"use cache"` function. Never export a cached function that takes a `userId` argument.
 - Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`, `documents:<userId>`, `interviews:<userId>`, `contacts:<userId>`). A cached query that joins another domain carries that domain's tag too, and an action that changes what another domain displays updates that tag as well. Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
 - Anything that depends on the clock (days in status, follow-up and ghosted flags) is computed in the exported query, after the cached read, never inside a `"use cache"` function. The rules live in `src/features/applications/follow-up.ts`.
+- Reading the clock outside a cached function still needs `await connection()` first when the value feeds a render (see `resolveCurrentRange` in `src/features/dashboard/range.ts`); otherwise Next.js rejects `Date.now()` while prerendering.
 - `src/proxy.ts` only does an optimistic cookie check for redirects. Authorization happens in `queries.ts` / `actions.ts`.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
 - When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to `NAV_ITEMS` in `src/app/(app)/layout.tsx`.
@@ -154,5 +158,6 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Shared Zod field helpers (`optionalText`, `requiredText`, `optionalHttpUrl`, `optionalId`) are in `src/lib/form-schemas.ts`; `invalidResult` in `src/lib/action-result.ts` turns a Zod error into an `ActionResult`; `setFieldErrors` in `src/lib/form-errors.ts` maps it back onto the form.
 - Forms are Client Components using `react-hook-form` with `zodResolver` and the schema from `schemas.ts`; the action re-parses the same raw values with the same schema. The form calls the action in a transition, maps `fieldErrors` onto fields, shows a `sonner` toast, then navigates. See `src/features/applications/components/application-form.tsx`.
 - The kanban board (`src/features/applications/components/board.tsx`) uses `@dnd-kit/core` only, since cards have no order within a column. Moves go through `useOptimistic` inside a standalone `startTransition`, following `node_modules/next/dist/docs/01-app/02-guides/interactive-apps.md`; a failed action reverts by itself because nothing is revalidated.
+- Charts use the shadcn `chart` component over Recharts 3 and live in `src/features/dashboard/components/` as Client Components that only render: aggregation happens in SQL in `src/features/dashboard/queries.ts`, and labels are formatted on the server and passed in. Series colours are `--chart-1` to `--chart-5` in `globals.css`, assigned in that order.
 - Tables use TanStack Table v9 (`useTable` + `tableFeatures`), whose API differs from v8; its docs ship in `node_modules/@tanstack/react-table/skills/`.
 - Path alias: `@/*` maps to `src/*`. `components.json` also reserves `@/hooks` for hooks.
