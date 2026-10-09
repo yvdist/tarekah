@@ -30,11 +30,11 @@ export function Logomark({ className }: { className?: string }) {
 // so whoever renders this also provides the real word to screen readers.
 export function AccentE({ className }: { className?: string }) {
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block leading-none">
       e
       <span
         className={cn(
-          "absolute top-[0.48em] left-[0.15em] h-[0.05em] w-[0.22em] -rotate-[20deg] rounded-full bg-kunyit",
+          "absolute top-[0.34em] left-[0.15em] h-[0.05em] w-[0.22em] -rotate-[20deg] rounded-full bg-kunyit",
           className,
         )}
       />
@@ -47,13 +47,15 @@ export function Wordmark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "font-heading text-2xl leading-none font-bold tracking-tight",
+        "font-heading text-2xl font-bold tracking-tight",
         INK,
         className,
+        // Last, because a font size passed in would drop it when merged.
+        "leading-none",
       )}
     >
       <span className="sr-only">Tarékah</span>
-      <span aria-hidden>
+      <span aria-hidden className="whitespace-nowrap">
         tar
         <AccentE />
         kah
