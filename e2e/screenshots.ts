@@ -8,6 +8,9 @@ import { SCREENSHOT_USER } from "./constants";
 
 const OUTPUT = "docs/screenshots";
 
+// Lists of the user's own records, captured in both themes and at phone width.
+const ARCHIVE_PAGES = ["contacts"];
+
 test.beforeAll(seedDemoUser);
 
 async function settle(page: Page) {
@@ -46,11 +49,16 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.goto("/applications");
     await capture("applications");
 
+    for (const name of ARCHIVE_PAGES) {
+      await page.goto(`/${name}`);
+      await capture(name);
+    }
+
     // Last, because the application below is opened from the board.
     await page.goto("/board");
     await capture("board");
 
-    // Dark mode is shown with three pages; the rest only in light.
+    // The pages below follow the same patterns, so they are only shown in light.
     if (colorScheme === "light") {
       await page
         .getByRole("region", { name: "Interview" })
@@ -116,7 +124,12 @@ for (const colorScheme of ["light", "dark"] as const) {
 
       const phone = await mobile.newPage();
 
-      for (const name of ["dashboard", "board", "applications"]) {
+      for (const name of [
+        "dashboard",
+        "board",
+        "applications",
+        ...ARCHIVE_PAGES,
+      ]) {
         await phone.goto(`/${name}`);
         await settle(phone);
         await phone.screenshot({
