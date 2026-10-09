@@ -53,6 +53,7 @@ npm run db:seed -- <email> [--reset]   # demo data for one existing user
 
 - Workflow: edit `src/db/schema/*` → `db:generate` → review the generated SQL → `db:migrate` → commit schema and `drizzle/` together.
 - Never use `drizzle-kit push`, and never edit a migration that has already been applied; add a new one.
+- On Vercel, `vercel.json` sets the build command to `npm run db:migrate && npm run build`, so every deploy applies pending migrations to its own environment's database before building. A migration must work with the code that is still serving: add a column first, drop it in a later deploy.
 - `scripts/seed.ts` fills an account that already signed in once. It refuses to run when that user has data unless `--reset` is passed, which deletes that user's companies, documents, applications and contacts first. It writes straight to the database, so cached pages do not see it: restart the server afterwards.
 - `drizzle.config.ts` loads `.env.local` itself (drizzle-kit runs outside Next.js) and uses the direct, unpooled connection string. The app at runtime uses the pooled `DATABASE_URL`.
 

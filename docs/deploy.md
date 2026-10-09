@@ -12,7 +12,7 @@ Yang dibutuhkan: akun [Vercel](https://vercel.com), akun GitHub, dan project Goo
 2. Tentukan **Project Name**. Nama ini menjadi domain production: `<nama-project>.vercel.app`. Catat; dipakai di langkah 3.
 3. Framework terdeteksi sebagai Next.js. Biarkan pengaturan lain apa adanya dan klik Deploy.
 
-Deploy pertama ini gagal dengan "Missing or invalid environment variables". Itu wajar: variabelnya baru diisi di langkah berikutnya. Yang dicari dari langkah ini hanya project dan domainnya.
+Deploy pertama ini gagal di langkah migration dengan "Please provide required params for Postgres driver". Itu wajar: variabelnya baru diisi di langkah berikutnya. Yang dicari dari langkah ini hanya project dan domainnya.
 
 Pilih region function yang dekat dengan pengguna (Settings → Functions; untuk Indonesia: Singapore, `sin1`).
 
@@ -74,29 +74,29 @@ Bersama dua variabel database dari langkah 2, totalnya tujuh.
 
 ## 5. Migration
 
-Pilih salah satu.
-
-**Otomatis di setiap deploy (disarankan).** Di Settings → Build and Deployment, ubah Build Command menjadi:
+Migration jalan otomatis di setiap deploy. `vercel.json` mengatur build command-nya:
 
 ```bash
 npm run db:migrate && npm run build
 ```
 
-Migration yang belum jalan diterapkan sebelum build. Kalau migration gagal, deploy gagal dan versi lama tetap melayani. Dengan branch per preview, preview deployment memigrasi branch database miliknya sendiri, bukan production.
+Tidak ada yang perlu diubah di dashboard; biarkan Override pada Build Command mati, karena nilai di dashboard tidak dipakai selama `vercel.json` mengisinya.
 
-**Manual dari lokal.** Jalankan dengan connection string direct milik production:
+Migration yang belum jalan diterapkan sebelum build. Kalau migration gagal, deploy gagal dan versi lama tetap melayani. Dengan branch per preview, preview deployment memigrasi branch database miliknya sendiri, bukan production. Tanpa itu, Preview dan Production memakai database yang sama, sehingga preview deployment dari branch yang belum di-merge sudah menerapkan migration-nya ke database production.
+
+**Manual dari lokal**, kalau migration perlu jalan tanpa deploy. Jalankan dengan connection string direct milik production:
 
 ```bash
 DATABASE_URL_UNPOOLED='postgres://…' npm run db:migrate
 ```
 
-Nilai di environment mengalahkan `.env.local`. Ingat untuk mengulanginya setiap kali ada migration baru, sebelum kode yang membutuhkannya di-deploy.
+Nilai di environment mengalahkan `.env.local`.
 
 Di kedua cara, migration harus kompatibel dengan kode yang sedang berjalan: tambah kolom dulu, hapus kolom di deploy berikutnya.
 
 ## 6. Deploy ulang dan periksa
 
-Di tab Deployments, pilih deploy terakhir → **Redeploy** (atau push commit baru). Variabel dan build command baru hanya berlaku untuk deploy yang dibuat setelah diubah.
+Di tab Deployments, pilih deploy terakhir → **Redeploy** (atau push commit baru). Variabel baru hanya berlaku untuk deploy yang dibuat setelah diubah.
 
 Lalu periksa di alamat production:
 
@@ -131,13 +131,15 @@ Fitur Supabase lain (Auth, Row Level Security, Storage) tidak dipakai: login tet
 
 ## Masalah yang sering muncul
 
-| Gejala                                                                                                    | Penyebab dan perbaikan                                                                                                                             |
-| --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Build gagal dengan "Missing or invalid environment variables"                                             | `DATABASE_URL` atau `AUTH_SECRET` (minimal 32 karakter) belum diisi untuk environment yang sedang di-build. Wajar pada deploy pertama (langkah 1). |
-| Variabel sudah diisi tapi deploy masih gagal dengan pesan yang sama                                       | Deploy itu dibuat sebelum variabel diisi. Redeploy.                                                                                                |
-| `redirect_uri_mismatch` (Google) atau "The redirect_uri is not associated with this application" (GitHub) | Callback URL di OAuth app tidak sama persis dengan domain yang dibuka. Periksa `https`, domain, dan path `/api/auth/callback/<provider>`.          |
-| Halaman login menampilkan pesan `OAuthAccountNotLinked`                                                   | Email itu sudah terdaftar lewat provider lain. Masuk dengan provider yang pertama kali dipakai.                                                    |
-| `UntrustedHost`                                                                                           | Aplikasi berjalan di luar Vercel tanpa `AUTH_TRUST_HOST=true`.                                                                                     |
-| `relation "users" does not exist`                                                                         | Migration belum dijalankan terhadap database itu. Lihat langkah 5.                                                                                 |
-| Google menolak dengan "Access blocked"                                                                    | Consent screen masih Testing dan akun tersebut bukan test user.                                                                                    |
-| Data yang diubah langsung di database tidak muncul                                                        | Halaman di-cache per pengguna dan hanya dibatalkan oleh Server Action. Ubah data lewat aplikasi, atau tunggu cache kedaluwarsa (hitungan jam).     |
+| Gejala                                                                                                    | Penyebab dan perbaikan                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build gagal dengan "Please provide required params for Postgres driver"                                   | `DATABASE_URL_UNPOOLED` belum diisi untuk environment yang sedang di-build. Wajar pada deploy pertama (langkah 1).                             |
+| Build gagal dengan "Missing or invalid environment variables"                                             | `DATABASE_URL` atau `AUTH_SECRET` (minimal 32 karakter) belum diisi untuk environment yang sedang di-build.                                    |
+| Variabel sudah diisi tapi deploy masih gagal dengan pesan yang sama                                       | Deploy itu dibuat sebelum variabel diisi. Redeploy.                                                                                            |
+| `redirect_uri_mismatch` (Google) atau "The redirect_uri is not associated with this application" (GitHub) | Callback URL di OAuth app tidak sama persis dengan domain yang dibuka. Periksa `https`, domain, dan path `/api/auth/callback/<provider>`.      |
+| Halaman login menampilkan pesan `OAuthAccountNotLinked`                                                   | Email itu sudah terdaftar lewat provider lain. Masuk dengan provider yang pertama kali dipakai.                                                |
+| `UntrustedHost`                                                                                           | Aplikasi berjalan di luar Vercel tanpa `AUTH_TRUST_HOST=true`.                                                                                 |
+| Login berakhir di `/api/auth/error?error=Configuration`                                                   | Auth.js menyembunyikan penyebabnya; lihat tab Logs. `AdapterError` dengan kode `42P01` berarti tabelnya belum ada: lihat baris berikut.        |
+| `relation "users" does not exist`                                                                         | Migration belum dijalankan terhadap database itu. Lihat langkah 5.                                                                             |
+| Google menolak dengan "Access blocked"                                                                    | Consent screen masih Testing dan akun tersebut bukan test user.                                                                                |
+| Data yang diubah langsung di database tidak muncul                                                        | Halaman di-cache per pengguna dan hanya dibatalkan oleh Server Action. Ubah data lewat aplikasi, atau tunggu cache kedaluwarsa (hitungan jam). |
