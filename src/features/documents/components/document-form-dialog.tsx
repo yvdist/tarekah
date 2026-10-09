@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useOpenKey } from "@/hooks/use-open-key";
-import { setFieldErrors } from "@/lib/form-errors";
+import { describedBy, setFieldErrors } from "@/lib/form-errors";
 import { createDocument, updateDocument } from "../actions";
 import { DOCUMENT_TYPE_OPTIONS } from "../labels";
 import {
@@ -126,6 +126,10 @@ function DocumentForm({
             render={({ field }) => (
               <OptionSelect
                 id={`${id}-type`}
+                aria-describedby={describedBy(
+                  !!documentId && `${id}-type-description`,
+                  !!errors.type && `${id}-type-error`,
+                )}
                 value={field.value}
                 onValueChange={field.onChange}
                 options={DOCUMENT_TYPE_OPTIONS}
@@ -136,49 +140,60 @@ function DocumentForm({
             )}
           />
           {documentId ? (
-            <FieldDescription>
+            <FieldDescription id={`${id}-type-description`}>
               Jenis tidak bisa diubah setelah versi dibuat.
             </FieldDescription>
           ) : null}
-          <FieldError errors={[errors.type]} />
+          <FieldError id={`${id}-type-error`} errors={[errors.type]} />
         </Field>
 
         <Field data-invalid={!!errors.label}>
           <FieldLabel htmlFor={`${id}-label`}>Nama versi</FieldLabel>
           <Input
             id={`${id}-label`}
+            aria-describedby={describedBy(
+              !!errors.label && `${id}-label-error`,
+            )}
+            aria-required
             placeholder="CV Backend v3"
             aria-invalid={!!errors.label}
             {...form.register("label")}
           />
-          <FieldError errors={[errors.label]} />
+          <FieldError id={`${id}-label-error`} errors={[errors.label]} />
         </Field>
 
         <Field data-invalid={!!errors.url}>
           <FieldLabel htmlFor={`${id}-url`}>Link file</FieldLabel>
           <Input
             id={`${id}-url`}
+            aria-describedby={describedBy(
+              `${id}-url-description`,
+              !!errors.url && `${id}-url-error`,
+            )}
             type="url"
             placeholder="https://"
             aria-invalid={!!errors.url}
             {...form.register("url")}
           />
-          <FieldDescription>
+          <FieldDescription id={`${id}-url-description`}>
             Misalnya link Google Drive. File tidak diunggah ke sini.
           </FieldDescription>
-          <FieldError errors={[errors.url]} />
+          <FieldError id={`${id}-url-error`} errors={[errors.url]} />
         </Field>
 
         <Field data-invalid={!!errors.notes}>
           <FieldLabel htmlFor={`${id}-notes`}>Deskripsi</FieldLabel>
           <Textarea
             id={`${id}-notes`}
+            aria-describedby={describedBy(
+              !!errors.notes && `${id}-notes-error`,
+            )}
             rows={3}
             placeholder="Apa yang berubah di versi ini"
             aria-invalid={!!errors.notes}
             {...form.register("notes")}
           />
-          <FieldError errors={[errors.notes]} />
+          <FieldError id={`${id}-notes-error`} errors={[errors.notes]} />
         </Field>
 
         <div className="flex justify-end gap-2">

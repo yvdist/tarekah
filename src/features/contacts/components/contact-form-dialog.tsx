@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useOpenKey } from "@/hooks/use-open-key";
-import { setFieldErrors } from "@/lib/form-errors";
+import { describedBy, setFieldErrors } from "@/lib/form-errors";
 import { createContact, updateContact } from "../actions";
 import { CONTACT_ROLE_OPTIONS } from "../labels";
 import {
@@ -155,10 +155,14 @@ function ContactForm({
             <FieldLabel htmlFor={`${id}-name`}>Nama</FieldLabel>
             <Input
               id={`${id}-name`}
+              aria-describedby={describedBy(
+                !!errors.name && `${id}-name-error`,
+              )}
+              aria-required
               aria-invalid={!!errors.name}
               {...form.register("name")}
             />
-            <FieldError errors={[errors.name]} />
+            <FieldError id={`${id}-name-error`} errors={[errors.name]} />
           </Field>
 
           <Field data-invalid={!!errors.role}>
@@ -169,6 +173,9 @@ function ContactForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-role`}
+                  aria-describedby={describedBy(
+                    !!errors.role && `${id}-role-error`,
+                  )}
                   value={field.value}
                   onValueChange={field.onChange}
                   options={CONTACT_ROLE_OPTIONS}
@@ -177,7 +184,7 @@ function ContactForm({
                 />
               )}
             />
-            <FieldError errors={[errors.role]} />
+            <FieldError id={`${id}-role-error`} errors={[errors.role]} />
           </Field>
 
           <Field data-invalid={!!errors.companyId} className="sm:col-span-2">
@@ -188,6 +195,10 @@ function ContactForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-companyId`}
+                  aria-describedby={describedBy(
+                    `${id}-companyId-description`,
+                    !!errors.companyId && `${id}-companyId-error`,
+                  )}
                   value={field.value === "" ? COMPANY_UNSET : field.value}
                   onValueChange={(value) =>
                     field.onChange(value === COMPANY_UNSET ? "" : value)
@@ -198,33 +209,45 @@ function ContactForm({
                 />
               )}
             />
-            <FieldDescription>
+            <FieldDescription id={`${id}-companyId-description`}>
               Perusahaan baru dibuat lewat form lamaran.
             </FieldDescription>
-            <FieldError errors={[errors.companyId]} />
+            <FieldError
+              id={`${id}-companyId-error`}
+              errors={[errors.companyId]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.email}>
             <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
             <Input
               id={`${id}-email`}
+              aria-describedby={describedBy(
+                !!errors.email && `${id}-email-error`,
+              )}
               type="email"
               aria-invalid={!!errors.email}
               {...form.register("email")}
             />
-            <FieldError errors={[errors.email]} />
+            <FieldError id={`${id}-email-error`} errors={[errors.email]} />
           </Field>
 
           <Field data-invalid={!!errors.linkedinUrl}>
             <FieldLabel htmlFor={`${id}-linkedinUrl`}>LinkedIn</FieldLabel>
             <Input
               id={`${id}-linkedinUrl`}
+              aria-describedby={describedBy(
+                !!errors.linkedinUrl && `${id}-linkedinUrl-error`,
+              )}
               type="url"
               placeholder="https://"
               aria-invalid={!!errors.linkedinUrl}
               {...form.register("linkedinUrl")}
             />
-            <FieldError errors={[errors.linkedinUrl]} />
+            <FieldError
+              id={`${id}-linkedinUrl-error`}
+              errors={[errors.linkedinUrl]}
+            />
           </Field>
         </div>
 
@@ -232,15 +255,18 @@ function ContactForm({
           <FieldLabel htmlFor={`${id}-notes`}>Catatan</FieldLabel>
           <Textarea
             id={`${id}-notes`}
+            aria-describedby={describedBy(
+              !!errors.notes && `${id}-notes-error`,
+            )}
             rows={3}
             aria-invalid={!!errors.notes}
             {...form.register("notes")}
           />
-          <FieldError errors={[errors.notes]} />
+          <FieldError id={`${id}-notes-error`} errors={[errors.notes]} />
         </Field>
 
         <Field data-invalid={!!errors.applicationIds}>
-          <FieldLabel>Lamaran terkait</FieldLabel>
+          <FieldLabel id={`${id}-applicationIds`}>Lamaran terkait</FieldLabel>
           {options.applications.length === 0 ? (
             <FieldDescription>Belum ada lamaran.</FieldDescription>
           ) : (
@@ -248,7 +274,11 @@ function ContactForm({
               control={form.control}
               name="applicationIds"
               render={({ field }) => (
-                <div className="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                <div
+                  role="group"
+                  aria-labelledby={`${id}-applicationIds`}
+                  className="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-lg border p-3"
+                >
                   {options.applications.map((application) => (
                     <label
                       key={application.id}

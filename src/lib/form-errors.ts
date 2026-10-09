@@ -14,3 +14,9 @@ export function setFieldErrors<T extends FieldValues>(
     }
   }
 }
+
+// Builds an aria-describedby value from the ids that are currently rendered,
+// so a field's hint and error are read out with it.
+export function describedBy(...ids: Array<string | false>) {
+  return ids.filter(Boolean).join(" ") || undefined;
+}

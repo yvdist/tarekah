@@ -20,6 +20,7 @@ export function OptionSelect<T extends string>({
   disabled,
   className,
   "aria-label": ariaLabel,
+  "aria-describedby": ariaDescribedBy,
 }: {
   id?: string;
   value: T;
@@ -29,6 +30,7 @@ export function OptionSelect<T extends string>({
   disabled?: boolean;
   className?: string;
   "aria-label"?: string;
+  "aria-describedby"?: string;
 }) {
   return (
     <Select
@@ -44,6 +46,7 @@ export function OptionSelect<T extends string>({
       <SelectTrigger
         id={id}
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
         aria-invalid={invalid || undefined}
         className={className}
       >

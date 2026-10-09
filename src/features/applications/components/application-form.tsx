@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { DocumentType } from "@/db/schema/enum-values";
 import type { DocumentOption } from "@/features/documents/queries";
 import { OptionSelect } from "@/components/option-select";
+import { describedBy } from "@/lib/form-errors";
 import { createApplication, updateApplication } from "../actions";
 import { SOURCE_OPTIONS, STATUS_OPTIONS, WORK_TYPE_OPTIONS } from "../labels";
 import {
@@ -143,6 +144,11 @@ export function ApplicationForm({
             <FieldLabel htmlFor={`${id}-companyName`}>Perusahaan</FieldLabel>
             <Input
               id={`${id}-companyName`}
+              aria-describedby={describedBy(
+                `${id}-companyName-description`,
+                !!errors.companyName && `${id}-companyName-error`,
+              )}
+              aria-required
               list={`${id}-companies`}
               autoComplete="off"
               aria-invalid={!!errors.companyName}
@@ -153,20 +159,30 @@ export function ApplicationForm({
                 <option key={name} value={name} />
               ))}
             </datalist>
-            <FieldDescription>
+            <FieldDescription id={`${id}-companyName-description`}>
               Pilih perusahaan yang sudah ada atau ketik nama baru.
             </FieldDescription>
-            <FieldError errors={[errors.companyName]} />
+            <FieldError
+              id={`${id}-companyName-error`}
+              errors={[errors.companyName]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.position}>
             <FieldLabel htmlFor={`${id}-position`}>Posisi</FieldLabel>
             <Input
               id={`${id}-position`}
+              aria-describedby={describedBy(
+                !!errors.position && `${id}-position-error`,
+              )}
+              aria-required
               aria-invalid={!!errors.position}
               {...form.register("position")}
             />
-            <FieldError errors={[errors.position]} />
+            <FieldError
+              id={`${id}-position-error`}
+              errors={[errors.position]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.status}>
@@ -177,6 +193,9 @@ export function ApplicationForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-status`}
+                  aria-describedby={describedBy(
+                    !!errors.status && `${id}-status-error`,
+                  )}
                   value={field.value}
                   onValueChange={field.onChange}
                   options={STATUS_OPTIONS}
@@ -185,21 +204,28 @@ export function ApplicationForm({
                 />
               )}
             />
-            <FieldError errors={[errors.status]} />
+            <FieldError id={`${id}-status-error`} errors={[errors.status]} />
           </Field>
 
           <Field data-invalid={!!errors.appliedAt}>
             <FieldLabel htmlFor={`${id}-appliedAt`}>Tanggal apply</FieldLabel>
             <Input
               id={`${id}-appliedAt`}
+              aria-describedby={describedBy(
+                `${id}-appliedAt-description`,
+                !!errors.appliedAt && `${id}-appliedAt-error`,
+              )}
               type="date"
               aria-invalid={!!errors.appliedAt}
               {...form.register("appliedAt")}
             />
-            <FieldDescription>
+            <FieldDescription id={`${id}-appliedAt-description`}>
               Kosongkan selama masih wishlist.
             </FieldDescription>
-            <FieldError errors={[errors.appliedAt]} />
+            <FieldError
+              id={`${id}-appliedAt-error`}
+              errors={[errors.appliedAt]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.source}>
@@ -210,6 +236,9 @@ export function ApplicationForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-source`}
+                  aria-describedby={describedBy(
+                    !!errors.source && `${id}-source-error`,
+                  )}
                   value={field.value}
                   onValueChange={field.onChange}
                   options={SOURCE_OPTIONS}
@@ -218,7 +247,7 @@ export function ApplicationForm({
                 />
               )}
             />
-            <FieldError errors={[errors.source]} />
+            <FieldError id={`${id}-source-error`} errors={[errors.source]} />
           </Field>
 
           <Field data-invalid={!!errors.sourceDetail}>
@@ -227,11 +256,17 @@ export function ApplicationForm({
             </FieldLabel>
             <Input
               id={`${id}-sourceDetail`}
+              aria-describedby={describedBy(
+                !!errors.sourceDetail && `${id}-sourceDetail-error`,
+              )}
               placeholder="Nama pemberi referral atau sumber lain"
               aria-invalid={!!errors.sourceDetail}
               {...form.register("sourceDetail")}
             />
-            <FieldError errors={[errors.sourceDetail]} />
+            <FieldError
+              id={`${id}-sourceDetail-error`}
+              errors={[errors.sourceDetail]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.workType}>
@@ -242,6 +277,9 @@ export function ApplicationForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-workType`}
+                  aria-describedby={describedBy(
+                    !!errors.workType && `${id}-workType-error`,
+                  )}
                   value={field.value === "" ? WORK_TYPE_UNSET : field.value}
                   onValueChange={(value) =>
                     field.onChange(value === WORK_TYPE_UNSET ? "" : value)
@@ -252,17 +290,26 @@ export function ApplicationForm({
                 />
               )}
             />
-            <FieldError errors={[errors.workType]} />
+            <FieldError
+              id={`${id}-workType-error`}
+              errors={[errors.workType]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.location}>
             <FieldLabel htmlFor={`${id}-location`}>Lokasi</FieldLabel>
             <Input
               id={`${id}-location`}
+              aria-describedby={describedBy(
+                !!errors.location && `${id}-location-error`,
+              )}
               aria-invalid={!!errors.location}
               {...form.register("location")}
             />
-            <FieldError errors={[errors.location]} />
+            <FieldError
+              id={`${id}-location-error`}
+              errors={[errors.location]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.salaryMin}>
@@ -271,11 +318,17 @@ export function ApplicationForm({
             </FieldLabel>
             <Input
               id={`${id}-salaryMin`}
+              aria-describedby={describedBy(
+                !!errors.salaryMin && `${id}-salaryMin-error`,
+              )}
               inputMode="numeric"
               aria-invalid={!!errors.salaryMin}
               {...form.register("salaryMin")}
             />
-            <FieldError errors={[errors.salaryMin]} />
+            <FieldError
+              id={`${id}-salaryMin-error`}
+              errors={[errors.salaryMin]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.salaryMax}>
@@ -284,11 +337,17 @@ export function ApplicationForm({
             </FieldLabel>
             <Input
               id={`${id}-salaryMax`}
+              aria-describedby={describedBy(
+                !!errors.salaryMax && `${id}-salaryMax-error`,
+              )}
               inputMode="numeric"
               aria-invalid={!!errors.salaryMax}
               {...form.register("salaryMax")}
             />
-            <FieldError errors={[errors.salaryMax]} />
+            <FieldError
+              id={`${id}-salaryMax-error`}
+              errors={[errors.salaryMax]}
+            />
           </Field>
         </div>
 
@@ -301,6 +360,9 @@ export function ApplicationForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-cvDocumentId`}
+                  aria-describedby={describedBy(
+                    !!errors.cvDocumentId && `${id}-cvDocumentId-error`,
+                  )}
                   value={field.value === "" ? DOCUMENT_UNSET : field.value}
                   onValueChange={(value) =>
                     field.onChange(value === DOCUMENT_UNSET ? "" : value)
@@ -315,7 +377,10 @@ export function ApplicationForm({
                 />
               )}
             />
-            <FieldError errors={[errors.cvDocumentId]} />
+            <FieldError
+              id={`${id}-cvDocumentId-error`}
+              errors={[errors.cvDocumentId]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.coverLetterDocumentId}>
@@ -328,6 +393,11 @@ export function ApplicationForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-coverLetterDocumentId`}
+                  aria-describedby={describedBy(
+                    `${id}-coverLetterDocumentId-description`,
+                    !!errors.coverLetterDocumentId &&
+                      `${id}-coverLetterDocumentId-error`,
+                  )}
                   value={field.value === "" ? DOCUMENT_UNSET : field.value}
                   onValueChange={(value) =>
                     field.onChange(value === DOCUMENT_UNSET ? "" : value)
@@ -342,10 +412,13 @@ export function ApplicationForm({
                 />
               )}
             />
-            <FieldDescription>
+            <FieldDescription id={`${id}-coverLetterDocumentId-description`}>
               Kelola versi di halaman Dokumen.
             </FieldDescription>
-            <FieldError errors={[errors.coverLetterDocumentId]} />
+            <FieldError
+              id={`${id}-coverLetterDocumentId-error`}
+              errors={[errors.coverLetterDocumentId]}
+            />
           </Field>
         </div>
 
@@ -353,23 +426,29 @@ export function ApplicationForm({
           <FieldLabel htmlFor={`${id}-jobUrl`}>Link lowongan</FieldLabel>
           <Input
             id={`${id}-jobUrl`}
+            aria-describedby={describedBy(
+              !!errors.jobUrl && `${id}-jobUrl-error`,
+            )}
             type="url"
             placeholder="https://"
             aria-invalid={!!errors.jobUrl}
             {...form.register("jobUrl")}
           />
-          <FieldError errors={[errors.jobUrl]} />
+          <FieldError id={`${id}-jobUrl-error`} errors={[errors.jobUrl]} />
         </Field>
 
         <Field data-invalid={!!errors.notes}>
           <FieldLabel htmlFor={`${id}-notes`}>Catatan</FieldLabel>
           <Textarea
             id={`${id}-notes`}
+            aria-describedby={describedBy(
+              !!errors.notes && `${id}-notes-error`,
+            )}
             rows={5}
             aria-invalid={!!errors.notes}
             {...form.register("notes")}
           />
-          <FieldError errors={[errors.notes]} />
+          <FieldError id={`${id}-notes-error`} errors={[errors.notes]} />
         </Field>
 
         <div className="flex justify-end gap-2">

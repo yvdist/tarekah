@@ -10,6 +10,7 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
+  type Announcements,
   type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
@@ -29,6 +30,7 @@ import {
 } from "@/db/schema/enum-values";
 import { changeApplicationStatus } from "../actions";
 import { FRESH_FOLLOW_UP_STATE } from "../follow-up";
+import { STATUS_LABELS } from "../labels";
 import { BoardCardBody, type BoardItem } from "./board-card";
 import { BoardColumn } from "./board-column";
 
@@ -51,6 +53,15 @@ const detectColumn: CollisionDetection = (args) => {
 
   return underPointer.length > 0 ? underPointer : rectIntersection(args);
 };
+
+// Read out once when a card gets focus. Replaces dnd-kit's English default.
+const SCREEN_READER_INSTRUCTIONS = {
+  draggable:
+    "Tekan Spasi untuk mengangkat kartu. Selama terangkat, pakai tombol panah untuk memindahkannya ke kolom lain, Spasi atau Enter untuk meletakkan, dan Escape untuk membatalkan. Tekan Enter tanpa mengangkat untuk membuka lamaran.",
+};
+
+const columnStatus = (id: string | number | undefined) =>
+  APPLICATION_STATUSES.find((status) => status === id);
 
 type Move = { id: string; status: ApplicationStatus };
 
@@ -88,6 +99,33 @@ export function Board({ items }: { items: BoardItem[] }) {
   );
 
   const activeItem = optimisticItems.find((item) => item.id === activeId);
+
+  const cardLabel = (id: string | number) => {
+    const item = optimisticItems.find((value) => value.id === id);
+
+    return item ? `${item.position} di ${item.companyName}` : "Kartu";
+  };
+
+  // Live-region messages for screen readers while a card is being moved.
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => `${cardLabel(active.id)} diangkat.`,
+    onDragOver: ({ active, over }) => {
+      const status = columnStatus(over?.id);
+
+      return status
+        ? `${cardLabel(active.id)} berada di atas kolom ${STATUS_LABELS[status]}.`
+        : `${cardLabel(active.id)} tidak berada di atas kolom mana pun.`;
+    },
+    onDragEnd: ({ active, over }) => {
+      const status = columnStatus(over?.id);
+
+      return status
+        ? `${cardLabel(active.id)} diletakkan di kolom ${STATUS_LABELS[status]}.`
+        : `${cardLabel(active.id)} dikembalikan ke kolom semula.`;
+    },
+    onDragCancel: ({ active }) =>
+      `Dibatalkan. ${cardLabel(active.id)} dikembalikan ke kolom semula.`,
+  };
 
   function handleDragStart(event: DragStartEvent) {
     suppressClick.current = true;
@@ -156,6 +194,10 @@ export function Board({ items }: { items: BoardItem[] }) {
       id={dndId}
       sensors={sensors}
       collisionDetection={detectColumn}
+      accessibility={{
+        announcements,
+        screenReaderInstructions: SCREEN_READER_INSTRUCTIONS,
+      }}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={endDrag}

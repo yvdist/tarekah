@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useOpenKey } from "@/hooks/use-open-key";
-import { setFieldErrors } from "@/lib/form-errors";
+import { describedBy, setFieldErrors } from "@/lib/form-errors";
 import { createInterview, updateInterview } from "../actions";
 import { INTERVIEW_STAGE_OPTIONS } from "../labels";
 import {
@@ -139,11 +139,18 @@ function InterviewForm({
             </FieldLabel>
             <Input
               id={`${id}-scheduledAt`}
+              aria-describedby={describedBy(
+                !!errors.scheduledAt && `${id}-scheduledAt-error`,
+              )}
+              aria-required
               type="datetime-local"
               aria-invalid={!!errors.scheduledAt}
               {...form.register("scheduledAt")}
             />
-            <FieldError errors={[errors.scheduledAt]} />
+            <FieldError
+              id={`${id}-scheduledAt-error`}
+              errors={[errors.scheduledAt]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.stage}>
@@ -154,6 +161,9 @@ function InterviewForm({
               render={({ field }) => (
                 <OptionSelect
                   id={`${id}-stage`}
+                  aria-describedby={describedBy(
+                    !!errors.stage && `${id}-stage-error`,
+                  )}
                   value={field.value}
                   onValueChange={field.onChange}
                   options={INTERVIEW_STAGE_OPTIONS}
@@ -162,7 +172,7 @@ function InterviewForm({
                 />
               )}
             />
-            <FieldError errors={[errors.stage]} />
+            <FieldError id={`${id}-stage-error`} errors={[errors.stage]} />
           </Field>
         </div>
 
@@ -170,11 +180,17 @@ function InterviewForm({
           <FieldLabel htmlFor={`${id}-interviewers`}>Interviewer</FieldLabel>
           <Input
             id={`${id}-interviewers`}
+            aria-describedby={describedBy(
+              !!errors.interviewers && `${id}-interviewers-error`,
+            )}
             placeholder="Nama dan jabatan"
             aria-invalid={!!errors.interviewers}
             {...form.register("interviewers")}
           />
-          <FieldError errors={[errors.interviewers]} />
+          <FieldError
+            id={`${id}-interviewers-error`}
+            errors={[errors.interviewers]}
+          />
         </Field>
 
         <Field data-invalid={!!errors.questions}>
@@ -183,29 +199,45 @@ function InterviewForm({
           </FieldLabel>
           <Textarea
             id={`${id}-questions`}
+            aria-describedby={describedBy(
+              `${id}-questions-description`,
+              !!errors.questions && `${id}-questions-error`,
+            )}
             rows={6}
             aria-invalid={!!errors.questions}
             {...form.register("questions")}
           />
-          <FieldDescription>
+          <FieldDescription id={`${id}-questions-description`}>
             Satu pertanyaan per baris; tiap baris muncul terpisah di halaman
             Pertanyaan. Mendukung markdown sederhana: **tebal**, _miring_,
             `kode`, list, dan [link](https://…).
           </FieldDescription>
-          <FieldError errors={[errors.questions]} />
+          <FieldError
+            id={`${id}-questions-error`}
+            errors={[errors.questions]}
+          />
         </Field>
 
         <Field data-invalid={!!errors.reflection}>
           <FieldLabel htmlFor={`${id}-reflection`}>Refleksi</FieldLabel>
           <Textarea
             id={`${id}-reflection`}
+            aria-describedby={describedBy(
+              `${id}-reflection-description`,
+              !!errors.reflection && `${id}-reflection-error`,
+            )}
             rows={5}
             placeholder="Apa yang berjalan baik, apa yang perlu diperbaiki"
             aria-invalid={!!errors.reflection}
             {...form.register("reflection")}
           />
-          <FieldDescription>Mendukung markdown sederhana.</FieldDescription>
-          <FieldError errors={[errors.reflection]} />
+          <FieldDescription id={`${id}-reflection-description`}>
+            Mendukung markdown sederhana.
+          </FieldDescription>
+          <FieldError
+            id={`${id}-reflection-error`}
+            errors={[errors.reflection]}
+          />
         </Field>
 
         <div className="flex justify-end gap-2">

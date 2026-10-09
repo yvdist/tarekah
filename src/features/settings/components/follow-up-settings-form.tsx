@@ -13,6 +13,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { describedBy } from "@/lib/form-errors";
 import { updateFollowUpSettings } from "../actions";
 import {
   followUpSettingsSchema,
@@ -73,15 +74,23 @@ export function FollowUpSettingsForm({
             </FieldLabel>
             <Input
               id={`${id}-followUpAfterDays`}
+              aria-describedby={describedBy(
+                `${id}-followUpAfterDays-description`,
+                !!errors.followUpAfterDays && `${id}-followUpAfterDays-error`,
+              )}
+              aria-required
               inputMode="numeric"
               aria-invalid={!!errors.followUpAfterDays}
               {...form.register("followUpAfterDays")}
             />
-            <FieldDescription>
+            <FieldDescription id={`${id}-followUpAfterDays-description`}>
               Lamaran aktif ditandai perlu follow-up setelah sekian hari tanpa
               perubahan status atau follow-up.
             </FieldDescription>
-            <FieldError errors={[errors.followUpAfterDays]} />
+            <FieldError
+              id={`${id}-followUpAfterDays-error`}
+              errors={[errors.followUpAfterDays]}
+            />
           </Field>
 
           <Field data-invalid={!!errors.ghostedAfterDays}>
@@ -90,15 +99,23 @@ export function FollowUpSettingsForm({
             </FieldLabel>
             <Input
               id={`${id}-ghostedAfterDays`}
+              aria-describedby={describedBy(
+                `${id}-ghostedAfterDays-description`,
+                !!errors.ghostedAfterDays && `${id}-ghostedAfterDays-error`,
+              )}
+              aria-required
               inputMode="numeric"
               aria-invalid={!!errors.ghostedAfterDays}
               {...form.register("ghostedAfterDays")}
             />
-            <FieldDescription>
+            <FieldDescription id={`${id}-ghostedAfterDays-description`}>
               Setelah sekian hari tanpa perubahan status, muncul saran
               memindahkan lamaran ke Tanpa kabar.
             </FieldDescription>
-            <FieldError errors={[errors.ghostedAfterDays]} />
+            <FieldError
+              id={`${id}-ghostedAfterDays-error`}
+              errors={[errors.ghostedAfterDays]}
+            />
           </Field>
         </div>
 
