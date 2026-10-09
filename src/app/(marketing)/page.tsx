@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { AccentE, Logo, Wordmark } from "@/components/brand/logo";
 import { MegaMendung } from "@/components/brand/mega-mendung";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
+import { SessionLink } from "@/features/auth/components/session-link";
 import { BoardPreview } from "@/features/marketing/components/board-preview";
 import { DeskPreview } from "@/features/marketing/components/desk-preview";
 import { FollowUpDemo } from "@/features/marketing/components/follow-up-demo";
@@ -84,12 +84,11 @@ export default function LandingPage() {
           <Logo />
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link
-              href="/login"
+            <SessionLink
+              guestLabel="Masuk"
+              userLabel="Buka dashboard"
               className={buttonVariants({ variant: "outline" })}
-            >
-              Masuk
-            </Link>
+            />
           </div>
         </div>
       </header>
@@ -131,12 +130,11 @@ export default function LandingPage() {
             sejauh mana jalanmu. Tenang, rapi, dan tanpa menghakimi.
           </p>
           <div className="relative mt-8 flex rise-in flex-wrap items-center gap-2 [--i:4]">
-            <Link
-              href="/login"
+            <SessionLink
+              guestLabel="Mulai mencatat"
+              userLabel="Lanjutkan mencatat"
               className={buttonVariants({ size: "lg", className: CTA })}
-            >
-              Mulai mencatat
-            </Link>
+            />
             <a
               href="#cara-kerja"
               className={buttonVariants({
@@ -257,15 +255,14 @@ export default function LandingPage() {
           <p className="mt-4 max-w-sm text-pretty text-muted-foreground">
             Masuk dengan akun GitHub atau Google, lalu catat lamaran pertamamu.
           </p>
-          <Link
-            href="/login"
+          <SessionLink
+            guestLabel="Mulai mencatat"
+            userLabel="Lanjutkan mencatat"
             className={buttonVariants({
               size: "lg",
               className: cn(CTA, "mt-8"),
             })}
-          >
-            Mulai mencatat
-          </Link>
+          />
         </section>
       </main>
 
