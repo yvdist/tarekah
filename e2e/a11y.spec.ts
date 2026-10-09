@@ -12,6 +12,7 @@ const PAGES = [
   { path: "/board", heading: "Board" },
   { path: "/companies", heading: "Perusahaan" },
   { path: "/contacts", heading: "Kontak" },
+  { path: "/documents", heading: "Dokumen" },
   { path: "/settings", heading: "Pengaturan" },
 ];
 

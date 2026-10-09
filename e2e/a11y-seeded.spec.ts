@@ -7,7 +7,13 @@ import { expectNoSeriousViolations, seedDemoUser } from "./helpers";
 // never renders for it. The demo user has every status badge, follow-up
 // warnings and full charts, which is where a colour can fail contrast.
 
-const PAGES = ["/dashboard", "/board", "/applications", "/contacts"];
+const PAGES = [
+  "/dashboard",
+  "/board",
+  "/applications",
+  "/contacts",
+  "/documents",
+];
 
 const VIEWPORTS = [
   { name: "desktop", viewport: { width: 1280, height: 800 } },
