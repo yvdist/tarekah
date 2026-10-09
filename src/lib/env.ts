@@ -6,6 +6,9 @@ import { z } from "zod";
 const envSchema = z.object({
   DATABASE_URL: z.url(),
   AUTH_SECRET: z.string().min(32),
+  SITE_URL: z.url().optional(),
+  // Set by Vercel: the production host, without the protocol.
+  VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -18,3 +21,10 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+// Where the app is served, for the absolute URLs in metadata.
+export const siteUrl =
+  env.SITE_URL ??
+  (env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");

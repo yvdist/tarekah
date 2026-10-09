@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { siteUrl } from "@/lib/env";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,10 +22,29 @@ const fraunces = Fraunces({
   axes: ["SOFT", "opsz"],
 });
 
+const DESCRIPTION =
+  "Catat ke mana saja kamu melamar, kapan harus follow-up, dan sudah sejauh mana jalanmu. Tenang, rapi, dan tanpa menghakimi.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "Tarékah", template: "%s · Tarékah" },
-  description:
-    "Job application tracker: status, riwayat, catatan interview, dan follow-up.",
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "Tarékah",
+    title: "Tarékah: setiap lamaran adalah satu léngkah",
+    description: DESCRIPTION,
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+// Kertas, in each theme: the browser chrome around the page on a phone.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf7f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#14131f" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
