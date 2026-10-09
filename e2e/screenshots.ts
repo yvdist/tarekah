@@ -9,7 +9,7 @@ import { SCREENSHOT_USER } from "./constants";
 const OUTPUT = "docs/screenshots";
 
 // Lists of the user's own records, captured in both themes and at phone width.
-const ARCHIVE_PAGES = ["contacts", "documents"];
+const ARCHIVE_PAGES = ["contacts", "documents", "questions"];
 
 test.beforeAll(seedDemoUser);
 
@@ -77,9 +77,6 @@ for (const colorScheme of ["light", "dark"] as const) {
 
       await page.goto("/applications/new");
       await capture("application-new");
-
-      await page.goto("/questions");
-      await capture("questions");
     }
 
     await context.close();

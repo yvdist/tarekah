@@ -13,6 +13,7 @@ const PAGES = [
   "/applications",
   "/contacts",
   "/documents",
+  "/questions",
 ];
 
 const VIEWPORTS = [
