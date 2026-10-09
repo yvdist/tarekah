@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { authCookies, createSession } from "./db";
 import { seedDemoUser } from "./helpers";
 import { SCREENSHOT_USER } from "./constants";
@@ -57,6 +57,43 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.goto(`/${name}`);
       await capture(name);
     }
+
+    // An open overlay, cut out with a little of the dimmed page around it.
+    const captureOverlay = async (name: string, overlay: Locator) => {
+      await expect(overlay).toBeVisible();
+      await settle(page);
+      const box = await overlay.boundingBox();
+      if (!box) throw new Error(`${name} has no bounding box`);
+      await page.screenshot({
+        path: `${OUTPUT}/overlay-${name}-${colorScheme}.png`,
+        clip: {
+          x: Math.max(box.x - 40, 0),
+          y: Math.max(box.y - 40, 0),
+          width: box.width + 80,
+          height: box.height + 80,
+        },
+      });
+    };
+
+    await page.goto("/contacts");
+    await page.getByRole("button", { name: "Tambah kontak" }).click();
+    await captureOverlay("dialog", page.getByRole("dialog"));
+    await page.keyboard.press("Escape");
+
+    await page
+      .getByRole("button", { name: /^Hapus / })
+      .first()
+      .click();
+    await captureOverlay("alert-dialog", page.getByRole("alertdialog"));
+    await page.getByRole("button", { name: "Batal" }).click();
+
+    await page.goto("/applications");
+    await page
+      .getByRole("button", { name: /^Aksi untuk / })
+      .first()
+      .click();
+    await captureOverlay("menu", page.getByRole("menu"));
+    await page.keyboard.press("Escape");
 
     // Last, because the application below is opened from the board.
     await page.goto("/board");
