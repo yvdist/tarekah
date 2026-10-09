@@ -32,7 +32,6 @@ Catatan:
 - Kunyit solid tidak lolos AA sebagai teks, jadi ada `kunyit-tua` (`#7a4e00` terang) untuk teks; solid hanya untuk titik dan ikon.
 - Warna chart bukan warna status. Warna status guideline gagal validator `dataviz` sebagai seri kategorikal (chroma terlalu rendah, biru batu dan daun terlalu mirip). Urutannya nila, terakota, teal, oker, biru; baru dua yang dipakai. Oker di slot 4 lebih gelap dari kunyit dan bukan "lonceng".
 - Tinggi kontrol naik 4px (tombol dan input 36px, `lg` 40px) mengikuti mockup; berlaku di semua halaman.
-- Dialog dan dropdown masih memakai `ring` dan radius lama; masuk butir "Dialog form dan konfirmasi hapus".
 
 ## Fase 2: logo dan motif
 
@@ -174,6 +173,8 @@ Tanpa mockup; mengikuti pola halaman yang sudah jadi.
 - [x] Not-found dan error: kartu dengan judul Fraunces; di luar shell ada logo di atasnya
 - [x] `global-error.tsx`: palet, radius dan tombol nila lewat CSS sendiri
 - [x] Skeleton mengikuti bentuk baru: header halaman, daftar dan form di dalam kartu, detail dua kolom
+- [x] Dialog form dan konfirmasi hapus: radius kartu, hairline, baris aksi di bawah garis
+- [x] Menu dropdown dan popup select: hairline menggantikan `ring`
 - [x] Empty state semua halaman daftar memakai `EmptyState` (Lamaran, Perusahaan, Kontak, Dokumen, Pertanyaan)
 
 Catatan:
@@ -191,13 +192,11 @@ Catatan:
 - `global-error.tsx` menggantikan root layout, jadi tidak bisa memakai token atau Fraunces. Paletnya disalin sebagai nilai hex dan mengikuti `prefers-color-scheme`, bukan pilihan tema pengguna; judulnya memakai serif sistem.
 - "Coba lagi" di halaman error adalah satu-satunya tombol nila di layar itu; "Ke beranda" dan "Ke dashboard" tetap outline.
 - `ListSkeleton` dan `FormSkeleton` sekarang menggambar kartunya sendiri. Di dalam `Panel` keduanya dipanggil dengan `bare` supaya tidak ada kartu di dalam kartu.
+- Dialog, menu dan popup select tetap berbayang walau guideline membatasi shadow pada kartu yang di-hover atau di-drag: mereka mengambang di atas kartu putih, dan hairline saja tidak cukup memisahkannya. Kartu yang diam tetap tanpa shadow.
+- Latar di belakang dialog dan sheet navigasi tidak lagi di-blur (guideline menolak glassmorphism); gantinya lapisan hitam 30%.
+- Dialog dihitung sebagai layar sendiri untuk aturan satu tombol nila: "Simpan" di dalam dialog solid walau halaman di belakangnya juga punya tombol nila.
+- Konfirmasi hapus tetap memakai tombol terakota muda, bukan solid.
 - Empty state Dokumen berjudul "Simpan versi CV pertamamu" (sebelumnya "Belum ada versi dokumen"). Kartu jenis yang kosong tetap memakai kalimat pendek "Belum ada versi.", bukan awan kedua.
-
-## Halaman berikutnya
-
-Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
-
-- [ ] Dialog form dan konfirmasi hapus
 
 ## Data yang ditunda
 

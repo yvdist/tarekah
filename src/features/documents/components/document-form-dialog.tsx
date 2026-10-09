@@ -196,7 +196,7 @@ function DocumentForm({
           <FieldError id={`${id}-notes-error`} errors={[errors.notes]} />
         </Field>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 border-t pt-4">
           <Button type="button" variant="outline" onClick={onDone}>
             Batal
           </Button>
