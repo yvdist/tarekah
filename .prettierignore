@@ -1,0 +1,14 @@
+.next
+out
+build
+node_modules
+drizzle
+package-lock.json
+next-env.d.ts
+.claude
+skills-lock.json
+.mcp.json
+test-results
+playwright-report
+e2e/.auth
+docs/screenshots
