@@ -3,8 +3,12 @@ import { Suspense } from "react";
 import { UserMenu } from "@/features/auth/components/user-menu";
 import { requireUser } from "@/lib/auth";
 
-// Add an entry here when the phase that builds the route lands.
-const NAV_ITEMS = [{ href: "/dashboard", label: "Dashboard" }];
+const NAV_ITEMS = [
+  { href: "/applications?view=board", label: "Board" },
+  { href: "/applications", label: "Lamaran" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/settings", label: "Pengaturan" },
+];
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
