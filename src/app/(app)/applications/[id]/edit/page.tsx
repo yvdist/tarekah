@@ -5,6 +5,7 @@ import {
   getApplication,
   getCompanyNames,
 } from "@/features/applications/queries";
+import { getDocumentOptions } from "@/features/documents/queries";
 
 export const metadata: Metadata = { title: "Edit lamaran" };
 
@@ -26,15 +27,17 @@ async function EditApplicationForm({
   params,
 }: Pick<PageProps<"/applications/[id]/edit">, "params">) {
   const { id } = await params;
-  const [application, companyNames] = await Promise.all([
+  const [application, companyNames, documentOptions] = await Promise.all([
     getApplication(id),
     getCompanyNames(),
+    getDocumentOptions(),
   ]);
 
   return (
     <ApplicationForm
       applicationId={application.id}
       companyNames={companyNames}
+      documentOptions={documentOptions}
       defaultValues={{
         companyName: application.companyName,
         position: application.position,
@@ -47,6 +50,8 @@ async function EditApplicationForm({
         workType: application.workType ?? "",
         appliedAt: application.appliedAt ?? "",
         status: application.status,
+        cvDocumentId: application.cvDocumentId ?? "",
+        coverLetterDocumentId: application.coverLetterDocumentId ?? "",
         notes: application.notes ?? "",
       }}
     />

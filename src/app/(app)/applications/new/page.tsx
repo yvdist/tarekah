@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ApplicationForm } from "@/features/applications/components/application-form";
 import { getCompanyNames } from "@/features/applications/queries";
+import { getDocumentOptions } from "@/features/documents/queries";
 
 export const metadata: Metadata = { title: "Tambah lamaran" };
 
@@ -17,7 +18,15 @@ export default function NewApplicationPage() {
 }
 
 async function NewApplicationForm() {
-  const companyNames = await getCompanyNames();
+  const [companyNames, documentOptions] = await Promise.all([
+    getCompanyNames(),
+    getDocumentOptions(),
+  ]);
 
-  return <ApplicationForm companyNames={companyNames} />;
+  return (
+    <ApplicationForm
+      companyNames={companyNames}
+      documentOptions={documentOptions}
+    />
+  );
 }

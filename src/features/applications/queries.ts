@@ -1,9 +1,15 @@
 import "server-only";
 import { and, asc, desc, eq, getTableColumns } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { cacheLife, cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { applications, applicationStatusEvents, companies } from "@/db/schema";
+import {
+  applications,
+  applicationStatusEvents,
+  companies,
+  documents,
+} from "@/db/schema";
 import { getFollowUpSettings } from "@/features/settings/queries";
 import { requireUser } from "@/lib/auth";
 import { getFollowUpState, type FollowUpState } from "./follow-up";
@@ -31,6 +37,17 @@ export async function getApplications(): Promise<ApplicationListItem[]> {
   return rows.map((row) => ({
     ...row,
     followUp: getFollowUpState(row, settings, now),
+  }));
+}
+
+// Choices for linking something to an application, for example a contact.
+export async function getApplicationOptions() {
+  const user = await requireUser();
+  const rows = await listApplicationsByUserId(user.id);
+
+  return rows.map((row) => ({
+    id: row.id,
+    label: `${row.companyName} · ${row.position}`,
   }));
 }
 
@@ -94,6 +111,9 @@ export async function getCompanyNames() {
   return listCompanyNamesByUserId(user.id);
 }
 
+const cvDocuments = alias(documents, "cv_documents");
+const coverLetterDocuments = alias(documents, "cover_letter_documents");
+
 // The cached functions below stay unexported: taking a userId argument, they
 // must only be reachable through the session-resolving functions above.
 
@@ -136,6 +156,11 @@ async function findApplicationByUserId(userId: string, id: string) {
     .select({
       ...getTableColumns(applications),
       companyName: companies.name,
+      cvDocument: { label: cvDocuments.label, url: cvDocuments.url },
+      coverLetterDocument: {
+        label: coverLetterDocuments.label,
+        url: coverLetterDocuments.url,
+      },
     })
     .from(applications)
     .innerJoin(
@@ -143,6 +168,20 @@ async function findApplicationByUserId(userId: string, id: string) {
       and(
         eq(companies.id, applications.companyId),
         eq(companies.userId, userId),
+      ),
+    )
+    .leftJoin(
+      cvDocuments,
+      and(
+        eq(cvDocuments.id, applications.cvDocumentId),
+        eq(cvDocuments.userId, userId),
+      ),
+    )
+    .leftJoin(
+      coverLetterDocuments,
+      and(
+        eq(coverLetterDocuments.id, applications.coverLetterDocumentId),
+        eq(coverLetterDocuments.userId, userId),
       ),
     )
     .where(and(eq(applications.id, id), eq(applications.userId, userId)))

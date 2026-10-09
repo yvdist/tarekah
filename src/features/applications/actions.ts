@@ -5,9 +5,14 @@ import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { applications, applicationStatusEvents, companies } from "@/db/schema";
-import type { ApplicationStatus } from "@/db/schema/enum-values";
-import type { ActionResult } from "@/lib/action-result";
+import {
+  applications,
+  applicationStatusEvents,
+  companies,
+  documents,
+} from "@/db/schema";
+import type { ApplicationStatus, DocumentType } from "@/db/schema/enum-values";
+import { invalidResult, type ActionResult } from "@/lib/action-result";
 import { requireUser } from "@/lib/auth";
 import { FOLLOW_UP_STATUSES } from "./follow-up";
 import {
@@ -19,7 +24,6 @@ import {
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const NOT_FOUND_MESSAGE = "Lamaran tidak ditemukan.";
-const INVALID_MESSAGE = "Periksa kembali isian form.";
 
 export async function createApplication(
   input: unknown,
@@ -28,7 +32,13 @@ export async function createApplication(
   const parsed = applicationFormSchema.safeParse(input);
 
   if (!parsed.success) {
-    return invalid(parsed.error);
+    return invalidResult(parsed.error);
+  }
+
+  const documentErrors = await checkDocuments(user.id, parsed.data);
+
+  if (documentErrors) {
+    return documentErrors;
   }
 
   const { companyName, ...values } = parsed.data;
@@ -80,7 +90,13 @@ export async function updateApplication(
   const parsed = applicationFormSchema.safeParse(input);
 
   if (!parsed.success) {
-    return invalid(parsed.error);
+    return invalidResult(parsed.error);
+  }
+
+  const documentErrors = await checkDocuments(user.id, parsed.data);
+
+  if (documentErrors) {
+    return documentErrors;
   }
 
   const { companyName, ...values } = parsed.data;
@@ -232,7 +248,10 @@ export async function deleteApplication(
     return { ok: false, message: NOT_FOUND_MESSAGE };
   }
 
+  // Interviews and contact links go with it through ON DELETE CASCADE.
   updateTag(`applications:${user.id}`);
+  updateTag(`interviews:${user.id}`);
+  updateTag(`contacts:${user.id}`);
 
   if (parsedOptions.success && parsedOptions.data?.redirectToList) {
     redirect("/applications");
@@ -241,12 +260,45 @@ export async function deleteApplication(
   return { ok: true, data: undefined };
 }
 
-function invalid(error: z.ZodError): ActionResult<never> {
-  return {
-    ok: false,
-    message: INVALID_MESSAGE,
-    fieldErrors: z.flattenError(error).fieldErrors,
-  };
+// The foreign keys do not check ownership, so a chosen version must belong to
+// this user and be of the type its column expects.
+async function checkDocuments(
+  userId: string,
+  values: { cvDocumentId: string | null; coverLetterDocumentId: string | null },
+): Promise<ActionResult<never> | undefined> {
+  const fieldErrors: Record<string, string[]> = {};
+  const checks: Array<[keyof typeof values, DocumentType]> = [
+    ["cvDocumentId", "cv"],
+    ["coverLetterDocumentId", "cover_letter"],
+  ];
+
+  for (const [field, type] of checks) {
+    const id = values[field];
+
+    if (id && !(await ownsDocument(userId, id, type))) {
+      fieldErrors[field] = ["Versi dokumen tidak ditemukan"];
+    }
+  }
+
+  return Object.keys(fieldErrors).length > 0
+    ? { ok: false, message: "Periksa kembali isian form.", fieldErrors }
+    : undefined;
+}
+
+async function ownsDocument(userId: string, id: string, type: DocumentType) {
+  const [document] = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.userId, userId),
+        eq(documents.type, type),
+      ),
+    )
+    .limit(1);
+
+  return document !== undefined;
 }
 
 // Companies are unique per user on lower(name), so the name typed in the form

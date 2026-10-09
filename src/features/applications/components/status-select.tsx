@@ -3,9 +3,9 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 import type { ApplicationStatus } from "@/db/schema/enum-values";
+import { OptionSelect } from "@/components/option-select";
 import { changeApplicationStatus } from "../actions";
 import { STATUS_LABELS, STATUS_OPTIONS } from "../labels";
-import { OptionSelect } from "./option-select";
 
 export function StatusSelect({
   applicationId,

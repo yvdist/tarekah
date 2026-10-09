@@ -4,17 +4,10 @@ import {
   JOB_SOURCES,
   WORK_TYPES,
 } from "@/db/schema/enum-values";
+import { optionalHttpUrl, optionalId, optionalText } from "@/lib/form-schemas";
 
 // Postgres integer upper bound; salary columns are integer.
 const MAX_INTEGER = 2_147_483_647;
-
-// Form fields arrive as strings. Empty optional fields become null.
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max, `Maksimal ${max} karakter`)
-    .transform((value) => (value === "" ? null : value));
 
 const optionalSalary = z
   .string()
@@ -37,15 +30,7 @@ export const applicationFormSchema = z
       .trim()
       .min(1, "Posisi wajib diisi")
       .max(200, "Maksimal 200 karakter"),
-    // http(s) only: the value is rendered as a link on the detail page.
-    jobUrl: z
-      .string()
-      .trim()
-      .max(2000, "Maksimal 2000 karakter")
-      .refine((value) => value === "" || z.httpUrl().safeParse(value).success, {
-        message: "Isi dengan URL lengkap, misalnya https://contoh.com/loker",
-      })
-      .transform((value) => (value === "" ? null : value)),
+    jobUrl: optionalHttpUrl("https://contoh.com/loker"),
     source: z.enum(JOB_SOURCES, "Pilih sumber lowongan"),
     sourceDetail: optionalText(200),
     salaryMin: optionalSalary,
@@ -64,6 +49,8 @@ export const applicationFormSchema = z
       )
       .transform((value) => (value === "" ? null : value)),
     status: z.enum(APPLICATION_STATUSES, "Pilih status"),
+    cvDocumentId: optionalId,
+    coverLetterDocumentId: optionalId,
     notes: optionalText(10_000),
   })
   // Mirrors applications_salary_range_check in the database.

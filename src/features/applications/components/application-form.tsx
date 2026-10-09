@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type { DocumentType } from "@/db/schema/enum-values";
+import type { DocumentOption } from "@/features/documents/queries";
+import { OptionSelect } from "@/components/option-select";
 import { createApplication, updateApplication } from "../actions";
 import { SOURCE_OPTIONS, STATUS_OPTIONS, WORK_TYPE_OPTIONS } from "../labels";
 import {
@@ -23,7 +26,6 @@ import {
   type ApplicationFormInput,
   type ApplicationFormValues,
 } from "../schemas";
-import { OptionSelect } from "./option-select";
 
 const EMPTY_VALUES: ApplicationFormInput = {
   companyName: "",
@@ -37,6 +39,8 @@ const EMPTY_VALUES: ApplicationFormInput = {
   workType: "",
   appliedAt: "",
   status: "wishlist",
+  cvDocumentId: "",
+  coverLetterDocumentId: "",
   notes: "",
 };
 
@@ -47,15 +51,42 @@ const WORK_TYPE_SELECT_OPTIONS = [
   ...WORK_TYPE_OPTIONS,
 ];
 
+const DOCUMENT_UNSET = "none";
+
+// Archived versions are offered only when the application already uses them.
+function documentSelectOptions(
+  documents: DocumentOption[],
+  type: DocumentType,
+  selectedId: string,
+) {
+  return [
+    { value: DOCUMENT_UNSET, label: "Tidak ada" },
+    ...documents
+      .filter(
+        (document) =>
+          document.type === type &&
+          (!document.isArchived || document.id === selectedId),
+      )
+      .map((document) => ({
+        value: document.id,
+        label: document.isArchived
+          ? `${document.label} (diarsipkan)`
+          : document.label,
+      })),
+  ];
+}
+
 export function ApplicationForm({
   applicationId,
   defaultValues = EMPTY_VALUES,
   companyNames,
+  documentOptions,
 }: {
   // Present when editing; absent when creating.
   applicationId?: string;
   defaultValues?: ApplicationFormInput;
   companyNames: string[];
+  documentOptions: DocumentOption[];
 }) {
   const router = useRouter();
   const id = useId();
@@ -258,6 +289,63 @@ export function ApplicationForm({
               {...form.register("salaryMax")}
             />
             <FieldError errors={[errors.salaryMax]} />
+          </Field>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field data-invalid={!!errors.cvDocumentId}>
+            <FieldLabel htmlFor={`${id}-cvDocumentId`}>Versi CV</FieldLabel>
+            <Controller
+              control={form.control}
+              name="cvDocumentId"
+              render={({ field }) => (
+                <OptionSelect
+                  id={`${id}-cvDocumentId`}
+                  value={field.value === "" ? DOCUMENT_UNSET : field.value}
+                  onValueChange={(value) =>
+                    field.onChange(value === DOCUMENT_UNSET ? "" : value)
+                  }
+                  options={documentSelectOptions(
+                    documentOptions,
+                    "cv",
+                    defaultValues.cvDocumentId,
+                  )}
+                  invalid={!!errors.cvDocumentId}
+                  className="w-full"
+                />
+              )}
+            />
+            <FieldError errors={[errors.cvDocumentId]} />
+          </Field>
+
+          <Field data-invalid={!!errors.coverLetterDocumentId}>
+            <FieldLabel htmlFor={`${id}-coverLetterDocumentId`}>
+              Versi cover letter
+            </FieldLabel>
+            <Controller
+              control={form.control}
+              name="coverLetterDocumentId"
+              render={({ field }) => (
+                <OptionSelect
+                  id={`${id}-coverLetterDocumentId`}
+                  value={field.value === "" ? DOCUMENT_UNSET : field.value}
+                  onValueChange={(value) =>
+                    field.onChange(value === DOCUMENT_UNSET ? "" : value)
+                  }
+                  options={documentSelectOptions(
+                    documentOptions,
+                    "cover_letter",
+                    defaultValues.coverLetterDocumentId,
+                  )}
+                  invalid={!!errors.coverLetterDocumentId}
+                  className="w-full"
+                />
+              )}
+            />
+            <FieldDescription>
+              Kelola versi di halaman Dokumen.
+            </FieldDescription>
+            <FieldError errors={[errors.coverLetterDocumentId]} />
           </Field>
         </div>
 

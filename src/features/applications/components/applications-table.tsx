@@ -39,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { OptionSelect } from "@/components/option-select";
 import { formatDate } from "../format";
 import {
   SOURCE_LABELS,
@@ -51,7 +52,6 @@ import {
 import type { ApplicationListItem } from "../queries";
 import { DeleteApplicationDialog } from "./delete-application-dialog";
 import { FollowUpBadge } from "./follow-up-badge";
-import { OptionSelect } from "./option-select";
 import { StatusBadge } from "./status-badge";
 
 const features = tableFeatures({
