@@ -2,7 +2,9 @@ import { Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { Markdown } from "@/components/markdown";
+import { PageHeader } from "@/components/page-header";
 import { ListSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -21,14 +23,10 @@ export default function QuestionsPage({
 }: PageProps<"/questions">) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Pertanyaan interview
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Semua pertanyaan dari catatan interview di seluruh lamaran.
-        </p>
-      </div>
+      <PageHeader
+        title="Pertanyaan interview"
+        description="Semua pertanyaan dari catatan interview di seluruh lamaran."
+      />
       <Suspense fallback={<ListSkeleton />}>
         <Questions searchParams={searchParams} />
       </Suspense>
@@ -51,13 +49,17 @@ async function Questions({
 
   if (total === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-16 text-center">
-        <h2 className="text-lg font-medium">Belum ada pertanyaan</h2>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Tambahkan catatan interview di halaman detail lamaran. Pertanyaan yang
-          kamu tulis di sana terkumpul di sini.
-        </p>
-      </div>
+      <EmptyState
+        title="Kumpulkan pertanyaan interview-mu"
+        description="Tambahkan catatan interview di halaman detail lamaran. Pertanyaan yang kamu tulis di sana terkumpul di sini."
+      >
+        <Link
+          href="/applications"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Buka lamaran
+        </Link>
+      </EmptyState>
     );
   }
 
@@ -79,7 +81,7 @@ async function Questions({
           name="stage"
           defaultValue={stage}
           aria-label="Filter tahap"
-          className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-9 rounded-md border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         >
           <option value="">Semua tahap</option>
           {INTERVIEW_STAGE_OPTIONS.map((option) => (
@@ -88,7 +90,9 @@ async function Questions({
             </option>
           ))}
         </select>
-        <Button type="submit">Cari</Button>
+        <Button type="submit" variant="outline">
+          Cari
+        </Button>
         {q !== "" || stage !== "" ? (
           <Link
             href="/questions"
@@ -104,30 +108,40 @@ async function Questions({
           Tidak ada pertanyaan yang cocok. Ubah kata kunci atau filter.
         </p>
       ) : (
-        <ul className="divide-y rounded-lg border">
-          {matches.map((item) => (
-            <li key={item.key} className="flex flex-col gap-2 p-4">
-              <Markdown>{item.question}</Markdown>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <Badge variant="secondary">
-                  {INTERVIEW_STAGE_LABELS[item.stage]}
-                </Badge>
-                <Link
-                  href={`/applications/${item.applicationId}`}
-                  className="underline-offset-4 hover:underline"
-                >
-                  {item.companyName} · {item.position}
-                </Link>
-                <span>{formatDateTime(item.scheduledAt)}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-hidden rounded-lg border bg-card">
+          <ul className="divide-y">
+            {matches.map((item) => (
+              <li
+                key={item.key}
+                className="flex flex-col gap-2 px-4 py-4 sm:px-5"
+              >
+                <Markdown>{item.question}</Markdown>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <Badge variant="secondary">
+                    {INTERVIEW_STAGE_LABELS[item.stage]}
+                  </Badge>
+                  <Link
+                    href={`/applications/${item.applicationId}`}
+                    className="underline-offset-4 hover:underline"
+                  >
+                    {item.companyName} · {item.position}
+                  </Link>
+                  <span className="font-figure">
+                    {formatDateTime(item.scheduledAt)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p
+            className="border-t px-4 py-3 text-xs text-muted-foreground sm:px-5"
+            aria-live="polite"
+          >
+            Menampilkan <span className="font-figure">{matches.length}</span>{" "}
+            dari <span className="font-figure">{total}</span> pertanyaan
+          </p>
+        </div>
       )}
-
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        Menampilkan {matches.length} dari {total} pertanyaan
-      </p>
     </>
   );
 }
