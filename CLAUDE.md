@@ -16,11 +16,22 @@ npm run lint          # ESLint (flat config, eslint-config-next + eslint-config-
 npm run typecheck     # next typegen && tsc --noEmit
 npm run format        # Prettier, write
 npm run format:check  # Prettier, check only
+npm test              # Vitest, once (npm run test:watch to watch)
+npm run test:e2e      # Playwright, against E2E_DATABASE_URL
+npm run screenshots   # regenerate docs/screenshots from seed data
 ```
 
-No test runner is configured yet (Vitest is planned, see `PLAN.md`).
+Before calling work done: `npm run lint && npm run typecheck && npm run format:check && npm test && npm run build`. Run `npm run test:e2e` as well when a change touches a page, a form or auth.
 
-Before calling work done: `npm run lint && npm run typecheck && npm run format:check && npm run build`.
+### Tests
+
+- Unit tests are Vitest, in `*.test.ts` next to the file they cover. One file: `npx vitest run src/features/applications/follow-up.test.ts`; one test: add `-t "name"`.
+- `vitest.config.mts` aliases `server-only` to an empty stub. Pure logic lives in files that import neither `@/db` nor `next/*`, which is what makes it testable.
+- SQL that needs checking is tested against PGlite: `createTestDb()` in `src/test/db.ts` gives an in-memory Postgres with the real migrations applied, plus fixtures. Give each test its own user rather than resetting the database.
+- E2E specs are in `e2e/` and run against the production build on port 3100. They create and delete users, so they refuse to start without `E2E_DATABASE_URL` (in `.env.e2e` locally): a throwaway database, never the one in `.env.local`. The setup applies the migrations.
+- Sign-in is OAuth only, so `e2e/db.ts` writes the user and a `sessions` row and `authCookies()` builds the cookies a real sign-in leaves, including Auth.js's CSRF cookie. One spec: `npx playwright test board`.
+- `e2e/a11y.spec.ts` runs axe on the main pages in both themes; add a new page to its `PAGES` list.
+- CI (`.github/workflows/ci.yml`) runs all of the above on every push.
 
 ### Running locally
 
@@ -61,14 +72,16 @@ Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · T
 
 `next-auth@latest` is still v4 and does not support this Next.js version; stay on the `beta` tag.
 
-The database driver is `pg` with `attachDatabasePool` from `@vercel/functions`, which is what Neon recommends on Vercel Fluid compute. The pool lives in `src/db/index.ts`; do not create another one. The one exception is `scripts/seed.ts`, which runs outside Next.js and opens its own short-lived connection.
+The database driver is `pg` with `attachDatabasePool` from `@vercel/functions`, which is what Neon recommends on Vercel Fluid compute. The pool lives in `src/db/index.ts`; do not create another one. The exceptions run outside Next.js and open their own short-lived connection: `scripts/seed.ts` and the test setup in `e2e/db.ts`.
 
 ## Folder structure
 
 ```
 drizzle/                      generated SQL migrations (committed)
 drizzle.config.ts
-scripts/seed.ts               demo data; the only code outside src/ that talks to the database
+scripts/seed.ts               demo data; talks to the database directly
+e2e/                          Playwright specs and their database setup
+docs/                         deploy guide and README screenshots
 src/
   app/
     (marketing)/              public landing page
@@ -86,6 +99,7 @@ src/
     schemas.ts                Zod schemas shared by forms and actions
     components/               components specific to the domain
   components/ui/              shadcn/ui components
+  test/                       Vitest helpers (PGlite database, server-only stub)
   lib/
     auth.ts                   getCurrentUser() / requireUser()
     env.ts                    Zod-validated environment variables
@@ -99,10 +113,10 @@ Route files in `src/app` stay thin: they compose components and call functions f
 These three are not negotiable.
 
 1. **Server Components by default.** Add `"use client"` only when a component needs state, effects, event handlers or browser APIs, and put the boundary as low in the tree as possible. Fetch data in Server Components and pass it down; do not fetch in Client Components.
-2. **Mutations go through Server Actions with Zod validation.** Every action lives in `src/features/<domain>/actions.ts` and follows the same order: `requireUser()` → `schema.safeParse(input)` → query scoped to the user → `updateTag(...)`. Treat every argument as untrusted, including ids. Return validation failures as data rather than throwing, using `ActionResult` from `src/lib/action-result.ts` (`{ ok: true, data }` or `{ ok: false, message, fieldErrors? }`). No Route Handlers for mutations.
+2. **Mutations go through Server Actions with Zod validation.** Every action lives in `src/features/<domain>/actions.ts` and follows the same order: `requireUser()` → `schema.safeParse(input)` → query scoped to the user → `updateTag(...)`. Treat every argument as untrusted, including ids. Return validation failures as data rather than throwing, using `ActionResult` from `src/lib/action-result.ts` (`{ ok: true, data }` or `{ ok: false, message, fieldErrors? }`). No Route Handlers for mutations; the only Route Handler besides Auth.js is the read-only CSV download at `/applications/export`.
 3. **Every query is filtered by `userId`.** Data is isolated per user.
    - The user id comes only from `requireUser()` (the session). Never accept it from form data, params, search params or a client component.
-   - Only `queries.ts` and `actions.ts` under `src/features` (plus `src/auth.ts`) import `db`. Both start with `import "server-only"` or `"use server"`. Components and route files never import `db`.
+   - Only `queries.ts` and `actions.ts` under `src/features` (plus `src/auth.ts`) import `db`. Both start with `import "server-only"` or `"use server"`. Components and route files never import `db`. SQL that is tested on its own takes the database as an argument instead of importing it (`src/features/dashboard/stats.ts`); its caller in `queries.ts` still owns `requireUser()` and caching.
    - Reads, updates and deletes by id always combine both conditions: `and(eq(table.id, id), eq(table.userId, user.id))`. A row that belongs to someone else is treated as not found.
    - When inserting a row that references another row (company, document, application, contact), verify the referenced row belongs to the same user first.
 
@@ -144,7 +158,7 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 
 - Tailwind v4 is CSS-first: there is no `tailwind.config.*` and no PostCSS config. Tailwind runs through the `@tailwindcss/turbopack` loader registered under `turbopack.rules` in `next.config.ts`.
 - All theme configuration lives in `src/app/globals.css`: the `@theme inline` block maps Tailwind tokens (`bg-primary`, `rounded-lg`, …) to CSS variables defined in `:root` and `.dark` (oklch, neutral base). Add or change design tokens there.
-- Dark mode is class-based (`@custom-variant dark (&:is(.dark *))`), so it follows a `.dark` class on an ancestor, not `prefers-color-scheme`. Nothing sets that class yet.
+- Dark mode is class-based (`@custom-variant dark (&:is(.dark *))`), so it follows a `.dark` class on an ancestor, not `prefers-color-scheme`. `next-themes` (`src/components/theme-provider.tsx`) sets that class on `<html>`, following the OS until the user picks a theme in `ThemeToggle`. Use semantic tokens (`bg-background`, `text-muted-foreground`), never fixed colours. `global-error.tsx` renders outside the root layout and styles itself.
 - Fonts: `layout.tsx` defines `--font-geist-sans` and `--font-geist-mono`; `globals.css` maps `--font-sans`, `--font-heading` and `--font-mono` to them.
 
 ## UI components
@@ -153,7 +167,9 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Add components with `npx shadcn@latest add <name>`; they land in `src/components/ui/` and are owned source, edited in place.
 - Class merging uses the `cn` npm package (shadcn's compiled replacement for `clsx` + `tailwind-merge`). `src/lib/utils.ts` only re-exports it, so `@/lib/utils` and `cn` are interchangeable imports.
 - Icons come from `lucide-react`.
-- Shared, non-shadcn components live in `src/components/`: `OptionSelect` (single choice over labelled options), `DeleteButton` (confirm, then run a bound delete action) and `Markdown` (the only place user-written markdown is rendered; raw HTML is never rendered).
+- Shared, non-shadcn components live in `src/components/`: `OptionSelect` (single choice over labelled options), `DeleteButton` (confirm, then run a bound delete action), `Markdown` (the only place user-written markdown is rendered; raw HTML is never rendered), the `*Skeleton` components in `skeletons.tsx` (the fallback of every data `<Suspense>`; pick the one shaped like the content), `StateMessage` (not-found and error boxes) and `NavLink`.
+- Error boundaries (`error.tsx`) take `retry`, not `reset`, and render the shared `ErrorState`.
+- Accessibility: every control has a visible label or an `aria-label`; in forms the hint and error get ids and the control points at them with `describedBy()` from `src/lib/form-errors.ts`, and required fields set `aria-required`. `NavLink` calls `usePathname`, so it sits inside `<Suspense>`: on routes with a dynamic segment the pathname is unknown while prerendering.
 - Forms inside a `Dialog` put `key={useOpenKey(open)}` (`src/hooks/use-open-key.ts`) on the form component, because the dialog popup keeps its state across closes.
 - Shared Zod field helpers (`optionalText`, `requiredText`, `optionalHttpUrl`, `optionalId`) are in `src/lib/form-schemas.ts`; `invalidResult` in `src/lib/action-result.ts` turns a Zod error into an `ActionResult`; `setFieldErrors` in `src/lib/form-errors.ts` maps it back onto the form.
 - Forms are Client Components using `react-hook-form` with `zodResolver` and the schema from `schemas.ts`; the action re-parses the same raw values with the same schema. The form calls the action in a transition, maps `fieldErrors` onto fields, shows a `sonner` toast, then navigates. See `src/features/applications/components/application-form.tsx`.
