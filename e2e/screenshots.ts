@@ -1,6 +1,6 @@
-import { execFileSync } from "node:child_process";
 import { expect, test, type Page } from "@playwright/test";
-import { authCookies, createSession, createUser } from "./db";
+import { authCookies, createSession } from "./db";
+import { seedDemoUser } from "./helpers";
 import { SCREENSHOT_USER } from "./constants";
 
 // Regenerates the README screenshots from the seed data: `npm run screenshots`.
@@ -8,19 +8,7 @@ import { SCREENSHOT_USER } from "./constants";
 
 const OUTPUT = "docs/screenshots";
 
-test.beforeAll(async () => {
-  await createUser(SCREENSHOT_USER.email, SCREENSHOT_USER.name);
-
-  // The seed script reads its connection string from the environment and only
-  // falls back to .env.local for variables that are not set.
-  execFileSync("npx", ["tsx", "scripts/seed.ts", SCREENSHOT_USER.email], {
-    env: {
-      ...process.env,
-      DATABASE_URL_UNPOOLED: process.env.E2E_DATABASE_URL,
-    },
-    stdio: "inherit",
-  });
-});
+test.beforeAll(seedDemoUser);
 
 async function settle(page: Page) {
   await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0);
@@ -76,5 +64,33 @@ for (const colorScheme of ["light", "dark"] as const) {
     }
 
     await context.close();
+
+    // The two redesigned pages at phone width, light only.
+    if (colorScheme === "light") {
+      const mobile = await browser.newContext({
+        colorScheme,
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        locale: "id-ID",
+        timezoneId: "Asia/Jakarta",
+      });
+
+      await mobile.addCookies(
+        authCookies(await createSession(SCREENSHOT_USER.email), baseURL!),
+      );
+
+      const phone = await mobile.newPage();
+
+      for (const name of ["dashboard", "board"]) {
+        await phone.goto(`/${name}`);
+        await settle(phone);
+        await phone.screenshot({
+          path: `${OUTPUT}/${name}-mobile-${colorScheme}.png`,
+          fullPage: name === "dashboard",
+        });
+      }
+
+      await mobile.close();
+    }
   });
 }

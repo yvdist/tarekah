@@ -1,25 +1,9 @@
-import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
-import { addApplication, uniqueName } from "./helpers";
-
-// WCAG 2.1 A and AA rules; anything axe rates serious or critical fails.
-async function expectNoSeriousViolations(page: Page) {
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-    .analyze();
-  const serious = violations
-    .filter(
-      (violation) =>
-        violation.impact === "serious" || violation.impact === "critical",
-    )
-    .map((violation) => ({
-      rule: violation.id,
-      help: violation.help,
-      targets: violation.nodes.map((node) => node.target.join(" ")),
-    }));
-
-  expect(serious).toEqual([]);
-}
+import { expect, test } from "@playwright/test";
+import {
+  addApplication,
+  expectNoSeriousViolations,
+  uniqueName,
+} from "./helpers";
 
 const PAGES = [
   { path: "/dashboard", heading: "Dashboard" },
