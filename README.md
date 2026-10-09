@@ -15,7 +15,9 @@ Screenshot dibuat otomatis dari data contoh (`npm run screenshots`).
 
 ## Demo
 
-Belum ada alamat publik. Langkah deploy ada di [`docs/deploy.md`](docs/deploy.md); tautannya ditambahkan di sini setelah aplikasi live.
+<https://tarekah.vercel.app>
+
+Masuk dengan akun GitHub atau Google. Setiap akun mulai dari kosong dan hanya melihat datanya sendiri.
 
 ## Fitur
 

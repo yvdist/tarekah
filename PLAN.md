@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 3 dan Fase 4 sampai 7 selesai**, kecuali deploy, yang dilakukan mengikuti `docs/deploy.md`. Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql` dan `drizzle/0001_follow_up.sql`. Berikutnya: Fase 3b.
+Status: **Fase 0 sampai 3 dan Fase 4 sampai 7 selesai.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql` dan `drizzle/0001_follow_up.sql`. Berikutnya: Fase 3b.
 
 ## Keputusan
 
