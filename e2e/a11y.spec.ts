@@ -13,21 +13,39 @@ const PAGES = [
   { path: "/settings", heading: "Pengaturan" },
 ];
 
+// Open to visitors, so they are checked without a session.
+const PUBLIC_PAGES = [
+  { path: "/", heading: "Setiap lamaran" },
+  { path: "/login", heading: "Masuk" },
+];
+
+const PUBLIC_VIEWPORTS = [
+  { width: 1280, height: 800 },
+  { width: 390, height: 844 },
+];
+
 for (const colorScheme of ["light", "dark"] as const) {
   test.describe(`${colorScheme} theme`, () => {
     // The theme follows the OS setting until the user picks one.
     test.use({ colorScheme });
 
-    test("login page has no serious accessibility violations", async ({
+    test("public pages have no serious accessibility violations", async ({
       browser,
     }) => {
-      const context = await browser.newContext({ colorScheme });
-      const page = await context.newPage();
+      for (const viewport of PUBLIC_VIEWPORTS) {
+        const context = await browser.newContext({ colorScheme, viewport });
+        const page = await context.newPage();
 
-      await page.goto("/login");
-      await expect(page.getByRole("heading", { name: "Masuk" })).toBeVisible();
-      await expectNoSeriousViolations(page);
-      await context.close();
+        for (const { path, heading } of PUBLIC_PAGES) {
+          await page.goto(path);
+          await expect(
+            page.getByRole("heading", { level: 1, name: heading }),
+          ).toBeVisible();
+          await expectNoSeriousViolations(page);
+        }
+
+        await context.close();
+      }
     });
 
     test("app pages have no serious accessibility violations", async ({

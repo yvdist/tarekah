@@ -125,12 +125,31 @@ Catatan:
 - Kolom Follow-up hanya memuat tanda follow-up dalam bentuk pendek ("8 hari menunggu", "30 hari tanpa kabar"); kalimat lengkapnya jadi tooltip. Jadwal interview dan tenggat di mockup belum ada datanya.
 - Primitif `Table` ikut berubah (header kecil redup di atas permukaan-2, sel lebih lega), jadi tabel Perusahaan dan tabel rincian di Dashboard ikut.
 
+## Fase 8: Landing dan Login
+
+Mockup: `reference/landing.png`. Login tidak punya mockup dan mengikuti guideline bagian 4.
+
+- [x] Landing desktop: nav dengan logo dan Masuk, hero Fraunces dengan awan samar, dua aksi
+- [x] Landing desktop: pratinjau board, tiga fitur bernomor, bagian "Ditolak juga dicatat" dengan jalur léngkah, penutup, footer
+- [x] Landing mobile: satu kolom, pratinjau board dua kolom, jalur léngkah vertikal
+- [x] Login: logo, kartu dengan judul Fraunces dan dua tombol penyedia berikon, awan samar di sudut
+- [x] E2E: axe untuk Landing dan Login di kedua tema, desktop dan ponsel
+
+Catatan:
+
+- Teks pengganti di mockup diisi: `[INFO HARGA DAN CARA MASUK]` menjadi "Masuk dengan akun GitHub atau Google, lalu catat lamaran pertamamu." tanpa menyebut harga, dan footer menjadi "Dibuat dengan tekun." tanpa `[KOTA]`.
+- Fitur pertama berbunyi "Tentukan berapa hari kamu mau menunggu kabar", bukan "untuk tiap lamaran": batas follow-up adalah satu pengaturan untuk semua lamaran.
+- "Mulai mencatat" muncul dua kali seperti di mockup, di hero dan di penutup. Keduanya tidak pernah terlihat di layar yang sama.
+- Pratinjau board dan kartu léngkah memakai komponen aslinya (`BoardCardBody`, `StatusBadge`, `StepPath`) dengan data contoh, jadi label status Indonesia, sumber memakai daftar yang ada, dan angka léngkah tampil dengan persen lanjutnya. Bagi screen reader masing-masing satu gambar berlabel.
+- Di ponsel pratinjau board menjadi dua kolom, bukan menggulung ke samping: isinya tidak bisa difokus, jadi area gulir tidak terjangkau keyboard.
+- Toggle tema tetap ada di kedua halaman, walau mockup tidak menggambarkannya.
+- Ikon GitHub dan Google di Login satu warna mengikuti warna teks, supaya terbaca di kedua tema.
+- Copy lama Landing (judul dan satu paragraf) diganti copy mockup; isinya tercakup di tiga fitur.
+
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Landing (mockup: `reference/landing.png`)
-- [ ] Login
 - [ ] Lamaran baru dan edit lamaran
 - [ ] Detail lamaran
 - [ ] Perusahaan
