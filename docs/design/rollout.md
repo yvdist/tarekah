@@ -18,70 +18,93 @@ Keputusan yang berlaku untuk semua halaman:
 
 Mockup: `reference/fondasi-desain.png`.
 
-- [ ] Palet terang dan gelap di `src/app/globals.css`, dipetakan ke nama token shadcn
-- [ ] Token baru: `kunyit`, `kunyit-tua`, `success`, dan `status-*`
-- [ ] Warna chart `--chart-1` sampai `--chart-5` dari palet
-- [ ] Fraunces (SOFT 100) sebagai `font-heading`; Geist dan Geist Mono tetap
-- [ ] Primitif `src/components/ui/`: kartu hairline radius 10px, kontrol radius 8px, badge pill
-- [ ] Badge status: pill, titik solid, `ghosted` putus-putus, `rejected` redup
-- [ ] Badge follow-up memakai kunyit
+- [x] Palet terang dan gelap di `src/app/globals.css`, dipetakan ke nama token shadcn
+- [x] Token baru: `kunyit`, `kunyit-tua`, `success`, dan `status-*`
+- [x] Warna chart `--chart-1` sampai `--chart-5` dari palet
+- [x] Fraunces (SOFT 100) sebagai `font-heading`; Geist dan Geist Mono tetap
+- [x] Primitif `src/components/ui/`: kartu hairline radius 10px, kontrol radius 8px, badge pill
+- [x] Badge status: pill, titik solid, `ghosted` putus-putus, `rejected` redup
+- [x] Badge follow-up memakai kunyit
 
 Catatan:
+
+- `--destructive` di tema terang `#a8492a`, satu tingkat lebih gelap dari terakota `#b5532f`, supaya lolos AA sebagai teks di atas permukaan-2.
+- Kunyit solid tidak lolos AA sebagai teks, jadi ada `kunyit-tua` (`#7a4e00` terang) untuk teks; solid hanya untuk titik dan ikon.
+- Warna chart bukan warna status. Warna status guideline gagal validator `dataviz` sebagai seri kategorikal (chroma terlalu rendah, biru batu dan daun terlalu mirip). Urutannya nila, terakota, teal, oker, biru; baru dua yang dipakai. Oker di slot 4 lebih gelap dari kunyit dan bukan "lonceng".
+- Tinggi kontrol naik 4px (tombol dan input 36px, `lg` 40px) mengikuti mockup; berlaku di semua halaman.
+- Dialog dan dropdown masih memakai `ring` dan radius lama; masuk butir "Dialog form dan konfirmasi hapus".
 
 ## Fase 2: logo dan motif
 
-- [ ] `Logomark`, `Wordmark`, `Logo` di `src/components/brand/logo.tsx`
-- [ ] Motif mega mendung di `src/components/brand/mega-mendung.tsx`
-- [ ] `src/app/icon.svg` dan `src/app/apple-icon.png`; `favicon.ico` bawaan dihapus
+- [x] `Logomark`, `Wordmark`, `Logo` di `src/components/brand/logo.tsx`
+- [x] Motif mega mendung di `src/components/brand/mega-mendung.tsx`
+- [x] `src/app/icon.svg` dan `src/app/apple-icon.png`; `favicon.ico` bawaan dihapus
 
 Catatan:
+
+- Huruf "t" di logomark adalah outline Fraunces (SOFT 100, bobot 600) yang disalin sebagai path, supaya favicon tidak bergantung pada web font.
+- Motif hanya satu ukuran gambar; ukuran diatur lewat lebar.
 
 ## Fase 3: shell
 
-- [ ] Sidebar desktop: logo, grup utama, grup Arsip, Pengaturan, pengguna
-- [ ] Item aktif: latar nila-muda, teks nila-tua, garis nila di kiri
-- [ ] Sheet navigasi di mobile
-- [ ] `PageHeader`: judul Fraunces, baris konteks, aksi di kanan
-- [ ] Lebar konten `max-w-6xl`; Board selebar layar
+- [x] Sidebar desktop: logo, grup utama, grup Arsip, Pengaturan, pengguna
+- [x] Item aktif: latar nila-muda, teks nila-tua, garis nila di kiri
+- [x] Sheet navigasi di mobile
+- [x] `PageHeader`: judul Fraunces, baris konteks, aksi di kanan
+- [x] Lebar konten `max-w-6xl`; Board selebar layar
 
 Catatan:
+
+- Toggle tema dan tombol keluar ada di baris pengguna di bawah sidebar; mockup tidak menggambarkannya.
+- `PageHeader` baru dipakai Board dan Dashboard. Halaman lain masih dengan h1 lama sampai gilirannya.
 
 ## Fase 4: Board
 
 Mockup: `reference/board.png`.
 
-- [ ] Desktop: header dengan ringkasan, pencarian, filter sumber
-- [ ] Desktop: kolom permukaan-2 dengan pill status dan jumlah
-- [ ] Desktop: kartu lamaran (perusahaan, posisi, sumber, hari; tanda kunyit saat lewat batas)
-- [ ] Desktop: tautan "Tambah" di kolom Wishlist, awan di kolom Offer
-- [ ] Momen: pesan saat kartu masuk Offer dan Ditolak
-- [ ] Mobile: header menumpuk, kolom dengan scroll-snap
-- [ ] Skeleton mengikuti bentuk baru
+- [x] Desktop: header dengan ringkasan, pencarian, filter sumber
+- [x] Desktop: kolom permukaan-2 dengan pill status dan jumlah
+- [x] Desktop: kartu lamaran (perusahaan, posisi, sumber, hari; tanda kunyit saat lewat batas)
+- [x] Desktop: tautan "Tambah" di kolom Wishlist, awan di kolom Offer
+- [x] Momen: pesan saat kartu masuk Offer dan Ditolak
+- [x] Mobile: header menumpuk, kolom dengan scroll-snap
+- [x] Skeleton mengikuti bentuk baru
 
 Catatan:
+
+- Pencarian dan filter sumber menyaring di klien dan tidak masuk URL.
+- Badge "Perlu follow-up" dan "Saran: Tanpa kabar" di kartu diganti titik kunyit dan hitungan hari berwarna kunyit; teks lengkapnya tetap ada untuk screen reader dan sebagai tooltip.
+- Kolom Ditolak dan Tanpa kabar tetap bisa diciutkan, walau tidak ada di mockup.
 
 ## Fase 5: Dashboard
 
 Mockup: `reference/dashboard.png`.
 
-- [ ] Desktop: sapaan sesuai waktu, tanggal, baris ringkasan
-- [ ] Desktop: banner follow-up
-- [ ] Desktop: empat kartu ringkasan dengan angka Fraunces
-- [ ] Desktop: jalur léngkah menggantikan chart funnel
-- [ ] Desktop: lamaran per minggu dan daftar perlu follow-up
-- [ ] Desktop: bagian respons (response rate, waktu respons, per sumber, per versi CV)
-- [ ] Empty state dengan mega mendung
-- [ ] Mobile: kartu dua kolom, jalur léngkah vertikal, grid satu kolom
-- [ ] Skeleton mengikuti bentuk baru
+- [x] Desktop: sapaan sesuai waktu, tanggal, baris ringkasan
+- [x] Desktop: banner follow-up
+- [x] Desktop: empat kartu ringkasan dengan angka Fraunces
+- [x] Desktop: jalur léngkah menggantikan chart funnel
+- [x] Desktop: lamaran per minggu dan daftar perlu follow-up
+- [x] Desktop: bagian respons (response rate, waktu respons, per sumber, per versi CV)
+- [x] Empty state dengan mega mendung
+- [x] Mobile: kartu dua kolom, jalur léngkah vertikal, grid satu kolom
+- [x] Skeleton mengikuti bentuk baru
 
 Catatan:
 
+- h1 tetap bernama "Dashboard" untuk screen reader; yang terlihat adalah sapaannya.
+- Daftar "Perlu follow-up" menempati tempat "Agenda terdekat" di mockup dan menggulung di dalam panelnya. Tombol "Lihat" di banner melompat ke sana.
+- Filter rentang, response rate, waktu respons, "Per sumber loker" dan "Per versi CV" tidak ada di mockup dan dipertahankan.
+- Chart mingguan tetap satu seri, 12 minggu.
+- Tombol di empty state memakai gaya outline, karena "Tambah lamaran" di header sudah menjadi satu-satunya tombol nila di layar.
+
 ## Fase 6: test dan dokumen
 
-- [ ] Unit test: sapaan, konversi funnel, filter board
-- [ ] E2E: navigasi mobile lewat sheet
-- [ ] `docs/screenshots/` dibuat ulang, termasuk tangkapan mobile
-- [ ] `CLAUDE.md` diperbarui (Styling, UI components, rujukan ke tracker ini)
+- [x] Unit test: sapaan, konversi funnel, filter board
+- [x] E2E: navigasi mobile lewat sheet
+- [x] E2E: pesan Offer dan Ditolak; axe dengan data lengkap di kedua tema, desktop dan ponsel
+- [x] `docs/screenshots/` dibuat ulang, termasuk tangkapan mobile
+- [x] `CLAUDE.md` diperbarui (Styling, UI components, rujukan ke tracker ini)
 
 ## Halaman berikutnya
 

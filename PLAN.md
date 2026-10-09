@@ -259,4 +259,6 @@ Interview dan perubahan status dikelola di halaman detail lamaran, tanpa route s
 | 6    | Dashboard statistik; halaman perusahaan (`/companies`, `/companies/[id]`); seed data demo (`npm run db:seed`)                                                                                                                                        | Tiga grafik tampil dari data nyata; perusahaan menampilkan lamaran dan kontaknya                   |
 | 7    | Polish: skeleton saat memuat, `error.tsx`, `not-found`, tema gelap, aksesibilitas dasar, export CSV; test Vitest (logika murni, skema Zod, statistik lewat PGlite) dan Playwright; GitHub Actions; README portfolio dan panduan deploy Vercel + Neon | Semua pemeriksaan dan test lolos di CI; aplikasi live dan bisa didemokan                           |
 
+Penerapan identitas brand (guideline di `docs/design/guideline.md`) berjalan di luar tabel ini, halaman demi halaman; daftar dan statusnya ada di `docs/design/rollout.md`.
+
 Setiap fase ditutup dengan `npm run lint && npm run typecheck && npm run format:check && npm test && npm run build`.
