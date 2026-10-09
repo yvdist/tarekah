@@ -28,6 +28,7 @@ export const config = {
     "/companies/:path*",
     "/contacts/:path*",
     "/documents/:path*",
+    "/questions/:path*",
     "/settings/:path*",
   ],
 };
