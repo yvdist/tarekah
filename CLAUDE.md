@@ -134,6 +134,7 @@ These three are not negotiable.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
 - When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to one of the item lists in `src/components/app-sidebar.tsx`.
 - `session.user.id` exists only because of the `session` callback in `src/auth.ts`; Auth.js drops it by default.
+- The public pages are static, so they only know about a session where they ask: `SessionLink` (`src/features/auth/components/session-link.tsx`) turns the landing page's calls to action into dashboard links for a signed-in user, and `/login` redirects one to `/dashboard`. Sessions are database sessions with the Auth.js defaults: 30 days idle, extended on use.
 
 ## Code conventions
 
