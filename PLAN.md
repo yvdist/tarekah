@@ -2,18 +2,18 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 selesai. Skema di bawah menunggu persetujuan** sebelum ditulis ke `src/db/schema`.
+Status: **Fase 0 dan 1 selesai.** Skema di bawah sudah disetujui dan diterapkan lewat `drizzle/0000_init.sql`. Berikutnya: Fase 2.
 
 ## Keputusan
 
-| Hal        | Pilihan                                       | Alasan                                                                            |
-| ---------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
-| Database   | Neon (PostgreSQL)                             | Serverless, cocok dengan Vercel, branch DB per preview                            |
-| Driver     | `drizzle-orm/neon-serverless` (Pool)          | Mendukung transaksi interaktif; ubah status dan riwayatnya harus atomik           |
-| Auth       | Auth.js v5, GitHub + Google, database session | Session bisa dicabut dari server; `userId` selalu berasal dari DB                 |
-| Dokumen CV | Metadata + link eksternal                     | Tanpa storage file; upload bisa ditambah nanti tanpa mengubah relasi              |
-| Perusahaan | Tabel sendiri                                 | Kontak menempel ke perusahaan; beberapa lamaran ke perusahaan yang sama tergabung |
-| Follow-up  | Diturunkan dari `status_changed_at`           | Tidak ada flag yang bisa basi, tidak butuh cron                                   |
+| Hal        | Pilihan                                       | Alasan                                                                                                |
+| ---------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Database   | Neon (PostgreSQL)                             | Serverless, cocok dengan Vercel, branch DB per preview                                                |
+| Driver     | `pg` (node-postgres) + `attachDatabasePool`   | Rekomendasi Neon untuk Vercel Fluid compute; mendukung transaksi untuk ubah status beserta riwayatnya |
+| Auth       | Auth.js v5, GitHub + Google, database session | Session bisa dicabut dari server; `userId` selalu berasal dari DB                                     |
+| Dokumen CV | Metadata + link eksternal                     | Tanpa storage file; upload bisa ditambah nanti tanpa mengubah relasi                                  |
+| Perusahaan | Tabel sendiri                                 | Kontak menempel ke perusahaan; beberapa lamaran ke perusahaan yang sama tergabung                     |
+| Follow-up  | Diturunkan dari `status_changed_at`           | Tidak ada flag yang bisa basi, tidak butuh cron                                                       |
 
 ## Skema database
 

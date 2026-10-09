@@ -29,6 +29,8 @@ Before calling work done: `npm run lint && npm run typecheck && npm run format:c
 3. `npm run db:migrate`
 4. `npm run dev`
 
+`npm run start` (production mode outside Vercel) also needs `AUTH_TRUST_HOST=true`, otherwise Auth.js rejects requests with `UntrustedHost`.
+
 ### Migrations
 
 ```bash
@@ -53,9 +55,11 @@ Follow this without being asked, at the end of every task or phase.
 
 ## Stack
 
-Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui on Base UI · PostgreSQL on Neon · Drizzle ORM + drizzle-kit · Auth.js v5 (`next-auth@beta`, GitHub + Google, database sessions through `@auth/drizzle-adapter`) · Zod 4 · Prettier · deployed on Vercel.
+Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui on Base UI · PostgreSQL on Neon through `pg` (node-postgres) · Drizzle ORM + drizzle-kit · Auth.js v5 (`next-auth@beta`, GitHub + Google, database sessions through `@auth/drizzle-adapter`) · Zod 4 · Prettier · deployed on Vercel.
 
 `next-auth@latest` is still v4 and does not support this Next.js version; stay on the `beta` tag.
+
+The database driver is `pg` with `attachDatabasePool` from `@vercel/functions`, which is what Neon recommends on Vercel Fluid compute. The pool lives in `src/db/index.ts`; do not create another one.
 
 ## Folder structure
 
@@ -85,7 +89,7 @@ src/
     utils.ts
 ```
 
-Route files in `src/app` stay thin: they compose components and call functions from `src/features`. Most of this tree does not exist yet; create each part in the phase that needs it.
+Route files in `src/app` stay thin: they compose components and call functions from `src/features`. Feature folders are created in the phase that needs them.
 
 ## Rules
 
@@ -107,15 +111,19 @@ These three are not negotiable.
 - To cache per-user data, the exported query resolves the user and passes `user.id` into an unexported `"use cache"` function. Never export a cached function that takes a `userId` argument.
 - Cache tags are `<domain>:<userId>` (for example `applications:<userId>`). Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
 - `src/proxy.ts` only does an optimistic cookie check for redirects. Authorization happens in `queries.ts` / `actions.ts`.
+- The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
+- When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to `NAV_ITEMS` in `src/app/(app)/layout.tsx`.
+- `session.user.id` exists only because of the `session` callback in `src/auth.ts`; Auth.js drops it by default.
 
 ## Code conventions
 
 - Formatting is Prettier's job (defaults, plus `prettier-plugin-tailwindcss` for class order). Do not hand-format or add ESLint style rules.
+- UI text is Indonesian; code, comments, identifiers and commit messages are English.
 - File names are kebab-case. Components are named exports in PascalCase; only Next.js route files use default exports.
 - No `any` and no non-null assertions on external data. Derive types instead of rewriting them: `typeof table.$inferSelect` / `$inferInsert` for rows, `z.infer<typeof schema>` for inputs.
 - Database identifiers are snake_case, TypeScript properties camelCase; the mapping comes from `casing: "snake_case"` (set in `drizzle.config.ts` and on the Drizzle client), so do not pass column names by hand.
 - Enum values are lowercase snake_case in the database (`technical_test`); display labels are mapped in the UI.
-- Read environment variables through `src/lib/env.ts`, not `process.env`, and add new ones to `.env.example`.
+- Read environment variables through `src/lib/env.ts`, not `process.env`, and add new ones to `.env.example`. The exception is the OAuth provider variables (`AUTH_GITHUB_*`, `AUTH_GOOGLE_*`), which Auth.js reads itself by naming convention.
 - Multi-statement writes that must stay consistent (for example a status change plus its history row) run inside `db.transaction`.
 - Timestamps are `timestamptz`; calendar dates without a time (applied date) are `date`.
 
