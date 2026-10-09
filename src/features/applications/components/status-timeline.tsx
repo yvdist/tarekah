@@ -16,7 +16,7 @@ export function StatusTimeline({
   }
 
   return (
-    <ol className="flex flex-col gap-3">
+    <ol className="flex flex-col gap-4">
       {events.map((event) => (
         <li key={event.id} className="flex flex-col gap-1 border-l-2 pl-3">
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -34,7 +34,7 @@ export function StatusTimeline({
           </div>
           <time
             dateTime={event.changedAt.toISOString()}
-            className="text-xs text-muted-foreground"
+            className="font-figure text-xs text-muted-foreground"
           >
             {formatDateTime(event.changedAt)}
           </time>

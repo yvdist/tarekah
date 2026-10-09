@@ -151,16 +151,19 @@ Catatan:
 Tanpa mockup; mengikuti pola halaman yang sudah jadi.
 
 - [x] Lamaran baru dan edit lamaran: `PageHeader`, form di dalam kartu, baris aksi di bawah garis
+- [x] Detail lamaran: `PageHeader` (posisi, perusahaan, Edit dan Hapus), tiap bagian jadi kartu, riwayat status di kolom kanan
 
 Catatan:
 
 - Form tetap satu kolom selebar `max-w-2xl`; isinya tidak dipecah jadi beberapa seksi, karena urutan dan label field dipakai e2e.
+- `Panel` pindah dari fitur dashboard ke `src/components/panel.tsx` dan mendapat slot `action` (tombol "Tambah interview").
+- "Riwayat status" bukan `Panel`: e2e mencari daftarnya lewat induk heading, jadi heading tetap anak langsung `<section>`.
+- Dua kolom detail baru muncul dari `lg`; di bawah itu riwayat status turun ke bawah, karena di `md` sidebar sudah memakan tempat.
 
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Detail lamaran
 - [ ] Perusahaan
 - [ ] Detail perusahaan
 - [ ] Kontak
