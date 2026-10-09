@@ -168,6 +168,7 @@ Catatan:
 Tanpa mockup; mengikuti pola halaman yang sudah jadi.
 
 - [x] Kontak: `PageHeader` dengan "Tambah kontak", daftar di dalam kartu, empty state dengan mega mendung
+- [x] Dokumen: `PageHeader` dengan "Tambah versi", CV dan cover letter sebagai dua kartu, empty state dengan mega mendung
 
 Catatan:
 
@@ -175,12 +176,13 @@ Catatan:
 - "Tambah kontak" di header menunggu daftar perusahaan dan lamaran untuk formnya, jadi ia punya `Suspense` sendiri. Di empty state tombol yang sama tampil bergaya outline, supaya tombol nila tetap satu.
 - Kontak tetap daftar, bukan tabel: catatan dan lamaran terkait tidak muat dalam sel.
 - Nama perusahaan di baris kontak menjadi tautan ke detail perusahaan; id-nya sudah ada di query.
+- Dokumen: dua kartu berdampingan dari `lg`, masing-masing dengan jumlah versinya. Versi yang diarsipkan tetap tampil, namanya diredupkan.
+- Empty state Dokumen berjudul "Simpan versi CV pertamamu" (sebelumnya "Belum ada versi dokumen"). Kartu jenis yang kosong tetap memakai kalimat pendek "Belum ada versi.", bukan awan kedua.
 
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Dokumen
 - [ ] Pertanyaan
 - [ ] Pengaturan
 - [ ] Loading, error, not-found, `global-error.tsx`

@@ -9,12 +9,15 @@ import { deleteDocument, setDocumentArchived } from "../actions";
 import type { DocumentListItem } from "../queries";
 import { DocumentFormDialog } from "./document-form-dialog";
 
-export function AddDocumentButton() {
+export function AddDocumentButton({
+  variant,
+  size,
+}: Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button variant={variant} size={size} onClick={() => setOpen(true)}>
         <Plus />
         Tambah versi
       </Button>
