@@ -19,6 +19,11 @@ import {
   WORK_TYPE_LABELS,
 } from "@/features/applications/labels";
 import { getApplication } from "@/features/applications/queries";
+import { ApplicationContacts } from "@/features/contacts/components/application-contacts";
+import { getContactsForApplication } from "@/features/contacts/queries";
+import { AddInterviewButton } from "@/features/interviews/components/interview-actions";
+import { InterviewList } from "@/features/interviews/components/interview-list";
+import { getInterviews } from "@/features/interviews/queries";
 
 export const metadata: Metadata = { title: "Detail lamaran" };
 
@@ -122,6 +127,12 @@ async function ApplicationDetails({
                   "—"
                 )}
               </Item>
+              <Item label="CV">
+                <DocumentLink document={application.cvDocument} />
+              </Item>
+              <Item label="Cover letter">
+                <DocumentLink document={application.coverLetterDocument} />
+              </Item>
               <Item label="Follow-up terakhir">
                 <div className="flex flex-col items-start gap-2">
                   <span>
@@ -154,6 +165,31 @@ async function ApplicationDetails({
               </p>
             )}
           </section>
+
+          <section className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-medium">Interview</h2>
+              <AddInterviewButton applicationId={application.id} />
+            </div>
+            <Suspense
+              fallback={
+                <p className="text-sm text-muted-foreground">Memuat…</p>
+              }
+            >
+              <Interviews applicationId={application.id} />
+            </Suspense>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <h2 className="font-medium">Kontak</h2>
+            <Suspense
+              fallback={
+                <p className="text-sm text-muted-foreground">Memuat…</p>
+              }
+            >
+              <Contacts applicationId={application.id} />
+            </Suspense>
+          </section>
         </div>
 
         <section className="flex flex-col gap-3">
@@ -162,6 +198,46 @@ async function ApplicationDetails({
         </section>
       </div>
     </>
+  );
+}
+
+async function Interviews({ applicationId }: { applicationId: string }) {
+  return <InterviewList interviews={await getInterviews(applicationId)} />;
+}
+
+async function Contacts({ applicationId }: { applicationId: string }) {
+  const { linked, available } = await getContactsForApplication(applicationId);
+
+  return (
+    <ApplicationContacts
+      applicationId={applicationId}
+      linked={linked}
+      available={available}
+    />
+  );
+}
+
+function DocumentLink({
+  document,
+}: {
+  document: { label: string; url: string | null } | null;
+}) {
+  if (!document) {
+    return "—";
+  }
+
+  return document.url ? (
+    <a
+      href={document.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 break-all underline underline-offset-4"
+    >
+      {document.label}
+      <ExternalLink className="size-3.5 shrink-0" />
+    </a>
+  ) : (
+    document.label
   );
 }
 
