@@ -23,6 +23,9 @@ async function settle(page: Page) {
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`capture pages in ${colorScheme}`, async ({ browser, baseURL }) => {
+    // The light run visits every page at two widths.
+    test.setTimeout(120_000);
+
     const context = await browser.newContext({
       colorScheme,
       viewport: { width: 1280, height: 800 },
@@ -78,6 +81,10 @@ for (const colorScheme of ["light", "dark"] as const) {
 
       await page.goto("/applications/new");
       await capture("application-new");
+
+      // Not found inside the shell; error.tsx renders the same card.
+      await page.goto("/applications/tidak-ada");
+      await capture("application-not-found");
     }
 
     await context.close();
@@ -95,6 +102,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     for (const [path, name] of [
       ["/", "landing"],
       ["/login", "login"],
+      ["/tidak-ada", "not-found"],
     ]) {
       await publicPage.goto(path);
       await settle(publicPage);
