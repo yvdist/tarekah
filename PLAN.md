@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 2 selesai.** Skema di bawah sudah disetujui dan diterapkan lewat `drizzle/0000_init.sql`. Berikutnya: Fase 3.
+Status: **Fase 0 sampai 3 selesai.** Skema di bawah sudah disetujui dan diterapkan lewat `drizzle/0000_init.sql`. Berikutnya: Fase 3b.
 
 ## Keputusan
 
@@ -191,21 +191,22 @@ Tidak ada tabel agregat; semua dihitung saat dibaca dan di-cache per user.
 
 ## Route
 
-| Route                     | Akses  | Isi                                                                                                  |
-| ------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
-| `/`                       | publik | Landing page                                                                                         |
-| `/login`                  | publik | Tombol masuk GitHub dan Google                                                                       |
-| `/api/auth/[...nextauth]` | publik | Handler Auth.js                                                                                      |
-| `/dashboard`              | login  | Funnel, response rate per sumber, lamaran per minggu, daftar yang perlu follow-up                    |
-| `/applications`           | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort; `?view=board` untuk kanban per status |
-| `/applications/new`       | login  | Form lamaran baru                                                                                    |
-| `/applications/[id]`      | login  | Detail: data lamaran, ubah status, riwayat status, interview, kontak, dokumen yang dipakai           |
-| `/applications/[id]/edit` | login  | Form edit                                                                                            |
-| `/companies`              | login  | Daftar perusahaan dengan jumlah lamaran                                                              |
-| `/companies/[id]`         | login  | Detail perusahaan: lamaran dan kontak                                                                |
-| `/contacts`               | login  | Daftar dan kelola kontak                                                                             |
-| `/documents`              | login  | Versi CV dan cover letter, jumlah pemakaian per versi                                                |
-| `/settings`               | login  | Profil, keluar, hapus akun                                                                           |
+| Route                     | Akses  | Isi                                                                                                                                   |
+| ------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                       | publik | Landing page                                                                                                                          |
+| `/login`                  | publik | Tombol masuk GitHub dan Google                                                                                                        |
+| `/api/auth/[...nextauth]` | publik | Handler Auth.js                                                                                                                       |
+| `/dashboard`              | login  | Funnel, response rate per sumber, lamaran per minggu, daftar yang perlu follow-up                                                     |
+| `/board`                  | login  | Kanban: kolom per status, drag-and-drop antar kolom mengubah status dan menulis riwayat; kolom Ditolak dan Tanpa kabar bisa diciutkan |
+| `/applications`           | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort                                                                         |
+| `/applications/new`       | login  | Form lamaran baru                                                                                                                     |
+| `/applications/[id]`      | login  | Detail: data lamaran, ubah status, riwayat status, interview, kontak, dokumen yang dipakai                                            |
+| `/applications/[id]/edit` | login  | Form edit                                                                                                                             |
+| `/companies`              | login  | Daftar perusahaan dengan jumlah lamaran                                                                                               |
+| `/companies/[id]`         | login  | Detail perusahaan: lamaran dan kontak                                                                                                 |
+| `/contacts`               | login  | Daftar dan kelola kontak                                                                                                              |
+| `/documents`              | login  | Versi CV dan cover letter, jumlah pemakaian per versi                                                                                 |
+| `/settings`               | login  | Profil, keluar, hapus akun                                                                                                            |
 
 Interview, kontak per lamaran, dan perubahan status dikelola di halaman detail lamaran lewat dialog, tanpa route sendiri.
 
@@ -216,7 +217,8 @@ Interview, kontak per lamaran, dan perubahan status dikelola di halaman detail l
 | 0    | Tooling (Drizzle, Auth.js, Zod, Prettier), `CLAUDE.md`, `PLAN.md`                                                                     | lint, typecheck, format, build lolos                          |
 | 1    | Fondasi: `src/db/schema`, migration pertama, client Drizzle, `src/auth.ts`, `requireUser`, proxy, `env.ts`, app shell dengan navigasi | Login GitHub dan Google jalan, route `(app)` menolak tamu     |
 | 2    | Lamaran: CRUD, pilih atau buat perusahaan dari form, ubah status dengan riwayat, tabel dengan filter, sort, pencarian                 | Lamaran bisa dibuat, diubah, dihapus; riwayat status tercatat |
-| 3    | Daftar: tampilan board, filter dan sort di URL, penanda follow-up dan snooze                                                          | Lamaran lama tanpa perubahan tertandai                        |
+| 3    | Board: halaman `/board` dengan drag-and-drop (dnd-kit), optimistic update dengan rollback, timeline riwayat di detail                 | Kartu bisa dipindah antar kolom; riwayat status tercatat      |
+| 3b   | Daftar: filter dan sort di URL, penanda follow-up dan snooze                                                                          | Lamaran lama tanpa perubahan tertandai                        |
 | 4    | Dokumen: kelola versi CV dan cover letter, pilih versi per lamaran                                                                    | Versi yang dipakai tampil di detail lamaran                   |
 | 5    | Catatan interview per lamaran                                                                                                         | CRUD interview di halaman detail                              |
 | 6    | Kontak: CRUD, tautan ke perusahaan dan lamaran, halaman perusahaan                                                                    | Kontak tampil di detail lamaran dan perusahaan                |
