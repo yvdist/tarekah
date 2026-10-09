@@ -109,7 +109,8 @@ These three are not negotiable.
 
 - A component that reads the session must sit inside a `<Suspense>` boundary. Do not `await` the session at the top level of a layout; push it into a child component.
 - To cache per-user data, the exported query resolves the user and passes `user.id` into an unexported `"use cache"` function. Never export a cached function that takes a `userId` argument.
-- Cache tags are `<domain>:<userId>` (for example `applications:<userId>`). Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
+- Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`). Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
+- Anything that depends on the clock (days in status, follow-up and ghosted flags) is computed in the exported query, after the cached read, never inside a `"use cache"` function. The rules live in `src/features/applications/follow-up.ts`.
 - `src/proxy.ts` only does an optimistic cookie check for redirects. Authorization happens in `queries.ts` / `actions.ts`.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
 - When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to `NAV_ITEMS` in `src/app/(app)/layout.tsx`.

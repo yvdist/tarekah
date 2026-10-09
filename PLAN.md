@@ -2,18 +2,19 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 3 selesai.** Skema di bawah sudah disetujui dan diterapkan lewat `drizzle/0000_init.sql`. Berikutnya: Fase 3b.
+Status: **Fase 0 sampai 3 dan Fase 4 selesai.** Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql` dan `drizzle/0001_follow_up.sql`. Berikutnya: Fase 3b.
 
 ## Keputusan
 
-| Hal        | Pilihan                                       | Alasan                                                                                                |
-| ---------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Database   | Neon (PostgreSQL)                             | Serverless, cocok dengan Vercel, branch DB per preview                                                |
-| Driver     | `pg` (node-postgres) + `attachDatabasePool`   | Rekomendasi Neon untuk Vercel Fluid compute; mendukung transaksi untuk ubah status beserta riwayatnya |
-| Auth       | Auth.js v5, GitHub + Google, database session | Session bisa dicabut dari server; `userId` selalu berasal dari DB                                     |
-| Dokumen CV | Metadata + link eksternal                     | Tanpa storage file; upload bisa ditambah nanti tanpa mengubah relasi                                  |
-| Perusahaan | Tabel sendiri                                 | Kontak menempel ke perusahaan; beberapa lamaran ke perusahaan yang sama tergabung                     |
-| Follow-up  | Diturunkan dari `status_changed_at`           | Tidak ada flag yang bisa basi, tidak butuh cron                                                       |
+| Hal        | Pilihan                                                                   | Alasan                                                                                                |
+| ---------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Database   | Neon (PostgreSQL)                                                         | Serverless, cocok dengan Vercel, branch DB per preview                                                |
+| Driver     | `pg` (node-postgres) + `attachDatabasePool`                               | Rekomendasi Neon untuk Vercel Fluid compute; mendukung transaksi untuk ubah status beserta riwayatnya |
+| Auth       | Auth.js v5, GitHub + Google, database session                             | Session bisa dicabut dari server; `userId` selalu berasal dari DB                                     |
+| Dokumen CV | Metadata + link eksternal                                                 | Tanpa storage file; upload bisa ditambah nanti tanpa mengubah relasi                                  |
+| Perusahaan | Tabel sendiri                                                             | Kontak menempel ke perusahaan; beberapa lamaran ke perusahaan yang sama tergabung                     |
+| Follow-up  | Diturunkan dari `status_changed_at` dan `last_followed_up_at` saat dibaca | Tidak ada flag yang bisa basi, tidak butuh cron                                                       |
+| Pengaturan | Tabel `user_settings`, baris opsional                                     | `users` mengikuti bentuk adapter Auth.js; user tanpa baris memakai default                            |
 
 ## Skema database
 
@@ -93,24 +94,25 @@ Index: unique (`user_id`, `type`, `label`).
 
 **`applications`**
 
-| Kolom                      | Tipe                                             | Keterangan                                             |
-| -------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
-| `company_id`               | uuid not null → companies, restrict              | perusahaan yang masih punya lamaran tidak bisa dihapus |
-| `position`                 | text not null                                    |                                                        |
-| `job_url`                  | text                                             | link loker                                             |
-| `source`                   | `job_source` not null                            |                                                        |
-| `source_detail`            | text                                             | nama pemberi referral atau sumber lain                 |
-| `salary_min`, `salary_max` | integer                                          |                                                        |
-| `salary_currency`          | char(3) not null default `'IDR'`                 |                                                        |
-| `location`                 | text                                             |                                                        |
-| `work_type`                | `work_type`                                      |                                                        |
-| `applied_at`               | date                                             | kosong selama masih wishlist                           |
-| `status`                   | `application_status` not null default `wishlist` | status saat ini                                        |
-| `status_changed_at`        | timestamptz not null default now()               | disalin dari event terakhir; dasar penanda follow-up   |
-| `follow_up_snoozed_until`  | date                                             | penanda follow-up disembunyikan sampai tanggal ini     |
-| `cv_document_id`           | uuid → documents, set null                       | versi CV yang dipakai                                  |
-| `cover_letter_document_id` | uuid → documents, set null                       | versi cover letter yang dipakai                        |
-| `notes`                    | text                                             |                                                        |
+| Kolom                      | Tipe                                             | Keterangan                                                 |
+| -------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| `company_id`               | uuid not null → companies, restrict              | perusahaan yang masih punya lamaran tidak bisa dihapus     |
+| `position`                 | text not null                                    |                                                            |
+| `job_url`                  | text                                             | link loker                                                 |
+| `source`                   | `job_source` not null                            |                                                            |
+| `source_detail`            | text                                             | nama pemberi referral atau sumber lain                     |
+| `salary_min`, `salary_max` | integer                                          |                                                            |
+| `salary_currency`          | char(3) not null default `'IDR'`                 |                                                            |
+| `location`                 | text                                             |                                                            |
+| `work_type`                | `work_type`                                      |                                                            |
+| `applied_at`               | date                                             | kosong selama masih wishlist                               |
+| `status`                   | `application_status` not null default `wishlist` | status saat ini                                            |
+| `status_changed_at`        | timestamptz not null default now()               | disalin dari event terakhir; dasar penanda follow-up       |
+| `follow_up_snoozed_until`  | date                                             | untuk snooze; belum dipakai                                |
+| `last_followed_up_at`      | timestamptz                                      | diisi tombol "Sudah follow-up"; mereset hitungan follow-up |
+| `cv_document_id`           | uuid → documents, set null                       | versi CV yang dipakai                                      |
+| `cover_letter_document_id` | uuid → documents, set null                       | versi cover letter yang dipakai                            |
+| `notes`                    | text                                             |                                                            |
 
 Index: (`user_id`, `status`), (`user_id`, `status_changed_at`), (`user_id`, `applied_at`), (`user_id`, `source`), (`company_id`).
 Check: `salary_min <= salary_max` bila keduanya terisi; `salary_min >= 0`.
@@ -163,10 +165,21 @@ Index: (`user_id`, `company_id`).
 
 PK (`application_id`, `contact_id`); index (`contact_id`).
 
+**`user_settings`** — satu baris opsional per user, tanpa `id`
+
+| Kolom                  | Tipe                        | Keterangan                             |
+| ---------------------- | --------------------------- | -------------------------------------- |
+| `user_id`              | text PK → users, cascade    |                                        |
+| `follow_up_after_days` | integer not null default 7  | batas hari penanda follow-up           |
+| `ghosted_after_days`   | integer not null default 21 | batas hari saran pindah ke Tanpa kabar |
+
+Check: kedua kolom `> 0`. User tanpa baris memakai default (`src/features/settings/constants.ts`).
+
 ### Relasi
 
 ```
 users 1─N companies, documents, applications, contacts, interviews, application_status_events
+users 1─1 user_settings                     (opsional)
 companies 1─N applications
 companies 1─N contacts                      (opsional di sisi contacts)
 applications 1─N application_status_events
@@ -178,7 +191,11 @@ documents 1─N applications                  dua FK: cv_document_id, cover_lett
 ### Aturan data
 
 - **Riwayat status.** Membuat lamaran menulis satu event (`from_status` null). Mengubah status menulis satu event dan memperbarui `applications.status` serta `status_changed_at` dalam satu transaksi. `applications.status` adalah salinan untuk query cepat; sumber kebenaran riwayat ada di events.
-- **Follow-up.** Lamaran perlu follow-up bila `status` termasuk `applied`, `screening`, `technical_test`, `interview`, dan `status_changed_at` lebih tua dari 7 hari (konstanta di kode), dan `follow_up_snoozed_until` kosong atau sudah lewat.
+- **Follow-up.** Hanya berlaku untuk `status` `applied`, `screening`, `technical_test`, `interview`. Dihitung di server setiap kali dibaca (`src/features/applications/follow-up.ts`), di luar fungsi ter-cache:
+  - Perlu follow-up bila hari sejak yang terbaru antara `status_changed_at` dan `last_followed_up_at` mencapai `follow_up_after_days`.
+  - Saran pindah ke `ghosted` bila hari sejak `status_changed_at` mencapai `ghosted_after_days`. Follow-up tidak menundanya; pemindahan selalu lewat klik user, tidak otomatis.
+  - `ghosted_after_days` harus lebih besar dari `follow_up_after_days` (divalidasi di form, bukan di database).
+  - Snooze (`follow_up_snoozed_until`) belum diterapkan.
 - **Isolasi.** FK tidak menjamin baris yang dirujuk milik user yang sama, jadi action memeriksa kepemilikan `company_id`, `*_document_id`, `application_id`, `contact_id` sebelum insert atau update.
 
 ### Query dashboard
@@ -196,7 +213,7 @@ Tidak ada tabel agregat; semua dihitung saat dibaca dan di-cache per user.
 | `/`                       | publik | Landing page                                                                                                                          |
 | `/login`                  | publik | Tombol masuk GitHub dan Google                                                                                                        |
 | `/api/auth/[...nextauth]` | publik | Handler Auth.js                                                                                                                       |
-| `/dashboard`              | login  | Funnel, response rate per sumber, lamaran per minggu, daftar yang perlu follow-up                                                     |
+| `/dashboard`              | login  | Panel "Perlu Follow-up" (sudah ada); funnel, response rate per sumber, lamaran per minggu (fase 8)                                    |
 | `/board`                  | login  | Kanban: kolom per status, drag-and-drop antar kolom mengubah status dan menulis riwayat; kolom Ditolak dan Tanpa kabar bisa diciutkan |
 | `/applications`           | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort                                                                         |
 | `/applications/new`       | login  | Form lamaran baru                                                                                                                     |
@@ -206,23 +223,24 @@ Tidak ada tabel agregat; semua dihitung saat dibaca dan di-cache per user.
 | `/companies/[id]`         | login  | Detail perusahaan: lamaran dan kontak                                                                                                 |
 | `/contacts`               | login  | Daftar dan kelola kontak                                                                                                              |
 | `/documents`              | login  | Versi CV dan cover letter, jumlah pemakaian per versi                                                                                 |
-| `/settings`               | login  | Profil, keluar, hapus akun                                                                                                            |
+| `/settings`               | login  | Profil, batas hari follow-up dan saran Tanpa kabar, keluar, hapus akun                                                                |
 
 Interview, kontak per lamaran, dan perubahan status dikelola di halaman detail lamaran lewat dialog, tanpa route sendiri.
 
 ## Fase pengerjaan
 
-| Fase | Isi                                                                                                                                   | Selesai bila                                                  |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 0    | Tooling (Drizzle, Auth.js, Zod, Prettier), `CLAUDE.md`, `PLAN.md`                                                                     | lint, typecheck, format, build lolos                          |
-| 1    | Fondasi: `src/db/schema`, migration pertama, client Drizzle, `src/auth.ts`, `requireUser`, proxy, `env.ts`, app shell dengan navigasi | Login GitHub dan Google jalan, route `(app)` menolak tamu     |
-| 2    | Lamaran: CRUD, pilih atau buat perusahaan dari form, ubah status dengan riwayat, tabel dengan filter, sort, pencarian                 | Lamaran bisa dibuat, diubah, dihapus; riwayat status tercatat |
-| 3    | Board: halaman `/board` dengan drag-and-drop (dnd-kit), optimistic update dengan rollback, timeline riwayat di detail                 | Kartu bisa dipindah antar kolom; riwayat status tercatat      |
-| 3b   | Daftar: filter dan sort di URL, penanda follow-up dan snooze                                                                          | Lamaran lama tanpa perubahan tertandai                        |
-| 4    | Dokumen: kelola versi CV dan cover letter, pilih versi per lamaran                                                                    | Versi yang dipakai tampil di detail lamaran                   |
-| 5    | Catatan interview per lamaran                                                                                                         | CRUD interview di halaman detail                              |
-| 6    | Kontak: CRUD, tautan ke perusahaan dan lamaran, halaman perusahaan                                                                    | Kontak tampil di detail lamaran dan perusahaan                |
-| 7    | Dashboard statistik                                                                                                                   | Tiga grafik dan daftar follow-up tampil dari data nyata       |
-| 8    | Polish: empty/loading/error state, data demo, test Vitest untuk schema Zod dan logika murni, README portfolio, deploy Vercel + Neon   | Aplikasi live dan bisa didemokan                              |
+| Fase | Isi                                                                                                                                   | Selesai bila                                                    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 0    | Tooling (Drizzle, Auth.js, Zod, Prettier), `CLAUDE.md`, `PLAN.md`                                                                     | lint, typecheck, format, build lolos                            |
+| 1    | Fondasi: `src/db/schema`, migration pertama, client Drizzle, `src/auth.ts`, `requireUser`, proxy, `env.ts`, app shell dengan navigasi | Login GitHub dan Google jalan, route `(app)` menolak tamu       |
+| 2    | Lamaran: CRUD, pilih atau buat perusahaan dari form, ubah status dengan riwayat, tabel dengan filter, sort, pencarian                 | Lamaran bisa dibuat, diubah, dihapus; riwayat status tercatat   |
+| 3    | Board: halaman `/board` dengan drag-and-drop (dnd-kit), optimistic update dengan rollback, timeline riwayat di detail                 | Kartu bisa dipindah antar kolom; riwayat status tercatat        |
+| 3b   | Daftar: filter dan sort di URL                                                                                                        | Filter dan sort bertahan saat halaman dimuat ulang              |
+| 4    | Follow-up: batas hari per user, penanda di board/tabel/detail, panel "Perlu Follow-up", saran Tanpa kabar, tombol "Sudah follow-up"   | Lamaran lama tanpa perubahan tertandai dan bisa ditindaklanjuti |
+| 5    | Dokumen: kelola versi CV dan cover letter, pilih versi per lamaran                                                                    | Versi yang dipakai tampil di detail lamaran                     |
+| 6    | Catatan interview per lamaran                                                                                                         | CRUD interview di halaman detail                                |
+| 7    | Kontak: CRUD, tautan ke perusahaan dan lamaran, halaman perusahaan                                                                    | Kontak tampil di detail lamaran dan perusahaan                  |
+| 8    | Dashboard statistik                                                                                                                   | Tiga grafik tampil dari data nyata                              |
+| 9    | Polish: empty/loading/error state, data demo, test Vitest untuk schema Zod dan logika murni, README portfolio, deploy Vercel + Neon   | Aplikasi live dan bisa didemokan                                |
 
 Setiap fase ditutup dengan `npm run lint && npm run typecheck && npm run format:check && npm run build`.
