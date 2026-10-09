@@ -8,19 +8,11 @@ import { getApplications } from "@/features/applications/queries";
 
 export const metadata: Metadata = { title: "Lamaran" };
 
-export default function ApplicationsPage({
-  searchParams,
-}: PageProps<"/applications">) {
+export default function ApplicationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
-        <Suspense
-          fallback={
-            <h1 className="text-2xl font-semibold tracking-tight">Lamaran</h1>
-          }
-        >
-          <Heading searchParams={searchParams} />
-        </Suspense>
+        <h1 className="text-2xl font-semibold tracking-tight">Lamaran</h1>
         <Link href="/applications/new" className={buttonVariants()}>
           <Plus />
           Tambah lamaran
@@ -32,19 +24,6 @@ export default function ApplicationsPage({
         <Applications />
       </Suspense>
     </div>
-  );
-}
-
-// searchParams is request-time data, so it is read behind the boundary.
-async function Heading({
-  searchParams,
-}: Pick<PageProps<"/applications">, "searchParams">) {
-  const { view } = await searchParams;
-
-  return (
-    <h1 className="text-2xl font-semibold tracking-tight">
-      {view === "board" ? "Board" : "Lamaran"}
-    </h1>
   );
 }
 

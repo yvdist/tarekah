@@ -4,7 +4,7 @@ import { UserMenu } from "@/features/auth/components/user-menu";
 import { requireUser } from "@/lib/auth";
 
 const NAV_ITEMS = [
-  { href: "/applications?view=board", label: "Board" },
+  { href: "/board", label: "Board" },
   { href: "/applications", label: "Lamaran" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/settings", label: "Pengaturan" },
