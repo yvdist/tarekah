@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 
 export default function LandingPage() {
   return (
-    <main className="flex flex-1 items-center justify-center px-4">
+    <main className="relative flex flex-1 items-center justify-center px-4">
+      <ThemeToggle className="absolute top-4 right-4" />
       <div className="flex max-w-xl flex-col items-start gap-6">
         <p className="font-semibold tracking-tight">Tarékah</p>
         <h1 className="text-4xl font-semibold tracking-tight text-balance">

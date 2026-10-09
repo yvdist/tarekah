@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { signInWithProvider } from "@/features/auth/actions";
 import type { Provider } from "@/features/auth/schemas";
@@ -23,7 +24,8 @@ const DEFAULT_ERROR_MESSAGE = "Gagal masuk. Coba lagi.";
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4">
+    <main className="relative flex flex-1 items-center justify-center px-4">
+      <ThemeToggle className="absolute top-4 right-4" />
       <div className="flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col gap-1">
           <Link href="/" className="font-semibold tracking-tight">
