@@ -14,6 +14,7 @@ const PAGES = [
   "/contacts",
   "/documents",
   "/questions",
+  "/settings",
 ];
 
 const VIEWPORTS = [

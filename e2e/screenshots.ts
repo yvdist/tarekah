@@ -8,8 +8,9 @@ import { SCREENSHOT_USER } from "./constants";
 
 const OUTPUT = "docs/screenshots";
 
-// Lists of the user's own records, captured in both themes and at phone width.
-const ARCHIVE_PAGES = ["contacts", "documents", "questions"];
+// The archive pages and the settings, captured in both themes and at phone
+// width.
+const ARCHIVE_PAGES = ["contacts", "documents", "questions", "settings"];
 
 test.beforeAll(seedDemoUser);
 
