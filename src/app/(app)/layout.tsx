@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 const NAV_ITEMS = [
   { href: "/board", label: "Board" },
   { href: "/applications", label: "Lamaran" },
+  { href: "/companies", label: "Perusahaan" },
   { href: "/documents", label: "Dokumen" },
   { href: "/contacts", label: "Kontak" },
   { href: "/questions", label: "Pertanyaan" },

@@ -62,7 +62,12 @@ async function ApplicationDetails({
           <h1 className="text-2xl font-semibold tracking-tight">
             {application.position}
           </h1>
-          <p className="text-muted-foreground">{application.companyName}</p>
+          <Link
+            href={`/companies/${application.companyId}`}
+            className="w-fit text-muted-foreground underline-offset-4 hover:underline"
+          >
+            {application.companyName}
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           <Link
