@@ -56,7 +56,7 @@ Catatan:
 Catatan:
 
 - Toggle tema dan tombol keluar ada di baris pengguna di bawah sidebar; mockup tidak menggambarkannya.
-- `PageHeader` baru dipakai Board dan Dashboard. Halaman lain masih dengan h1 lama sampai gilirannya.
+- `PageHeader` dipakai halaman yang sudah di-restyle. Halaman lain masih dengan h1 lama sampai gilirannya.
 
 ## Fase 4: Board
 
@@ -106,11 +106,29 @@ Catatan:
 - [x] `docs/screenshots/` dibuat ulang, termasuk tangkapan mobile
 - [x] `CLAUDE.md` diperbarui (Styling, UI components, rujukan ke tracker ini)
 
+## Fase 7: Lamaran (tabel)
+
+Mockup: `reference/lamaran.png`.
+
+- [x] Desktop: header dengan ringkasan, Export CSV dan Tambah lamaran
+- [x] Desktop: tabel di dalam kartu, baris header permukaan-2, kaki kartu dengan jumlah baris
+- [x] Desktop: kolom Follow-up dengan titik kunyit; baris Ditolak dan Tanpa kabar diredupkan
+- [x] Mobile: kolom dilepas bertahap, posisi dan tanda follow-up pindah ke sel perusahaan
+- [x] Empty state dengan mega mendung
+
+Catatan:
+
+- Tab Semua/Aktif/Perlu follow-up/Selesai dan paginasi tidak dibuat (lihat "Data yang ditunda"). Tempatnya diisi pencarian dan tiga filter yang sudah ada (status, sumber, tipe kerja).
+- Kolom "Tipe kerja" tidak ada di mockup dan dipertahankan. Ia baru muncul saat tabel selebar 1024px ke atas, karena di bawah itu menu aksi terdorong keluar.
+- Kolom dilepas menurut lebar tabel sendiri (container query), bukan lebar layar, sebab sidebar ikut memakan tempat.
+- Teks "Export CSV" dan "Tanggal apply" tetap (mockup: "Ekspor CSV", "Dilamar"); yang pertama dipakai e2e, yang kedua sama dengan label di form dan halaman detail.
+- Kolom Follow-up hanya memuat tanda follow-up dalam bentuk pendek ("8 hari menunggu", "30 hari tanpa kabar"); kalimat lengkapnya jadi tooltip. Jadwal interview dan tenggat di mockup belum ada datanya.
+- Primitif `Table` ikut berubah (header kecil redup di atas permukaan-2, sel lebih lega), jadi tabel Perusahaan dan tabel rincian di Dashboard ikut.
+
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Lamaran, tabel (mockup: `reference/lamaran.png`)
 - [ ] Landing (mockup: `reference/landing.png`)
 - [ ] Login
 - [ ] Lamaran baru dan edit lamaran
@@ -135,3 +153,5 @@ Ada di mockup, tapi butuh query atau skema baru.
 - [ ] Board: jadwal interview di kartu kolom Interview
 - [ ] Board dan Dashboard: tenggat tes teknis (butuh kolom baru dan migrasi)
 - [ ] Lamaran: tab Semua/Aktif/Perlu follow-up/Selesai dan paginasi
+- [ ] Lamaran: kolom "Terakhir update" (butuh `updatedAt` di query daftar)
+- [ ] Lamaran: jadwal interview dan tenggat di kolom Follow-up
