@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorState } from "@/components/error-state";
+import { StandaloneState } from "@/components/standalone-state";
 
 // For the public pages; the signed-in area has its own boundary inside its
 // layout.
@@ -12,13 +13,13 @@ export default function RootError({
   retry: () => void;
 }) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-8">
+    <StandaloneState>
       <ErrorState
         error={error}
         retry={retry}
         homeHref="/"
         homeLabel="Ke beranda"
       />
-    </main>
+    </StandaloneState>
   );
 }

@@ -171,6 +171,9 @@ Tanpa mockup; mengikuti pola halaman yang sudah jadi.
 - [x] Dokumen: `PageHeader` dengan "Tambah versi", CV dan cover letter sebagai dua kartu, empty state dengan mega mendung
 - [x] Pertanyaan: `PageHeader`, pencarian dan filter tahap, daftar di dalam kartu dengan jumlah di kakinya, empty state dengan mega mendung
 - [x] Pengaturan: `PageHeader`, profil dan follow-up sebagai kartu, "Keluar" di kartu profil
+- [x] Not-found dan error: kartu dengan judul Fraunces; di luar shell ada logo di atasnya
+- [x] `global-error.tsx`: palet, radius dan tombol nila lewat CSS sendiri
+- [x] Skeleton mengikuti bentuk baru: header halaman, daftar dan form di dalam kartu, detail dua kolom
 - [x] Empty state semua halaman daftar memakai `EmptyState` (Lamaran, Perusahaan, Kontak, Dokumen, Pertanyaan)
 
 Catatan:
@@ -184,13 +187,16 @@ Catatan:
 - Empty state Pertanyaan berjudul "Kumpulkan pertanyaan interview-mu" (sebelumnya "Belum ada pertanyaan") dan mengarah ke daftar lamaran, tempat catatan interview ditulis.
 - Hasil pencarian yang kosong ("Tidak ada pertanyaan yang cocok") tetap kotak putus-putus tanpa awan, sama dengan Dashboard: itu bukan halaman kosong. Jumlahnya tidak ditampilkan di keadaan itu.
 - Pengaturan selebar `max-w-2xl` seperti halaman form. "Keluar" pindah dari bawah halaman ke slot aksi kartu Profil, karena ia tindakan atas akun itu; tombol yang sama tetap ada di sidebar.
+- Not-found dan error tidak memakai awan: mega mendung disimpan untuk empty state, yang berupa ajakan. Kotaknya kartu biasa, bukan garis putus-putus.
+- `global-error.tsx` menggantikan root layout, jadi tidak bisa memakai token atau Fraunces. Paletnya disalin sebagai nilai hex dan mengikuti `prefers-color-scheme`, bukan pilihan tema pengguna; judulnya memakai serif sistem.
+- "Coba lagi" di halaman error adalah satu-satunya tombol nila di layar itu; "Ke beranda" dan "Ke dashboard" tetap outline.
+- `ListSkeleton` dan `FormSkeleton` sekarang menggambar kartunya sendiri. Di dalam `Panel` keduanya dipanggil dengan `bare` supaya tidak ada kartu di dalam kartu.
 - Empty state Dokumen berjudul "Simpan versi CV pertamamu" (sebelumnya "Belum ada versi dokumen"). Kartu jenis yang kosong tetap memakai kalimat pendek "Belum ada versi.", bukan awan kedua.
 
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Loading, error, not-found, `global-error.tsx`
 - [ ] Dialog form dan konfirmasi hapus
 
 ## Data yang ditunda

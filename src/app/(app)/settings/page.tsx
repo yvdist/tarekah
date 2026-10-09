@@ -36,7 +36,7 @@ export default function SettingsPage() {
           </Suspense>
         </Panel>
         <Panel title="Follow-up">
-          <Suspense fallback={<FormSkeleton fields={2} />}>
+          <Suspense fallback={<FormSkeleton fields={2} bare />}>
             <FollowUpSettings />
           </Suspense>
         </Panel>

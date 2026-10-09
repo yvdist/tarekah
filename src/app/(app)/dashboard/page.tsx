@@ -105,7 +105,7 @@ export default function DashboardPage({ searchParams }: SearchParams) {
           title="Perlu follow-up"
           hint="Yang paling lama menunggu di atas"
         >
-          <Suspense fallback={<ListSkeleton rows={3} />}>
+          <Suspense fallback={<ListSkeleton rows={3} bare />}>
             <FollowUpList />
           </Suspense>
         </Panel>
