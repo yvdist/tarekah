@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 dan 1 selesai.** Skema di bawah sudah disetujui dan diterapkan lewat `drizzle/0000_init.sql`. Berikutnya: Fase 2.
+Status: **Fase 0 sampai 2 selesai.** Skema di bawah sudah disetujui dan diterapkan lewat `drizzle/0000_init.sql`. Berikutnya: Fase 3.
 
 ## Keputusan
 
@@ -215,8 +215,8 @@ Interview, kontak per lamaran, dan perubahan status dikelola di halaman detail l
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | 0    | Tooling (Drizzle, Auth.js, Zod, Prettier), `CLAUDE.md`, `PLAN.md`                                                                     | lint, typecheck, format, build lolos                          |
 | 1    | Fondasi: `src/db/schema`, migration pertama, client Drizzle, `src/auth.ts`, `requireUser`, proxy, `env.ts`, app shell dengan navigasi | Login GitHub dan Google jalan, route `(app)` menolak tamu     |
-| 2    | Lamaran: CRUD, pilih atau buat perusahaan dari form, ubah status dengan riwayat                                                       | Lamaran bisa dibuat, diubah, dihapus; riwayat status tercatat |
-| 3    | Daftar: filter, sort, pencarian, tampilan board, penanda follow-up dan snooze                                                         | Lamaran lama tanpa perubahan tertandai                        |
+| 2    | Lamaran: CRUD, pilih atau buat perusahaan dari form, ubah status dengan riwayat, tabel dengan filter, sort, pencarian                 | Lamaran bisa dibuat, diubah, dihapus; riwayat status tercatat |
+| 3    | Daftar: tampilan board, filter dan sort di URL, penanda follow-up dan snooze                                                          | Lamaran lama tanpa perubahan tertandai                        |
 | 4    | Dokumen: kelola versi CV dan cover letter, pilih versi per lamaran                                                                    | Versi yang dipakai tampil di detail lamaran                   |
 | 5    | Catatan interview per lamaran                                                                                                         | CRUD interview di halaman detail                              |
 | 6    | Kontak: CRUD, tautan ke perusahaan dan lamaran, halaman perusahaan                                                                    | Kontak tampil di detail lamaran dan perusahaan                |

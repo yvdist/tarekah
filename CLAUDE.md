@@ -96,7 +96,7 @@ Route files in `src/app` stay thin: they compose components and call functions f
 These three are not negotiable.
 
 1. **Server Components by default.** Add `"use client"` only when a component needs state, effects, event handlers or browser APIs, and put the boundary as low in the tree as possible. Fetch data in Server Components and pass it down; do not fetch in Client Components.
-2. **Mutations go through Server Actions with Zod validation.** Every action lives in `src/features/<domain>/actions.ts` and follows the same order: `requireUser()` → `schema.safeParse(input)` → query scoped to the user → `updateTag(...)`. Treat every argument as untrusted, including ids. Return validation failures as data (`{ ok: false, fieldErrors }`) rather than throwing. No Route Handlers for mutations.
+2. **Mutations go through Server Actions with Zod validation.** Every action lives in `src/features/<domain>/actions.ts` and follows the same order: `requireUser()` → `schema.safeParse(input)` → query scoped to the user → `updateTag(...)`. Treat every argument as untrusted, including ids. Return validation failures as data rather than throwing, using `ActionResult` from `src/lib/action-result.ts` (`{ ok: true, data }` or `{ ok: false, message, fieldErrors? }`). No Route Handlers for mutations.
 3. **Every query is filtered by `userId`.** Data is isolated per user.
    - The user id comes only from `requireUser()` (the session). Never accept it from form data, params, search params or a client component.
    - Only `queries.ts` and `actions.ts` under `src/features` (plus `src/auth.ts`) import `db`. Both start with `import "server-only"` or `"use server"`. Components and route files never import `db`.
@@ -122,7 +122,7 @@ These three are not negotiable.
 - File names are kebab-case. Components are named exports in PascalCase; only Next.js route files use default exports.
 - No `any` and no non-null assertions on external data. Derive types instead of rewriting them: `typeof table.$inferSelect` / `$inferInsert` for rows, `z.infer<typeof schema>` for inputs.
 - Database identifiers are snake_case, TypeScript properties camelCase; the mapping comes from `casing: "snake_case"` (set in `drizzle.config.ts` and on the Drizzle client), so do not pass column names by hand.
-- Enum values are lowercase snake_case in the database (`technical_test`); display labels are mapped in the UI.
+- Enum values are lowercase snake_case in the database (`technical_test`); display labels are mapped in the UI. The allowed values live as plain tuples in `src/db/schema/enum-values.ts`; Zod schemas and Client Components import from there, never from `enums.ts` (which pulls in Drizzle).
 - Read environment variables through `src/lib/env.ts`, not `process.env`, and add new ones to `.env.example`. The exception is the OAuth provider variables (`AUTH_GITHUB_*`, `AUTH_GOOGLE_*`), which Auth.js reads itself by naming convention.
 - Multi-statement writes that must stay consistent (for example a status change plus its history row) run inside `db.transaction`.
 - Timestamps are `timestamptz`; calendar dates without a time (applied date) are `date`.
@@ -140,7 +140,7 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Tailwind v4 is CSS-first: there is no `tailwind.config.*` and no PostCSS config. Tailwind runs through the `@tailwindcss/turbopack` loader registered under `turbopack.rules` in `next.config.ts`.
 - All theme configuration lives in `src/app/globals.css`: the `@theme inline` block maps Tailwind tokens (`bg-primary`, `rounded-lg`, …) to CSS variables defined in `:root` and `.dark` (oklch, neutral base). Add or change design tokens there.
 - Dark mode is class-based (`@custom-variant dark (&:is(.dark *))`), so it follows a `.dark` class on an ancestor, not `prefers-color-scheme`. Nothing sets that class yet.
-- `globals.css` declares `--font-sans: var(--font-sans)`, but `layout.tsx` only defines `--font-geist-sans` and `--font-geist-mono`. The sans font is therefore not wired to Geist until one side is changed.
+- Fonts: `layout.tsx` defines `--font-geist-sans` and `--font-geist-mono`; `globals.css` maps `--font-sans`, `--font-heading` and `--font-mono` to them.
 
 ## UI components
 
@@ -148,4 +148,6 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Add components with `npx shadcn@latest add <name>`; they land in `src/components/ui/` and are owned source, edited in place.
 - Class merging uses the `cn` npm package (shadcn's compiled replacement for `clsx` + `tailwind-merge`). `src/lib/utils.ts` only re-exports it, so `@/lib/utils` and `cn` are interchangeable imports.
 - Icons come from `lucide-react`.
+- Forms are Client Components using `react-hook-form` with `zodResolver` and the schema from `schemas.ts`; the action re-parses the same raw values with the same schema. The form calls the action in a transition, maps `fieldErrors` onto fields, shows a `sonner` toast, then navigates. See `src/features/applications/components/application-form.tsx`.
+- Tables use TanStack Table v9 (`useTable` + `tableFeatures`), whose API differs from v8; its docs ship in `node_modules/@tanstack/react-table/skills/`.
 - Path alias: `@/*` maps to `src/*`. `components.json` also reserves `@/hooks` for hooks.
