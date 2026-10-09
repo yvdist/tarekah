@@ -38,6 +38,10 @@ Aturan:
 
 - Maksimal satu tombol nila solid per layar.
 - Kunyit adalah "lonceng". Kalau dipakai untuk dekorasi, ia kehilangan makna.
+  Di dalam aplikasi ia hanya berarti "ini butuh kamu".
+- Satu pengecualian: tanda tangan brand. Di sana kunyit adalah goresan naik
+  (logo, aksen é) dan prada, emas pada batik (awan landing saat disentuh).
+  Tidak ada tempat lain.
 - Latar selalu kertas, bukan putih. Kartu putih di atas kertas = kedalaman
   tanpa shadow berat.
 
@@ -77,6 +81,8 @@ Motif awan khas Cirebon, digambar ulang sebagai **garis tipis satu warna**
 Dipakai hemat, sebagai tanda tangan:
 
 - Landing dan login: motif besar samar (opasitas rendah) di satu sudut.
+  Di landing awan itu melayang pelan dan garisnya menyala kunyit saat
+  disentuh; di login ia diam.
 - Empty state: ilustrasi kecil awan bergaris nila.
 - Header sidebar: motif kecil di belakang logo.
 - Kolom Offer di board: awan kecil di header kolom sebagai "hadiah".
@@ -85,11 +91,15 @@ Jangan dipakai sebagai background penuh di halaman kerja (board, tabel, form).
 
 ## 5. Logo
 
-- Wordmark: "tarékah" huruf kecil, Fraunces, warna tinta; huruf é dengan
-  aksen berwarna kunyit.
-- Logomark: huruf "t" Fraunces putih di dalam kotak rounded (radius 30%)
-  berwarna nila, dengan lengkung awan mega mendung kecil di sudut. Dipakai
-  juga sebagai favicon.
+"Garis léngkah": satu goresan naik, di t dan di é. Acuan:
+`reference/logo-garis-lengkah.png`.
+
+- Logomark: batang huruf "t" berujung bulat, dipotong satu goresan kunyit
+  yang naik ke kanan. Tanpa kotak. Dipakai juga sebagai favicon.
+- Wordmark: "tarékah" huruf kecil, Fraunces tebal; aksen é adalah goresan
+  kunyit yang sama, dengan kemiringan yang sama.
+- Warna: batang dan wordmark nila di latar terang, kertas di latar gelap.
+  Goresan selalu kunyit.
 
 ## 6. Bentuk dan ruang
 
