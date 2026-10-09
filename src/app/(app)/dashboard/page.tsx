@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { Panel } from "@/components/panel";
 import {
   ChartSkeleton,
   ListSkeleton,
@@ -22,7 +23,6 @@ import {
   getBoardItems,
   getFollowUpItems,
 } from "@/features/applications/queries";
-import { Panel } from "@/features/dashboard/components/panel";
 import { RangeFilter } from "@/features/dashboard/components/range-filter";
 import { RateBreakdown } from "@/features/dashboard/components/rate-breakdown";
 import { StepPath } from "@/features/dashboard/components/step-path";
