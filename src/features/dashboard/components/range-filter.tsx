@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { RANGE_PRESETS, type DateRange } from "../range";
 
@@ -7,7 +8,7 @@ import { RANGE_PRESETS, type DateRange } from "../range";
 // client state.
 export function RangeFilter({ range }: { range: DateRange }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <nav aria-label="Rentang tanggal" className="flex flex-wrap gap-1">
         {RANGE_PRESETS.map((preset) => (
           <Link
@@ -18,10 +19,12 @@ export function RangeFilter({ range }: { range: DateRange }) {
                 : `/dashboard?range=${preset.value}`
             }
             aria-current={range.preset === preset.value ? "true" : undefined}
-            className={buttonVariants({
-              variant: range.preset === preset.value ? "secondary" : "ghost",
-              size: "sm",
-            })}
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "sm" }),
+              "rounded-full px-3",
+              range.preset === preset.value &&
+                "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground",
+            )}
           >
             {preset.label}
           </Link>
@@ -39,17 +42,17 @@ export function RangeFilter({ range }: { range: DateRange }) {
           name="from"
           defaultValue={range.from ?? ""}
           aria-label="Tanggal apply dari"
-          className="w-auto"
+          className="h-8 w-auto font-figure text-xs md:text-xs"
         />
-        <span className="text-sm text-muted-foreground">sampai</span>
+        <span className="text-xs text-muted-foreground">sampai</span>
         <Input
           type="date"
           name="to"
           defaultValue={range.to ?? ""}
           aria-label="Tanggal apply sampai"
-          className="w-auto"
+          className="h-8 w-auto font-figure text-xs md:text-xs"
         />
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" size="sm">
           Terapkan
         </Button>
       </form>
