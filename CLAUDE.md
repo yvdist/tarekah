@@ -81,7 +81,7 @@ drizzle/                      generated SQL migrations (committed)
 drizzle.config.ts
 scripts/seed.ts               demo data; talks to the database directly
 e2e/                          Playwright specs and their database setup
-docs/                         deploy guide, README screenshots, design/ (guideline, mockups, rollout tracker)
+docs/                         deploy guide, README screenshots, design/ (guideline, mockups, decision notes)
 src/
   app/
     (marketing)/              public landing page
@@ -172,7 +172,7 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Add components with `npx shadcn@latest add <name>`; they land in `src/components/ui/` and are owned source, edited in place.
 - Class merging uses the `cn` npm package (shadcn's compiled replacement for `clsx` + `tailwind-merge`). `src/lib/utils.ts` only re-exports it, so `@/lib/utils` and `cn` are interchangeable imports.
 - Icons come from `lucide-react`.
-- Shared, non-shadcn components live in `src/components/`: `OptionSelect` (single choice over labelled options), `DeleteButton` (confirm, then run a bound delete action), `Markdown` (the only place user-written markdown is rendered; raw HTML is never rendered), the `*Skeleton` components in `skeletons.tsx` (the fallback of every data `<Suspense>`; pick the one shaped like the content), `StateMessage` (not-found and error boxes), `EmptyState` (nothing here yet: cloud, inviting title, one action), `PageHeader` (the Fraunces title, one line of context, actions on the right), `Panel` (a titled card: one line of context or one action on the right) and `NavLink`.
+- Shared, non-shadcn components live in `src/components/`: `OptionSelect` (single choice over labelled options), `DeleteButton` (confirm, then run a bound delete action), `Markdown` (the only place user-written markdown is rendered; raw HTML is never rendered), the `*Skeleton` components in `skeletons.tsx` (the fallback of every data `<Suspense>`; pick the one shaped like the content, and pass `bare` to `ListSkeleton` or `FormSkeleton` inside a `Panel`), `StateMessage` (not-found and error cards), `StandaloneState` (frames one outside the app shell), `EmptyState` (nothing here yet: cloud, inviting title, one action), `PageHeader` (the Fraunces title, one line of context, actions on the right), `Panel` (a titled card: one line of context or one action on the right) and `NavLink`.
 - The app shell is `AppSidebar` (`src/components/app-sidebar.tsx`): a fixed sidebar from `md` up, and the same component inside the `MobileNav` sheet below it. Page content is capped at `max-w-6xl` by the layout; a page that needs the full width puts `data-full-width` on its root element, as the board does.
 - The logo is `Logomark`, `Wordmark` and `Logo` in `src/components/brand/logo.tsx`. `src/app/icon.svg` and `apple-icon.png` repeat the mark's shapes, so change them together.
 - Error boundaries (`error.tsx`) take `retry`, not `reset`, and render the shared `ErrorState`.
@@ -186,10 +186,7 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Tables use TanStack Table v9 (`useTable` + `tableFeatures`), whose API differs from v8; its docs ship in `node_modules/@tanstack/react-table/skills/`.
 - Path alias: `@/*` maps to `src/*`. `components.json` also reserves `@/hooks` for hooks.
 
-## Design rollout
+## Design notes
 
-The brand identity in `docs/design/guideline.md` is being applied page by page. `docs/design/rollout.md` is the tracker: what is done, which pages still only inherit the tokens and the shell, and which parts of the mockups in `docs/design/reference/` wait for data that does not exist yet.
-
-- Before restyling a page, read its section in the tracker and its mockup if there is one.
-- Tick the items in the same commit as the work, and note any deviation from the mockup under "Catatan" with the reason.
-- The mockups use sample data and English status names. Keep the app's own labels and data; a mockup element that needs a new query or column goes under "Data yang ditunda" instead of being built during a restyle.
+- The mockups in `docs/design/reference/` use sample data and English status names; the app keeps its own labels and data.
+- "Data yang ditunda" in `docs/design/rollout.md` is the backlog of mockup elements that wait for a new query or column.
