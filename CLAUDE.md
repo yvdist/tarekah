@@ -109,7 +109,7 @@ These three are not negotiable.
 
 - A component that reads the session must sit inside a `<Suspense>` boundary. Do not `await` the session at the top level of a layout; push it into a child component.
 - To cache per-user data, the exported query resolves the user and passes `user.id` into an unexported `"use cache"` function. Never export a cached function that takes a `userId` argument.
-- Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`). Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
+- Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`, `documents:<userId>`, `interviews:<userId>`, `contacts:<userId>`). A cached query that joins another domain carries that domain's tag too, and an action that changes what another domain displays updates that tag as well. Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
 - Anything that depends on the clock (days in status, follow-up and ghosted flags) is computed in the exported query, after the cached read, never inside a `"use cache"` function. The rules live in `src/features/applications/follow-up.ts`.
 - `src/proxy.ts` only does an optimistic cookie check for redirects. Authorization happens in `queries.ts` / `actions.ts`.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
@@ -149,6 +149,9 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Add components with `npx shadcn@latest add <name>`; they land in `src/components/ui/` and are owned source, edited in place.
 - Class merging uses the `cn` npm package (shadcn's compiled replacement for `clsx` + `tailwind-merge`). `src/lib/utils.ts` only re-exports it, so `@/lib/utils` and `cn` are interchangeable imports.
 - Icons come from `lucide-react`.
+- Shared, non-shadcn components live in `src/components/`: `OptionSelect` (single choice over labelled options), `DeleteButton` (confirm, then run a bound delete action) and `Markdown` (the only place user-written markdown is rendered; raw HTML is never rendered).
+- Forms inside a `Dialog` put `key={useOpenKey(open)}` (`src/hooks/use-open-key.ts`) on the form component, because the dialog popup keeps its state across closes.
+- Shared Zod field helpers (`optionalText`, `requiredText`, `optionalHttpUrl`, `optionalId`) are in `src/lib/form-schemas.ts`; `invalidResult` in `src/lib/action-result.ts` turns a Zod error into an `ActionResult`; `setFieldErrors` in `src/lib/form-errors.ts` maps it back onto the form.
 - Forms are Client Components using `react-hook-form` with `zodResolver` and the schema from `schemas.ts`; the action re-parses the same raw values with the same schema. The form calls the action in a transition, maps `fieldErrors` onto fields, shows a `sonner` toast, then navigates. See `src/features/applications/components/application-form.tsx`.
 - The kanban board (`src/features/applications/components/board.tsx`) uses `@dnd-kit/core` only, since cards have no order within a column. Moves go through `useOptimistic` inside a standalone `startTransition`, following `node_modules/next/dist/docs/01-app/02-guides/interactive-apps.md`; a failed action reverts by itself because nothing is revalidated.
 - Tables use TanStack Table v9 (`useTable` + `tableFeatures`), whose API differs from v8; its docs ship in `node_modules/@tanstack/react-table/skills/`.
