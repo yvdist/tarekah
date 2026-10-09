@@ -43,10 +43,14 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.goto("/dashboard");
     await capture("dashboard", true);
 
+    await page.goto("/applications");
+    await capture("applications");
+
+    // Last, because the application below is opened from the board.
     await page.goto("/board");
     await capture("board");
 
-    // Dark mode is shown with two pages; the rest only in light.
+    // Dark mode is shown with three pages; the rest only in light.
     if (colorScheme === "light") {
       await page
         .getByRole("region", { name: "Interview" })
@@ -56,8 +60,15 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.waitForURL(/\/applications\/[0-9a-f-]{36}$/);
       await capture("application");
 
-      await page.goto("/applications");
-      await capture("applications");
+      await page.goto("/companies");
+      await capture("companies");
+
+      await page.getByRole("row").nth(1).getByRole("link").first().click();
+      await page.waitForURL(/\/companies\/[0-9a-f-]{36}$/);
+      await capture("company");
+
+      await page.goto("/applications/new");
+      await capture("application-new");
 
       await page.goto("/questions");
       await capture("questions");
@@ -65,7 +76,31 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     await context.close();
 
-    // The two redesigned pages at phone width, light only.
+    // The public pages, as a visitor who is not signed in sees them.
+    const visitor = await browser.newContext({
+      colorScheme,
+      viewport: { width: 1280, height: 800 },
+      deviceScaleFactor: 2,
+      locale: "id-ID",
+      timezoneId: "Asia/Jakarta",
+    });
+    const publicPage = await visitor.newPage();
+
+    for (const [path, name] of [
+      ["/", "landing"],
+      ["/login", "login"],
+    ]) {
+      await publicPage.goto(path);
+      await settle(publicPage);
+      await publicPage.screenshot({
+        path: `${OUTPUT}/${name}-${colorScheme}.png`,
+        fullPage: true,
+      });
+    }
+
+    await visitor.close();
+
+    // The redesigned pages at phone width, light only.
     if (colorScheme === "light") {
       const mobile = await browser.newContext({
         colorScheme,
@@ -81,7 +116,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
       const phone = await mobile.newPage();
 
-      for (const name of ["dashboard", "board"]) {
+      for (const name of ["dashboard", "board", "applications"]) {
         await phone.goto(`/${name}`);
         await settle(phone);
         await phone.screenshot({
@@ -91,6 +126,24 @@ for (const colorScheme of ["light", "dark"] as const) {
       }
 
       await mobile.close();
+
+      const phoneVisitor = await browser.newContext({
+        colorScheme,
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        locale: "id-ID",
+        timezoneId: "Asia/Jakarta",
+      });
+      const publicPhone = await phoneVisitor.newPage();
+
+      await publicPhone.goto("/");
+      await settle(publicPhone);
+      await publicPhone.screenshot({
+        path: `${OUTPUT}/landing-mobile-${colorScheme}.png`,
+        fullPage: true,
+      });
+
+      await phoneVisitor.close();
     }
   });
 }
