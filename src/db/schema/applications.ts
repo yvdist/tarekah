@@ -37,6 +37,8 @@ export const applications = pgTable(
     status: applicationStatus().notNull().default("wishlist"),
     statusChangedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     followUpSnoozedUntil: date(),
+    // Set by the "Sudah follow-up" action; restarts the follow-up count.
+    lastFollowedUpAt: timestamp({ withTimezone: true }),
     cvDocumentId: uuid().references(() => documents.id, {
       onDelete: "set null",
     }),
