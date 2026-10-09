@@ -43,6 +43,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           colorScheme,
           viewport,
           reducedMotion: "reduce",
+          storageState: { cookies: [], origins: [] },
         });
         const page = await context.newPage();
 
