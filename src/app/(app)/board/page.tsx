@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { BoardSkeleton } from "@/components/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { Board } from "@/features/applications/components/board";
 import { getBoardItems } from "@/features/applications/queries";
@@ -18,9 +19,7 @@ export default function BoardPage() {
           Tambah lamaran
         </Link>
       </div>
-      <Suspense
-        fallback={<p className="text-muted-foreground">Memuat board…</p>}
-      >
+      <Suspense fallback={<BoardSkeleton />}>
         <BoardData />
       </Suspense>
     </div>

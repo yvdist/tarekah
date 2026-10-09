@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
+  ChartSkeleton,
+  ListSkeleton,
+  StatsSkeleton,
+} from "@/components/skeletons";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -36,20 +41,20 @@ export default function DashboardPage({
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
       <section className="flex flex-col gap-3">
         <h2 className="font-medium">Perlu Follow-up</h2>
-        <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+        <Suspense fallback={<ListSkeleton rows={3} />}>
           <FollowUpPanel />
         </Suspense>
       </section>
       <section className="flex flex-col gap-4">
         <h2 className="font-medium">Statistik</h2>
-        <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+        <Suspense fallback={<StatsSkeleton />}>
           <Statistics searchParams={searchParams} />
         </Suspense>
         <ChartCard
           title="Lamaran per minggu"
           description="12 minggu terakhir menurut tanggal apply. Tidak mengikuti filter."
         >
-          <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+          <Suspense fallback={<ChartSkeleton />}>
             <Weekly />
           </Suspense>
         </ChartCard>

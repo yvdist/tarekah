@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Markdown } from "@/components/markdown";
+import { ListSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ export default function QuestionsPage({
           Semua pertanyaan dari catatan interview di seluruh lamaran.
         </p>
       </div>
-      <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+      <Suspense fallback={<ListSkeleton />}>
         <Questions searchParams={searchParams} />
       </Suspense>
     </div>

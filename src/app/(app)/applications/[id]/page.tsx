@@ -2,6 +2,7 @@ import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { DetailSkeleton, TextSkeleton } from "@/components/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { DeleteApplicationButton } from "@/features/applications/components/delete-application-dialog";
 import { FollowUpActions } from "@/features/applications/components/follow-up-actions";
@@ -39,9 +40,7 @@ export default function ApplicationPage({
         <ArrowLeft className="size-4" />
         Semua lamaran
       </Link>
-      <Suspense
-        fallback={<p className="text-muted-foreground">Memuat lamaran…</p>}
-      >
+      <Suspense fallback={<DetailSkeleton />}>
         <ApplicationDetails params={params} />
       </Suspense>
     </div>
@@ -176,22 +175,14 @@ async function ApplicationDetails({
               <h2 className="font-medium">Interview</h2>
               <AddInterviewButton applicationId={application.id} />
             </div>
-            <Suspense
-              fallback={
-                <p className="text-sm text-muted-foreground">Memuat…</p>
-              }
-            >
+            <Suspense fallback={<TextSkeleton />}>
               <Interviews applicationId={application.id} />
             </Suspense>
           </section>
 
           <section className="flex flex-col gap-3">
             <h2 className="font-medium">Kontak</h2>
-            <Suspense
-              fallback={
-                <p className="text-sm text-muted-foreground">Memuat…</p>
-              }
-            >
+            <Suspense fallback={<TextSkeleton />}>
               <Contacts applicationId={application.id} />
             </Suspense>
           </section>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LogOut } from "lucide-react";
 import { Suspense } from "react";
+import { FormSkeleton, TextSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/features/auth/actions";
 import { FollowUpSettingsForm } from "@/features/settings/components/follow-up-settings-form";
@@ -15,13 +16,13 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-semibold tracking-tight">Pengaturan</h1>
       <section className="flex flex-col gap-3">
         <h2 className="font-medium">Profil</h2>
-        <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+        <Suspense fallback={<TextSkeleton />}>
           <Profile />
         </Suspense>
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="font-medium">Follow-up</h2>
-        <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+        <Suspense fallback={<FormSkeleton fields={2} />}>
           <FollowUpSettings />
         </Suspense>
       </section>

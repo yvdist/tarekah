@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ListSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { DOCUMENT_TYPES } from "@/db/schema/enum-values";
 import {
@@ -19,7 +20,7 @@ export default function DocumentsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Dokumen</h1>
         <AddDocumentButton />
       </div>
-      <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+      <Suspense fallback={<ListSkeleton />}>
         <Documents />
       </Suspense>
     </div>

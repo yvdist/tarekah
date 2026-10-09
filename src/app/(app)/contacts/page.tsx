@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ListSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { getApplicationOptions } from "@/features/applications/queries";
 import { getCompanyOptions } from "@/features/companies/queries";
@@ -17,7 +18,7 @@ export default function ContactsPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Kontak</h1>
-      <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+      <Suspense fallback={<ListSkeleton />}>
         <Contacts />
       </Suspense>
     </div>

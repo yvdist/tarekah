@@ -2,6 +2,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { DetailSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/features/applications/components/status-badge";
 import { formatDate } from "@/features/applications/format";
@@ -20,7 +21,7 @@ export default function CompanyPage({ params }: PageProps<"/companies/[id]">) {
         <ArrowLeft className="size-4" />
         Semua perusahaan
       </Link>
-      <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+      <Suspense fallback={<DetailSkeleton />}>
         <CompanyDetails params={params} />
       </Suspense>
     </div>

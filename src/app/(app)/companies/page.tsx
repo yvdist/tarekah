@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ListSkeleton } from "@/components/skeletons";
 import {
   Table,
   TableBody,
@@ -17,7 +18,7 @@ export default function CompaniesPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Perusahaan</h1>
-      <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+      <Suspense fallback={<ListSkeleton />}>
         <Companies />
       </Suspense>
     </div>

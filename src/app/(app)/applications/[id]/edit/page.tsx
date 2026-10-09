@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { FormSkeleton } from "@/components/skeletons";
 import { ApplicationForm } from "@/features/applications/components/application-form";
 import {
   getApplication,
@@ -15,7 +16,7 @@ export default function EditApplicationPage({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Edit lamaran</h1>
-      <Suspense fallback={<p className="text-muted-foreground">Memuat…</p>}>
+      <Suspense fallback={<FormSkeleton />}>
         <EditApplicationForm params={params} />
       </Suspense>
     </div>
