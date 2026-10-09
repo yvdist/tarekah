@@ -15,7 +15,9 @@ Screenshot dibuat otomatis dari data contoh (`npm run screenshots`).
 
 ## Demo
 
-Belum ada alamat publik. Langkah deploy ada di [`docs/deploy.md`](docs/deploy.md); tautannya ditambahkan di sini setelah aplikasi live.
+<https://tarekah.vercel.app>
+
+Masuk dengan akun GitHub atau Google. Setiap akun mulai dari kosong dan hanya melihat datanya sendiri.
 
 ## Fitur
 
@@ -224,7 +226,7 @@ npm run test:e2e
 
 Branch Neon tersendiri juga bisa. Jangan arahkan `E2E_DATABASE_URL` ke database di `.env.local`. Migration diterapkan oleh setup test. Login lewat OAuth tidak bisa diotomasi, jadi setup menulis satu pengguna dan satu baris session langsung ke database itu.
 
-GitHub Actions menjalankan lint, typecheck, format, unit test dan build di setiap push ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Test end-to-end tidak ikut otomatis: jalankan dari tab Actions (Run workflow) atau di lokal sebelum rilis.
+GitHub Actions menjalankan lint, typecheck, format, unit test dan build di setiap pull request dan setiap push ke `production` ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Test end-to-end tidak ikut otomatis: jalankan dari tab Actions (Run workflow) atau di lokal sebelum rilis.
 
 ## Script
 
