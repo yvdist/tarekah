@@ -10,6 +10,7 @@ Setiap pengguna masuk dengan akun GitHub atau Google dan hanya melihat datanya s
 | --------------------------------------------------------- | --------------------------------------------------------- |
 | ![Board](docs/screenshots/board-light.png)                | ![Detail lamaran](docs/screenshots/application-light.png) |
 | ![Tabel lamaran](docs/screenshots/applications-light.png) | ![Board, tema gelap](docs/screenshots/board-dark.png)     |
+| ![Dokumen](docs/screenshots/documents-light.png)          | ![Kontak, tema gelap](docs/screenshots/contacts-dark.png) |
 
 Screenshot dibuat otomatis dari data contoh (`npm run screenshots`).
 
