@@ -8,7 +8,8 @@ import type { ApplicationStatus } from "@/db/schema/enum-values";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS } from "../labels";
 import { STATUS_STYLES } from "../status-styles";
-import { BoardCard, type BoardItem } from "./board-card";
+import { BoardCard } from "./board-card";
+import type { BoardItem } from "./board-card-body";
 import { StatusBadge } from "./status-badge";
 
 export function BoardColumn({

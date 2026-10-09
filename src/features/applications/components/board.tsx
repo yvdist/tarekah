@@ -33,7 +33,7 @@ import { filterBoardItems, isBoardFiltered } from "../board-filter";
 import { cn } from "@/lib/utils";
 import { FRESH_FOLLOW_UP_STATE } from "../follow-up";
 import { STATUS_LABELS } from "../labels";
-import { BoardCardBody, type BoardItem } from "./board-card";
+import { BoardCardBody, type BoardItem } from "./board-card-body";
 import { BoardColumn } from "./board-column";
 import { useBoardFilter } from "./board-filters";
 
