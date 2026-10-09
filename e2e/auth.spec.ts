@@ -18,6 +18,16 @@ test.describe("signed out", () => {
     ).toBeVisible();
   });
 
+  test("offers a guest the sign-in link on the landing page", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await expect(
+      page.getByRole("banner").getByRole("link", { name: "Masuk" }),
+    ).toHaveAttribute("href", "/login");
+  });
+
   test("rejects a session cookie that matches no session", async ({
     page,
     context,
@@ -66,4 +76,14 @@ test("opens the dashboard for a signed-in user", async ({ page }) => {
       name: "Dashboard",
     }),
   ).toHaveAttribute("aria-current", "page");
+});
+
+test("recognises a signed-in user on the public pages", async ({ page }) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Buka dashboard" }),
+  ).toHaveAttribute("href", "/dashboard");
+
+  await page.goto("/login");
+  await expect(page).toHaveURL(/\/dashboard$/);
 });

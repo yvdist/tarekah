@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
 import { MegaMendung } from "@/components/brand/mega-mendung";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { signInWithProvider } from "@/features/auth/actions";
 import { ProviderIcon } from "@/features/auth/components/provider-icon";
 import type { Provider } from "@/features/auth/schemas";
+import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Masuk" };
 
@@ -30,6 +32,9 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
     <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4 py-16">
       <MegaMendung className="pointer-events-none absolute -right-28 -bottom-12 w-[34rem] max-w-none text-foreground/10" />
       <ThemeToggle className="absolute top-4 right-4" />
+      <Suspense fallback={null}>
+        <SignedInRedirect />
+      </Suspense>
       <div className="relative flex w-full max-w-sm flex-col items-center gap-8">
         <Link href="/" className="rounded-md">
           <Logo />
@@ -71,6 +76,15 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       </div>
     </main>
   );
+}
+
+// Someone who is already signed in has no use for this page.
+async function SignedInRedirect() {
+  if (await getCurrentUser()) {
+    redirect("/dashboard");
+  }
+
+  return null;
 }
 
 // searchParams is request-time data, so it is read behind the boundary.

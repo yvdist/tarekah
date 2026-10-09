@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const CLOUD =
+export const CLOUD =
   "M34 104H206a20 20 0 0 0 6-39.1 27 27 0 0 0-31-29.4 36 36 0 0 0-61-13.5 31 31 0 0 0-52 14.5 25 25 0 0 0-31 27.5A20.5 20.5 0 0 0 34 104Z";
 
 // Mega mendung, the Cirebon cloud, redrawn as thin single-colour lines. A

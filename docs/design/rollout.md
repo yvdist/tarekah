@@ -24,7 +24,11 @@ Mockup: `reference/fondasi-desain.png`.
 
 ### Logo dan motif
 
-- Huruf "t" di logomark adalah outline Fraunces (SOFT 100, bobot 600) yang disalin sebagai path, supaya favicon tidak bergantung pada web font.
+- Logo "Garis léngkah" digambar ulang sebagai dua garis SVG berujung bulat, dijiplak dari `reference/logomark-terang.png`. PNG acuannya kecil dan tidak bisa ikut tema, jadi tidak dipakai langsung.
+- Angkanya ada di `src/components/brand/mark-paths.ts` dan dipakai logo, apple icon dan gambar pratinjau tautan. `src/app/icon.svg` mengulang angka yang sama karena berkas statis; di sana warna batang mengikuti `prefers-color-scheme`, sebab tab browser tidak melihat kelas `.dark`.
+- Apple icon dibuat dari kode (`apple-icon.tsx`) di atas latar kertas penuh: iOS mengisi transparansi dengan hitam dan membulatkan sudutnya sendiri.
+- Wordmark tetap teks Fraunces, bukan outline. Hurufnya "e" biasa dan aksennya digambar (`AccentE`), jadi kata aslinya diberikan terpisah untuk screen reader. Letak aksen bergantung pada ukuran optik Fraunces, sehingga judul hero memakai offset sendiri.
+- Ukuran logo mengikuti panel "Header aplikasi 1:1" di acuan: mark 28px, wordmark 34px.
 - Motif hanya satu ukuran gambar; ukuran diatur lewat lebar.
 
 ### Shell
@@ -71,6 +75,19 @@ Mockup: `reference/landing.png`. Login tidak punya mockup dan mengikuti guidelin
 - Toggle tema tetap ada di kedua halaman, walau mockup tidak menggambarkannya.
 - Ikon GitHub dan Google di Login satu warna mengikuti warna teks, supaya terbaca di kedua tema.
 - Copy lama Landing (judul dan satu paragraf) diganti copy mockup; isinya tercakup di tiga fitur.
+
+Perombakan setelah mockup (halaman terasa kosong dan diam):
+
+- Gerak dibatasi pada tiga hal: satu rangkaian saat muat (teks hero naik bergiliran, aksen é tergores, awan menyala sekali), satu momen saat terlihat (kartu pindah ke Offer di pratinjau board), dan sisanya menjawab pengunjung (awan di-hover, demo follow-up, lembar catatan). Tidak ada fade-in per bagian.
+- Semua gerak otomatis hanya berjalan tanpa `prefers-reduced-motion`. Dengan reduced motion halaman tampil diam dan utuh, dan pratinjau board tidak memindahkan kartu.
+- Awan hero menyala kunyit, bukan nila: prada pada mega mendung, senada goresan di logo. Ini pengecualian aturan kunyit yang dicatat di guideline bagian 2.
+- Eyebrow huruf besar diganti glosa kamus: "tarékah (Sunda) ikhtiar, usaha sungguh-sungguh". Isinya memang definisi kata.
+- Angka 01/02/03 di fitur dihapus: tiga fitur itu bukan urutan. Tiap fitur kini bersebelahan dengan potongan aplikasi: demo follow-up yang bisa dicoba, lembar catatan, dan kartu léngkah.
+- Kartu léngkah pindah ke fitur ketiga. Bagian "Ditolak juga dicatat" memakai `StatusTimeline` asli dengan lamaran contoh yang berakhir ditolak.
+- Bagian "Sebelum kamu mulai" menjawab keraguan pengunjung baru. Isinya harus tetap benar: gratis, masuk lewat OAuth, data per pengguna, ekspor CSV, repo publik.
+- Header lengket dengan latar kertas solid; garis bawahnya muncul lewat scroll timeline CSS, dan browser tanpa fitur itu tidak mendapat garis.
+- Footer menaut ke pembuat dan ke repo.
+- Pratinjau tautan (`opengraph-image.tsx`) dirender dari kode dengan dua berkas Fraunces statis di `src/assets/fonts/`, karena `ImageResponse` tidak membaca font variabel dari `next/font`.
 
 ### Form lamaran dan detail lamaran
 

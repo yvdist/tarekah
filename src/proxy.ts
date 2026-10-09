@@ -1,10 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-
-// Auth.js uses the __Secure- prefix when served over HTTPS.
-const SESSION_COOKIES = [
-  "authjs.session-token",
-  "__Secure-authjs.session-token",
-];
+import { SESSION_COOKIES } from "@/lib/session-cookie";
 
 // Optimistic check only: a cookie being present does not prove the session is
 // valid. Real authorization happens in requireUser().

@@ -227,3 +227,130 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* The landing's clouds. Each line drifts by its own amount, so the cloud
+   breathes instead of sliding as one picture. */
+@keyframes cloud-drift {
+  to {
+    translate: var(--drift, 4px -2px);
+  }
+}
+
+/* Kunyit passing over a line once and leaving again: prada on batik. */
+@keyframes cloud-prada {
+  30%,
+  60% {
+    stroke: var(--kunyit);
+  }
+}
+
+/* Wraps a MegaMendung that drifts and turns kunyit under the pointer, from
+   the inner line outwards. With `data-hello` it also lights up once on load,
+   which is the only hint that it reacts. */
+@utility cloud-alive {
+  & > svg {
+    overflow: visible;
+    transition: filter 700ms ease;
+  }
+  & > svg > * {
+    transition: stroke 500ms ease;
+  }
+  & > svg > :nth-child(1) {
+    --drift: 5px -3px;
+    --drift-time: 13s;
+    --light-delay: 240ms;
+  }
+  & > svg > :nth-child(2) {
+    --drift: -4px -2px;
+    --drift-time: 17s;
+    --light-delay: 120ms;
+  }
+  & > svg > :nth-child(3) {
+    --drift: 3px 2px;
+    --drift-time: 11s;
+    --light-delay: 0ms;
+  }
+  & > svg > :nth-child(4) {
+    --drift: 3px 2px;
+    --drift-time: 11s;
+    --light-delay: 0ms;
+  }
+  & > svg > * {
+    transition-delay: var(--light-delay);
+  }
+  @media (hover: hover) {
+    &:hover > svg {
+      filter: drop-shadow(
+        0 0 0.5rem color-mix(in oklch, var(--kunyit) 55%, transparent)
+      );
+    }
+    &:hover > svg > * {
+      stroke: var(--kunyit);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    & > svg > * {
+      animation: cloud-drift var(--drift-time) ease-in-out infinite alternate;
+    }
+    &[data-hello] > svg > * {
+      animation:
+        cloud-drift var(--drift-time) ease-in-out infinite alternate,
+        cloud-prada 2400ms ease-in-out calc(1400ms + var(--light-delay)) 1;
+    }
+  }
+}
+
+/* The hero's lines arriving one after another; `--i` is the place in line. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 0.75rem;
+  }
+}
+
+@utility rise-in {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: rise-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 90ms);
+  }
+}
+
+/* The rising stroke being drawn, left to right. */
+@keyframes stroke-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@utility stroke-draw {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: stroke-draw 450ms ease-out both;
+    animation-delay: var(--stroke-delay, 0ms);
+  }
+}
+
+/* A hairline under the landing's sticky header once the page has scrolled.
+   Without scroll timelines the header simply has no rule. */
+@keyframes header-rule {
+  to {
+    border-bottom-color: var(--border);
+  }
+}
+
+@utility header-rule {
+  border-bottom: 1px solid transparent;
+  @supports (animation-timeline: scroll()) {
+    animation: header-rule linear both;
+    animation-timeline: scroll();
+    animation-range: 0 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

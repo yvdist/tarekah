@@ -37,7 +37,14 @@ for (const colorScheme of ["light", "dark"] as const) {
       browser,
     }) => {
       for (const viewport of PUBLIC_VIEWPORTS) {
-        const context = await browser.newContext({ colorScheme, viewport });
+        // Reduced motion, so axe reads the landing page at rest and not text
+        // that is still fading in.
+        const context = await browser.newContext({
+          colorScheme,
+          viewport,
+          reducedMotion: "reduce",
+          storageState: { cookies: [], origins: [] },
+        });
         const page = await context.newPage();
 
         for (const { path, heading } of PUBLIC_PAGES) {
