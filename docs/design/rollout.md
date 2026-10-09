@@ -146,11 +146,20 @@ Catatan:
 - Ikon GitHub dan Google di Login satu warna mengikuti warna teks, supaya terbaca di kedua tema.
 - Copy lama Landing (judul dan satu paragraf) diganti copy mockup; isinya tercakup di tiga fitur.
 
+## Fase 9: form dan halaman detail
+
+Tanpa mockup; mengikuti pola halaman yang sudah jadi.
+
+- [x] Lamaran baru dan edit lamaran: `PageHeader`, form di dalam kartu, baris aksi di bawah garis
+
+Catatan:
+
+- Form tetap satu kolom selebar `max-w-2xl`; isinya tidak dipecah jadi beberapa seksi, karena urutan dan label field dipakai e2e.
+
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Lamaran baru dan edit lamaran
 - [ ] Detail lamaran
 - [ ] Perusahaan
 - [ ] Detail perusahaan

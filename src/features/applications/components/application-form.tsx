@@ -137,7 +137,11 @@ export function ApplicationForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit(submit)} noValidate>
+    <form
+      onSubmit={form.handleSubmit(submit)}
+      noValidate
+      className="rounded-lg border bg-card p-5 sm:p-6"
+    >
       <FieldGroup>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field data-invalid={!!errors.companyName}>
@@ -451,7 +455,7 @@ export function ApplicationForm({
           <FieldError id={`${id}-notes-error`} errors={[errors.notes]} />
         </Field>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 border-t pt-5">
           <Link
             href={cancelHref}
             className={buttonVariants({ variant: "outline" })}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
 import { FormSkeleton } from "@/components/skeletons";
 import { ApplicationForm } from "@/features/applications/components/application-form";
 import {
@@ -15,7 +16,7 @@ export default function EditApplicationPage({
 }: PageProps<"/applications/[id]/edit">) {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Edit lamaran</h1>
+      <PageHeader title="Edit lamaran" />
       <Suspense fallback={<FormSkeleton />}>
         <EditApplicationForm params={params} />
       </Suspense>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
 import { FormSkeleton } from "@/components/skeletons";
 import { ApplicationForm } from "@/features/applications/components/application-form";
 import { getCompanyNames } from "@/features/applications/queries";
@@ -10,7 +11,10 @@ export const metadata: Metadata = { title: "Tambah lamaran" };
 export default function NewApplicationPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Tambah lamaran</h1>
+      <PageHeader
+        title="Tambah lamaran"
+        description="Yang wajib hanya perusahaan dan posisi. Sisanya bisa menyusul."
+      />
       <Suspense fallback={<FormSkeleton />}>
         <NewApplicationForm />
       </Suspense>
