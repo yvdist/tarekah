@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { LogOut } from "lucide-react";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
+import { Panel } from "@/components/panel";
 import { FormSkeleton, TextSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/features/auth/actions";
@@ -12,26 +14,33 @@ export const metadata: Metadata = { title: "Pengaturan" };
 
 export default function SettingsPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Pengaturan</h1>
-      <section className="flex flex-col gap-3">
-        <h2 className="font-medium">Profil</h2>
-        <Suspense fallback={<TextSkeleton />}>
-          <Profile />
-        </Suspense>
-      </section>
-      <section className="flex flex-col gap-3">
-        <h2 className="font-medium">Follow-up</h2>
-        <Suspense fallback={<FormSkeleton fields={2} />}>
-          <FollowUpSettings />
-        </Suspense>
-      </section>
-      <form action={signOutAction}>
-        <Button type="submit" variant="outline">
-          <LogOut />
-          Keluar
-        </Button>
-      </form>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <PageHeader
+        title="Pengaturan"
+        description="Akunmu dan kapan sebuah lamaran dianggap perlu disusul."
+      />
+      <div className="flex flex-col gap-4">
+        <Panel
+          title="Profil"
+          action={
+            <form action={signOutAction}>
+              <Button type="submit" variant="outline" size="sm">
+                <LogOut />
+                Keluar
+              </Button>
+            </form>
+          }
+        >
+          <Suspense fallback={<TextSkeleton />}>
+            <Profile />
+          </Suspense>
+        </Panel>
+        <Panel title="Follow-up">
+          <Suspense fallback={<FormSkeleton fields={2} />}>
+            <FollowUpSettings />
+          </Suspense>
+        </Panel>
+      </div>
     </div>
   );
 }
@@ -40,11 +49,15 @@ async function Profile() {
   const user = await requireUser();
 
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-      <dt className="text-muted-foreground">Nama</dt>
-      <dd>{user.name ?? "-"}</dd>
-      <dt className="text-muted-foreground">Email</dt>
-      <dd>{user.email ?? "-"}</dd>
+    <dl className="grid gap-x-6 gap-y-5 text-sm sm:grid-cols-2">
+      <div className="flex flex-col gap-1">
+        <dt className="text-xs text-muted-foreground">Nama</dt>
+        <dd className="break-words">{user.name ?? "—"}</dd>
+      </div>
+      <div className="flex flex-col gap-1">
+        <dt className="text-xs text-muted-foreground">Email</dt>
+        <dd className="break-all">{user.email ?? "—"}</dd>
+      </div>
     </dl>
   );
 }

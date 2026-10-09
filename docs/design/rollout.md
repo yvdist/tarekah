@@ -170,6 +170,7 @@ Tanpa mockup; mengikuti pola halaman yang sudah jadi.
 - [x] Kontak: `PageHeader` dengan "Tambah kontak", daftar di dalam kartu, empty state dengan mega mendung
 - [x] Dokumen: `PageHeader` dengan "Tambah versi", CV dan cover letter sebagai dua kartu, empty state dengan mega mendung
 - [x] Pertanyaan: `PageHeader`, pencarian dan filter tahap, daftar di dalam kartu dengan jumlah di kakinya, empty state dengan mega mendung
+- [x] Pengaturan: `PageHeader`, profil dan follow-up sebagai kartu, "Keluar" di kartu profil
 - [x] Empty state semua halaman daftar memakai `EmptyState` (Lamaran, Perusahaan, Kontak, Dokumen, Pertanyaan)
 
 Catatan:
@@ -182,13 +183,13 @@ Catatan:
 - Pertanyaan: filter tahap tetap `<select>` bawaan browser di dalam form GET, supaya pencarian jalan tanpa JavaScript; hanya tinggi, radius dan latarnya yang disamakan dengan `Input`. Tombol "Cari" bergaya outline karena bukan aksi utama; halaman ini tidak punya tombol nila.
 - Empty state Pertanyaan berjudul "Kumpulkan pertanyaan interview-mu" (sebelumnya "Belum ada pertanyaan") dan mengarah ke daftar lamaran, tempat catatan interview ditulis.
 - Hasil pencarian yang kosong ("Tidak ada pertanyaan yang cocok") tetap kotak putus-putus tanpa awan, sama dengan Dashboard: itu bukan halaman kosong. Jumlahnya tidak ditampilkan di keadaan itu.
+- Pengaturan selebar `max-w-2xl` seperti halaman form. "Keluar" pindah dari bawah halaman ke slot aksi kartu Profil, karena ia tindakan atas akun itu; tombol yang sama tetap ada di sidebar.
 - Empty state Dokumen berjudul "Simpan versi CV pertamamu" (sebelumnya "Belum ada versi dokumen"). Kartu jenis yang kosong tetap memakai kalimat pendek "Belum ada versi.", bukan awan kedua.
 
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Pengaturan
 - [ ] Loading, error, not-found, `global-error.tsx`
 - [ ] Dialog form dan konfirmasi hapus
 
