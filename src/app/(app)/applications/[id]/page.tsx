@@ -4,8 +4,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { DeleteApplicationButton } from "@/features/applications/components/delete-application-dialog";
+import { FollowUpActions } from "@/features/applications/components/follow-up-actions";
+import { FollowUpBadge } from "@/features/applications/components/follow-up-badge";
 import { StatusSelect } from "@/features/applications/components/status-select";
 import { StatusTimeline } from "@/features/applications/components/status-timeline";
+import { isFollowUpStatus } from "@/features/applications/follow-up";
 import {
   formatDate,
   formatDateTime,
@@ -118,6 +121,22 @@ async function ApplicationDetails({
                 ) : (
                   "—"
                 )}
+              </Item>
+              <Item label="Follow-up terakhir">
+                <div className="flex flex-col items-start gap-2">
+                  <span>
+                    {application.lastFollowedUpAt
+                      ? formatDateTime(application.lastFollowedUpAt)
+                      : "—"}
+                  </span>
+                  <FollowUpBadge followUp={application.followUp} />
+                  {isFollowUpStatus(application.status) ? (
+                    <FollowUpActions
+                      applicationId={application.id}
+                      suggestGhosted={application.followUp.suggestGhosted}
+                    />
+                  ) : null}
+                </div>
               </Item>
               <Item label="Terakhir diperbarui">
                 {formatDateTime(application.updatedAt)}

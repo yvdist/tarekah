@@ -28,6 +28,7 @@ import {
   type ApplicationStatus,
 } from "@/db/schema/enum-values";
 import { changeApplicationStatus } from "../actions";
+import { FRESH_FOLLOW_UP_STATE } from "../follow-up";
 import { BoardCardBody, type BoardItem } from "./board-card";
 import { BoardColumn } from "./board-column";
 
@@ -62,7 +63,7 @@ function applyMove(items: BoardItem[], move: Move) {
 
   // Columns list the most recent status change first.
   return [
-    { ...moved, status: move.status, daysInStatus: 0 },
+    { ...moved, status: move.status, followUp: FRESH_FOLLOW_UP_STATE },
     ...items.filter((item) => item.id !== move.id),
   ];
 }

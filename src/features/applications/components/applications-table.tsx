@@ -50,6 +50,7 @@ import {
 } from "../labels";
 import type { ApplicationListItem } from "../queries";
 import { DeleteApplicationDialog } from "./delete-application-dialog";
+import { FollowUpBadge } from "./follow-up-badge";
 import { OptionSelect } from "./option-select";
 import { StatusBadge } from "./status-badge";
 
@@ -91,7 +92,12 @@ const columns = helper.columns([
     sortFn: (a, b) =>
       STATUS_ORDER[a.original.status] - STATUS_ORDER[b.original.status],
     filterFn: "equalsString",
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    cell: ({ row }) => (
+      <div className="flex flex-wrap items-center gap-1">
+        <StatusBadge status={row.original.status} />
+        <FollowUpBadge followUp={row.original.followUp} />
+      </div>
+    ),
   }),
   helper.accessor("source", {
     header: "Sumber",

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -9,6 +9,7 @@ import { applications, applicationStatusEvents, companies } from "@/db/schema";
 import type { ApplicationStatus } from "@/db/schema/enum-values";
 import type { ActionResult } from "@/lib/action-result";
 import { requireUser } from "@/lib/auth";
+import { FOLLOW_UP_STATUSES } from "./follow-up";
 import {
   applicationFormSchema,
   applicationIdSchema,
@@ -162,6 +163,37 @@ export async function changeApplicationStatus(
   });
 
   if (!found) {
+    return { ok: false, message: NOT_FOUND_MESSAGE };
+  }
+
+  updateTag(`applications:${user.id}`);
+
+  return { ok: true, data: undefined };
+}
+
+// Restarts the follow-up count. Only applications that are waiting on the
+// company can be followed up; anything else is treated as not found.
+export async function markFollowedUp(id: unknown): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsedId = applicationIdSchema.safeParse(id);
+
+  if (!parsedId.success) {
+    return { ok: false, message: NOT_FOUND_MESSAGE };
+  }
+
+  const updated = await db
+    .update(applications)
+    .set({ lastFollowedUpAt: new Date() })
+    .where(
+      and(
+        eq(applications.id, parsedId.data),
+        eq(applications.userId, user.id),
+        inArray(applications.status, FOLLOW_UP_STATUSES),
+      ),
+    )
+    .returning({ id: applications.id });
+
+  if (updated.length === 0) {
     return { ok: false, message: NOT_FOUND_MESSAGE };
   }
 

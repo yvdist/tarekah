@@ -4,8 +4,10 @@ import { useDraggable } from "@dnd-kit/core";
 import Link from "next/link";
 import type { ApplicationStatus, JobSource } from "@/db/schema/enum-values";
 import { cn } from "@/lib/utils";
+import type { FollowUpState } from "../follow-up";
 import { formatDaysInStatus } from "../format";
 import { SOURCE_LABELS } from "../labels";
+import { FollowUpBadge } from "./follow-up-badge";
 
 export type BoardItem = {
   id: string;
@@ -13,7 +15,7 @@ export type BoardItem = {
   position: string;
   source: JobSource;
   status: ApplicationStatus;
-  daysInStatus: number;
+  followUp: FollowUpState;
 };
 
 export function BoardCard({ item }: { item: BoardItem }) {
@@ -60,8 +62,9 @@ export function BoardCardBody({
       </div>
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>{SOURCE_LABELS[item.source]}</span>
-        <span>{formatDaysInStatus(item.daysInStatus)}</span>
+        <span>{formatDaysInStatus(item.followUp.daysInStatus)}</span>
       </div>
+      <FollowUpBadge followUp={item.followUp} />
     </div>
   );
 }
