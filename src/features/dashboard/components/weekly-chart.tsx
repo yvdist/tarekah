@@ -19,7 +19,7 @@ export function WeeklyChart({
   data: ReadonlyArray<{ label: string; count: number }>;
 }) {
   return (
-    <ChartContainer config={chartConfig} className="aspect-auto h-56 w-full">
+    <ChartContainer config={chartConfig} className="aspect-auto h-80 w-full">
       <BarChart accessibilityLayer data={[...data]} margin={{ top: 8 }}>
         <CartesianGrid vertical={false} />
         <XAxis

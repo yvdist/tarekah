@@ -1,74 +1,51 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { NavLink } from "@/components/nav-link";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Logo } from "@/components/brand/logo";
+import { MobileNav } from "@/components/mobile-nav";
 import { PageSkeleton } from "@/components/skeletons";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { UserMenu } from "@/features/auth/components/user-menu";
 import { requireUser } from "@/lib/auth";
-
-const NAV_ITEMS = [
-  { href: "/board", label: "Board" },
-  { href: "/applications", label: "Lamaran" },
-  { href: "/companies", label: "Perusahaan" },
-  { href: "/documents", label: "Dokumen" },
-  { href: "/contacts", label: "Kontak" },
-  { href: "/questions", label: "Pertanyaan" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/settings", label: "Pengaturan" },
-];
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="flex min-h-full flex-1 flex-col md:flex-row">
       <a
         href="#konten"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:ring-2 focus:ring-ring"
       >
         Lewati ke konten
       </a>
-      <header className="border-b">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4 sm:gap-6">
-          <Link href="/dashboard" className="font-semibold tracking-tight">
-            Tarékah
-          </Link>
-          <nav
-            aria-label="Navigasi utama"
-            className="flex min-w-0 flex-1 items-center gap-4 overflow-x-auto py-1 text-sm"
-          >
-            {NAV_ITEMS.map((item) => (
-              // Until the pathname is known the link renders without its
-              // current state.
-              <Suspense
-                key={item.href}
-                fallback={
-                  <Link
-                    href={item.href}
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
-                  >
-                    {item.label}
-                  </Link>
-                }
-              >
-                <NavLink href={item.href}>{item.label}</NavLink>
-              </Suspense>
-            ))}
-          </nav>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <Suspense fallback={null}>
-              <UserMenu />
-            </Suspense>
-          </div>
-        </div>
+      {/* Small screens: a top bar, with the sidebar in a sheet. */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b bg-sidebar px-4 md:hidden">
+        <Link
+          href="/dashboard"
+          className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Logo />
+        </Link>
+        <MobileNav>
+          <AppSidebar />
+        </MobileNav>
       </header>
+      {/* The colour runs the full height of the page; the content stays in
+          view while the page scrolls. */}
+      <aside className="hidden w-58 shrink-0 bg-sidebar md:block">
+        <div className="sticky top-0 h-dvh overflow-y-auto">
+          <AppSidebar />
+        </div>
+      </aside>
       <main
         id="konten"
         tabIndex={-1}
-        className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 outline-none"
+        className="min-w-0 flex-1 px-4 py-6 outline-none md:p-8"
       >
-        <Suspense fallback={<PageSkeleton />}>
-          <Authenticated>{children}</Authenticated>
-        </Suspense>
+        {/* A page that needs the full width (the board) marks its root with
+            data-full-width. */}
+        <div className="mx-auto w-full max-w-6xl has-[[data-full-width]]:max-w-none">
+          <Suspense fallback={<PageSkeleton />}>
+            <Authenticated>{children}</Authenticated>
+          </Suspense>
+        </div>
       </main>
     </div>
   );

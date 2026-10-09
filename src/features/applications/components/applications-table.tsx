@@ -17,12 +17,13 @@ import {
   ArrowUp,
   ArrowUpDown,
   MoreHorizontal,
-  Plus,
   Search,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EmptyState } from "@/components/empty-state";
+import { OptionSelect } from "@/components/option-select";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,7 +40,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { OptionSelect } from "@/components/option-select";
+import type { ApplicationStatus } from "@/db/schema/enum-values";
+import { cn } from "@/lib/utils";
+import { followUpLabel, type FollowUpState } from "../follow-up";
 import { formatDate } from "../format";
 import {
   SOURCE_LABELS,
@@ -51,7 +54,6 @@ import {
 } from "../labels";
 import type { ApplicationListItem } from "../queries";
 import { DeleteApplicationDialog } from "./delete-application-dialog";
-import { FollowUpBadge } from "./follow-up-badge";
 import { StatusBadge } from "./status-badge";
 
 const features = tableFeatures({
@@ -73,18 +75,34 @@ const columns = helper.columns([
     header: ({ column }) => <SortButton column={column} label="Perusahaan" />,
     sortFn: (a, b) =>
       a.original.companyName.localeCompare(b.original.companyName, "id"),
+    // Narrow tables drop the position and follow-up columns, so the company
+    // cell carries both.
     cell: ({ row }) => (
-      <Link
-        href={`/applications/${row.original.id}`}
-        className="font-medium underline-offset-4 hover:underline"
-      >
-        {row.original.companyName}
-      </Link>
+      <div className="flex flex-col items-start gap-1">
+        <Link
+          href={`/applications/${row.original.id}`}
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          {row.original.companyName}
+        </Link>
+        <span className="text-[0.8125rem] text-muted-foreground @xl:hidden">
+          {row.original.position}
+        </span>
+        <FollowUpMark
+          followUp={row.original.followUp}
+          className="@4xl:hidden"
+        />
+      </div>
     ),
   }),
   helper.accessor("position", {
     header: "Posisi",
     enableSorting: false,
+    cell: ({ row }) => (
+      <span className="block max-w-64 truncate" title={row.original.position}>
+        {row.original.position}
+      </span>
+    ),
   }),
   helper.accessor("status", {
     header: ({ column }) => <SortButton column={column} label="Status" />,
@@ -92,12 +110,7 @@ const columns = helper.columns([
     sortFn: (a, b) =>
       STATUS_ORDER[a.original.status] - STATUS_ORDER[b.original.status],
     filterFn: "equalsString",
-    cell: ({ row }) => (
-      <div className="flex flex-wrap items-center gap-1">
-        <StatusBadge status={row.original.status} />
-        <FollowUpBadge followUp={row.original.followUp} />
-      </div>
-    ),
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
   }),
   helper.accessor("source", {
     header: "Sumber",
@@ -119,13 +132,44 @@ const columns = helper.columns([
     // ISO dates compare as strings; applications without a date sort first.
     sortFn: (a, b) =>
       (a.original.appliedAt ?? "").localeCompare(b.original.appliedAt ?? ""),
-    cell: ({ row }) => formatDate(row.original.appliedAt),
+    cell: ({ row }) => (
+      <span className="font-figure text-[0.8125rem]">
+        {formatDate(row.original.appliedAt)}
+      </span>
+    ),
+  }),
+  helper.display({
+    id: "followUp",
+    header: "Follow-up",
+    cell: ({ row }) =>
+      followUpLabel(row.original.followUp) ? (
+        <FollowUpMark followUp={row.original.followUp} short />
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
   }),
   helper.display({
     id: "actions",
     header: () => <span className="sr-only">Aksi</span>,
     cell: ({ row }) => <RowActions application={row.original} />,
   }),
+]);
+
+// Columns leave as the table's own width shrinks, least important first. The
+// sidebar takes a share of the viewport, hence container queries.
+const COLUMN_CLASS: Record<string, string> = {
+  position: "hidden @xl:table-cell",
+  appliedAt: "hidden @2xl:table-cell",
+  source: "hidden @3xl:table-cell",
+  followUp: "hidden @4xl:table-cell",
+  workType: "hidden @5xl:table-cell",
+  // The menu button is taller than a line of text; it must not set the row.
+  actions: "py-0",
+};
+
+const CLOSED_STATUSES: ReadonlySet<ApplicationStatus> = new Set([
+  "rejected",
+  "ghosted",
 ]);
 
 const ALL = "all";
@@ -152,17 +196,17 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-16 text-center">
-        <h2 className="text-lg font-medium">Belum ada lamaran</h2>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Catat lamaran pertamamu untuk mulai melacak status, riwayat, dan
-          catatan di satu tempat.
-        </p>
-        <Link href="/applications/new" className={buttonVariants()}>
-          <Plus />
-          Tambah lamaran
+      <EmptyState
+        title="Catat léngkah pertamamu"
+        description="Setiap lamaran yang kamu catat muncul di sini, lengkap dengan status, riwayat, dan catatannya."
+      >
+        <Link
+          href="/applications/new"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Catat lamaran pertama
         </Link>
-      </div>
+      </EmptyState>
     );
   }
 
@@ -189,15 +233,18 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-52 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative min-w-52 flex-1 basis-full sm:basis-64">
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          />
           <Input
             type="search"
             aria-label="Cari perusahaan atau posisi"
             placeholder="Cari perusahaan atau posisi…"
             value={search}
             onChange={(event) => table.setGlobalFilter(event.target.value)}
-            className="pl-8"
+            className="h-10 pl-9"
           />
         </div>
         <OptionSelect
@@ -205,27 +252,30 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
           value={filterValue("status")}
           onValueChange={(value) => setFilter("status", value)}
           options={STATUS_FILTER_OPTIONS}
+          className="h-10! flex-1 sm:flex-none"
         />
         <OptionSelect
           aria-label="Filter sumber"
           value={filterValue("source")}
           onValueChange={(value) => setFilter("source", value)}
           options={SOURCE_FILTER_OPTIONS}
+          className="h-10! flex-1 sm:flex-none"
         />
         <OptionSelect
           aria-label="Filter tipe kerja"
           value={filterValue("workType")}
           onValueChange={(value) => setFilter("workType", value)}
           options={WORK_TYPE_FILTER_OPTIONS}
+          className="h-10! flex-1 sm:flex-none"
         />
         {isFiltered ? (
-          <Button variant="ghost" onClick={resetFilters}>
+          <Button variant="ghost" size="lg" onClick={resetFilters}>
             Reset
           </Button>
         ) : null}
       </div>
 
-      <div className="rounded-lg border">
+      <div className="@container overflow-hidden rounded-lg border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((group) => (
@@ -234,6 +284,7 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
                   <TableHead
                     key={header.id}
                     aria-sort={ariaSort(header.column.getIsSorted())}
+                    className={COLUMN_CLASS[header.column.id]}
                   >
                     {header.isPlaceholder ? null : (
                       <table.FlexRender header={header} />
@@ -246,9 +297,23 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
           <TableBody>
             {rows.length > 0 ? (
               rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  // A closed application steps back; its company stays legible.
+                  className={cn(
+                    CLOSED_STATUSES.has(row.original.status) &&
+                      "text-muted-foreground",
+                  )}
+                >
                   {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        COLUMN_CLASS[cell.column.id],
+                        cell.column.id === "companyName" &&
+                          "whitespace-normal @xl:whitespace-nowrap",
+                      )}
+                    >
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
@@ -271,11 +336,13 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
             )}
           </TableBody>
         </Table>
+        <p
+          className="border-t px-4 py-3 text-xs text-muted-foreground"
+          aria-live="polite"
+        >
+          Menampilkan {rows.length} dari {data.length} lamaran
+        </p>
       </div>
-
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        Menampilkan {rows.length} dari {data.length} lamaran
-      </p>
     </div>
   );
 }
@@ -307,12 +374,52 @@ function SortButton({
     <Button
       variant="ghost"
       size="sm"
-      className="-ml-2"
+      className={cn(
+        "-ml-2 h-7 px-2 text-xs",
+        sorted ? "text-foreground" : "text-muted-foreground",
+      )}
       onClick={column.getToggleSortingHandler()}
     >
       {label}
-      <Icon className={sorted ? undefined : "text-muted-foreground"} />
+      <Icon className="size-3.5" />
     </Button>
+  );
+}
+
+// The follow-up warning as a kunyit dot and a line of text. Under its own
+// column header the short form is enough; the full reason is the tooltip.
+function FollowUpMark({
+  followUp,
+  short = false,
+  className,
+}: {
+  followUp: FollowUpState;
+  short?: boolean;
+  className?: string;
+}) {
+  const label = followUpLabel(followUp);
+
+  if (!label) {
+    return null;
+  }
+
+  const text = !short
+    ? label
+    : followUp.suggestGhosted
+      ? `${followUp.daysInStatus} hari tanpa kabar`
+      : `${followUp.daysSinceActivity} hari menunggu`;
+
+  return (
+    <span
+      title={short ? label : undefined}
+      className={cn(
+        "inline-flex items-center gap-1.5 font-figure text-xs font-medium text-kunyit-tua",
+        className,
+      )}
+    >
+      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-kunyit" />
+      {text}
+    </span>
   );
 }
 

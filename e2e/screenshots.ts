@@ -1,6 +1,6 @@
-import { execFileSync } from "node:child_process";
-import { expect, test, type Page } from "@playwright/test";
-import { authCookies, createSession, createUser } from "./db";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { authCookies, createSession } from "./db";
+import { seedDemoUser } from "./helpers";
 import { SCREENSHOT_USER } from "./constants";
 
 // Regenerates the README screenshots from the seed data: `npm run screenshots`.
@@ -8,19 +8,11 @@ import { SCREENSHOT_USER } from "./constants";
 
 const OUTPUT = "docs/screenshots";
 
-test.beforeAll(async () => {
-  await createUser(SCREENSHOT_USER.email, SCREENSHOT_USER.name);
+// The archive pages and the settings, captured in both themes and at phone
+// width.
+const ARCHIVE_PAGES = ["contacts", "documents", "questions", "settings"];
 
-  // The seed script reads its connection string from the environment and only
-  // falls back to .env.local for variables that are not set.
-  execFileSync("npx", ["tsx", "scripts/seed.ts", SCREENSHOT_USER.email], {
-    env: {
-      ...process.env,
-      DATABASE_URL_UNPOOLED: process.env.E2E_DATABASE_URL,
-    },
-    stdio: "inherit",
-  });
-});
+test.beforeAll(seedDemoUser);
 
 async function settle(page: Page) {
   await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0);
@@ -31,6 +23,9 @@ async function settle(page: Page) {
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`capture pages in ${colorScheme}`, async ({ browser, baseURL }) => {
+    // The light run visits every page at two widths.
+    test.setTimeout(120_000);
+
     const context = await browser.newContext({
       colorScheme,
       viewport: { width: 1280, height: 800 },
@@ -55,10 +50,56 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.goto("/dashboard");
     await capture("dashboard", true);
 
+    await page.goto("/applications");
+    await capture("applications");
+
+    for (const name of ARCHIVE_PAGES) {
+      await page.goto(`/${name}`);
+      await capture(name);
+    }
+
+    // An open overlay, cut out with a little of the dimmed page around it.
+    const captureOverlay = async (name: string, overlay: Locator) => {
+      await expect(overlay).toBeVisible();
+      await settle(page);
+      const box = await overlay.boundingBox();
+      if (!box) throw new Error(`${name} has no bounding box`);
+      await page.screenshot({
+        path: `${OUTPUT}/overlay-${name}-${colorScheme}.png`,
+        clip: {
+          x: Math.max(box.x - 40, 0),
+          y: Math.max(box.y - 40, 0),
+          width: box.width + 80,
+          height: box.height + 80,
+        },
+      });
+    };
+
+    await page.goto("/contacts");
+    await page.getByRole("button", { name: "Tambah kontak" }).click();
+    await captureOverlay("dialog", page.getByRole("dialog"));
+    await page.keyboard.press("Escape");
+
+    await page
+      .getByRole("button", { name: /^Hapus / })
+      .first()
+      .click();
+    await captureOverlay("alert-dialog", page.getByRole("alertdialog"));
+    await page.getByRole("button", { name: "Batal" }).click();
+
+    await page.goto("/applications");
+    await page
+      .getByRole("button", { name: /^Aksi untuk / })
+      .first()
+      .click();
+    await captureOverlay("menu", page.getByRole("menu"));
+    await page.keyboard.press("Escape");
+
+    // Last, because the application below is opened from the board.
     await page.goto("/board");
     await capture("board");
 
-    // Dark mode is shown with two pages; the rest only in light.
+    // The pages below follow the same patterns, so they are only shown in light.
     if (colorScheme === "light") {
       await page
         .getByRole("region", { name: "Interview" })
@@ -68,13 +109,97 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.waitForURL(/\/applications\/[0-9a-f-]{36}$/);
       await capture("application");
 
-      await page.goto("/applications");
-      await capture("applications");
+      await page.goto("/companies");
+      await capture("companies");
 
-      await page.goto("/questions");
-      await capture("questions");
+      await page.getByRole("row").nth(1).getByRole("link").first().click();
+      await page.waitForURL(/\/companies\/[0-9a-f-]{36}$/);
+      await capture("company");
+
+      await page.goto("/applications/new");
+      await capture("application-new");
+
+      // Not found inside the shell; error.tsx renders the same card.
+      await page.goto("/applications/tidak-ada");
+      await capture("application-not-found");
     }
 
     await context.close();
+
+    // The public pages, as a visitor who is not signed in sees them.
+    const visitor = await browser.newContext({
+      colorScheme,
+      viewport: { width: 1280, height: 800 },
+      deviceScaleFactor: 2,
+      locale: "id-ID",
+      timezoneId: "Asia/Jakarta",
+    });
+    const publicPage = await visitor.newPage();
+
+    for (const [path, name] of [
+      ["/", "landing"],
+      ["/login", "login"],
+      ["/tidak-ada", "not-found"],
+    ]) {
+      await publicPage.goto(path);
+      await settle(publicPage);
+      await publicPage.screenshot({
+        path: `${OUTPUT}/${name}-${colorScheme}.png`,
+        fullPage: true,
+      });
+    }
+
+    await visitor.close();
+
+    // The redesigned pages at phone width, light only.
+    if (colorScheme === "light") {
+      const mobile = await browser.newContext({
+        colorScheme,
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        locale: "id-ID",
+        timezoneId: "Asia/Jakarta",
+      });
+
+      await mobile.addCookies(
+        authCookies(await createSession(SCREENSHOT_USER.email), baseURL!),
+      );
+
+      const phone = await mobile.newPage();
+
+      for (const name of [
+        "dashboard",
+        "board",
+        "applications",
+        ...ARCHIVE_PAGES,
+      ]) {
+        await phone.goto(`/${name}`);
+        await settle(phone);
+        await phone.screenshot({
+          path: `${OUTPUT}/${name}-mobile-${colorScheme}.png`,
+          fullPage: name === "dashboard",
+        });
+      }
+
+      await mobile.close();
+
+      const phoneVisitor = await browser.newContext({
+        colorScheme,
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        locale: "id-ID",
+        timezoneId: "Asia/Jakarta",
+      });
+      const publicPhone = await phoneVisitor.newPage();
+
+      await publicPhone.goto("/");
+      await settle(publicPhone);
+      await publicPhone.screenshot({
+        path: `${OUTPUT}/landing-mobile-${colorScheme}.png`,
+        fullPage: true,
+      });
+
+      await phoneVisitor.close();
+    }
   });
 }

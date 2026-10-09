@@ -9,7 +9,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-fraunces);
+  /* Fraunces is the display face: page titles, large figures, empty states.
+     A high SOFT axis is what makes it warm. */
+  --font-heading--font-variation-settings: "SOFT" 100;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -29,6 +32,25 @@
   --color-destructive: var(--destructive);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-kunyit: var(--kunyit);
+  --color-kunyit-tua: var(--kunyit-tua);
+  --color-success: var(--success);
+  --color-status-wishlist: var(--status-wishlist);
+  --color-status-wishlist-fg: var(--status-wishlist-fg);
+  --color-status-applied: var(--status-applied);
+  --color-status-applied-fg: var(--status-applied-fg);
+  --color-status-screening: var(--status-screening);
+  --color-status-screening-fg: var(--status-screening-fg);
+  --color-status-technical-test: var(--status-technical-test);
+  --color-status-technical-test-fg: var(--status-technical-test-fg);
+  --color-status-interview: var(--status-interview);
+  --color-status-interview-fg: var(--status-interview-fg);
+  --color-status-offer: var(--status-offer);
+  --color-status-offer-fg: var(--status-offer-fg);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-fg: var(--status-rejected-fg);
+  --color-status-ghosted: var(--status-ghosted);
+  --color-status-ghosted-fg: var(--status-ghosted-fg);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -41,6 +63,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --animate-cloud-bloom: cloud-bloom 900ms ease-out;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -50,81 +73,126 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Palette from docs/design/guideline.md: kertas, tinta, nila, kunyit, daun,
+   terakota. The shadcn names stay so every component picks the palette up. */
 :root {
   color-scheme: light;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --warning: oklch(0.962 0.059 95.617);
-  --warning-foreground: oklch(0.414 0.112 45.904);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --background: #faf7f0;
+  --foreground: #1c1a17;
+  --card: #ffffff;
+  --card-foreground: #1c1a17;
+  --popover: #ffffff;
+  --popover-foreground: #1c1a17;
+  --primary: #4a43b0;
+  --primary-foreground: #ffffff;
+  --secondary: #f3eee3;
+  --secondary-foreground: #1c1a17;
+  --muted: #f3eee3;
+  --muted-foreground: #6b665c;
+  --accent: #eceaf8;
+  --accent-foreground: #2e2a75;
+  /* Terakota, one step darker than the swatch so it passes AA as text. */
+  --destructive: #a8492a;
+  --warning: #fbf0d6;
+  --warning-foreground: #7a4e00;
+  /* Kunyit is the bell: follow-ups and deadlines only. The solid is for dots
+     and icons; text uses kunyit-tua, which passes AA on every surface. */
+  --kunyit: #e0a021;
+  --kunyit-tua: #7a4e00;
+  --success: #2f6a3e;
+  --border: #e7e1d5;
+  --input: #e7e1d5;
+  --ring: #4a43b0;
+  /* Each status has a solid (dot, chart mark) and a darker text colour. Badge
+     backgrounds are the solid at low opacity. */
+  --status-wishlist: #8a857b;
+  --status-wishlist-fg: #524e46;
+  --status-applied: #4f79a8;
+  --status-applied-fg: #2c4a6e;
+  --status-screening: #2f8a7e;
+  --status-screening-fg: #1a5c53;
+  --status-technical-test: #e0a021;
+  --status-technical-test-fg: #7a4e00;
+  --status-interview: #4a43b0;
+  --status-interview-fg: #2e2a75;
+  --status-offer: #3f7d4e;
+  --status-offer-fg: #275233;
+  --status-rejected: #b5532f;
+  --status-rejected-fg: #8a3d20;
+  --status-ghosted: #8a857b;
+  --status-ghosted-fg: #5e5950;
   /* Categorical series colours. The order is what keeps neighbours apart for
      colour-blind readers, so assign them in order and do not reshuffle. */
-  --chart-1: #2a78d6;
-  --chart-2: #eb6834;
-  --chart-3: #1baf7a;
-  --chart-4: #eda100;
-  --chart-5: #e87ba4;
+  --chart-1: #4a43b0;
+  --chart-2: #c2622f;
+  --chart-3: #168f7e;
+  --chart-4: #b37a0c;
+  --chart-5: #3d7fc4;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f3eee3;
+  --sidebar-foreground: #1c1a17;
+  --sidebar-primary: #4a43b0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eceaf8;
+  --sidebar-accent-foreground: #2e2a75;
+  --sidebar-border: #e7e1d5;
+  --sidebar-ring: #4a43b0;
 }
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --warning: oklch(0.414 0.112 45.904);
-  --warning-foreground: oklch(0.962 0.059 95.617);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: #3987e5;
-  --chart-2: #d95926;
-  --chart-3: #199e70;
-  --chart-4: #c98500;
-  --chart-5: #d55181;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #14131f;
+  --foreground: #edeae3;
+  --card: #1d1c2b;
+  --card-foreground: #edeae3;
+  --popover: #1d1c2b;
+  --popover-foreground: #edeae3;
+  --primary: #8f88e6;
+  --primary-foreground: #14131f;
+  --secondary: #25233a;
+  --secondary-foreground: #edeae3;
+  --muted: #25233a;
+  --muted-foreground: #a29e95;
+  --accent: #2a2750;
+  --accent-foreground: #c9c5f5;
+  --destructive: #e08a68;
+  --warning: #3a2f14;
+  --warning-foreground: #f0b848;
+  --kunyit: #f0b848;
+  --kunyit-tua: #f0b848;
+  --success: #7dbe8c;
+  --border: #2f2d44;
+  --input: #3a3852;
+  --ring: #8f88e6;
+  --status-wishlist: #a29e95;
+  --status-wishlist-fg: #cfcbc2;
+  --status-applied: #7fa6d1;
+  --status-applied-fg: #b4cde8;
+  --status-screening: #5fbdb0;
+  --status-screening-fg: #a5ddd4;
+  --status-technical-test: #f0b848;
+  --status-technical-test-fg: #f5d08a;
+  --status-interview: #8f88e6;
+  --status-interview-fg: #c9c5f5;
+  --status-offer: #7dbe8c;
+  --status-offer-fg: #b3ddbd;
+  --status-rejected: #e08a68;
+  --status-rejected-fg: #edb8a2;
+  --status-ghosted: #a29e95;
+  --status-ghosted-fg: #b5b1a8;
+  --chart-1: #7a72db;
+  --chart-2: #cc7550;
+  --chart-3: #2a9d8c;
+  --chart-4: #b8891f;
+  --chart-5: #4a88cf;
+  --sidebar: #25233a;
+  --sidebar-foreground: #edeae3;
+  --sidebar-primary: #8f88e6;
+  --sidebar-primary-foreground: #14131f;
+  --sidebar-accent: #2a2750;
+  --sidebar-accent-foreground: #c9c5f5;
+  --sidebar-border: #2f2d44;
+  --sidebar-ring: #8f88e6;
 }
 
 @layer base {
@@ -137,4 +205,25 @@
   html {
     @apply font-sans;
   }
+}
+
+/* The offer column's cloud when a card lands in it. */
+@keyframes cloud-bloom {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Dates, day counts and small statistics. */
+@utility font-figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }

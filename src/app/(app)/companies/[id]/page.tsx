@@ -2,6 +2,8 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
+import { Panel } from "@/components/panel";
 import { DetailSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/features/applications/components/status-badge";
@@ -37,38 +39,40 @@ async function CompanyDetails({
 
   return (
     <>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {company.name}
-        </h1>
-        {company.website ? (
-          <a
-            href={company.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-fit items-center gap-1 text-sm break-all text-muted-foreground underline underline-offset-4"
-          >
-            {company.website}
-            <ExternalLink className="size-3.5 shrink-0" />
-          </a>
-        ) : null}
-        {company.notes ? (
-          <p className="pt-2 text-sm whitespace-pre-wrap">{company.notes}</p>
-        ) : null}
-      </div>
+      <PageHeader
+        title={company.name}
+        description={
+          company.website ? (
+            <a
+              href={company.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 break-all underline underline-offset-4"
+            >
+              {company.website}
+              <ExternalLink className="size-3.5 shrink-0" />
+            </a>
+          ) : null
+        }
+      />
 
-      <section className="flex flex-col gap-3">
-        <h2 className="font-medium">Lamaran</h2>
+      {company.notes ? (
+        <Panel title="Catatan">
+          <p className="text-sm whitespace-pre-wrap">{company.notes}</p>
+        </Panel>
+      ) : null}
+
+      <Panel title="Lamaran">
         {company.applications.length === 0 ? (
-          <p className="rounded-lg border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Belum ada lamaran ke perusahaan ini.
           </p>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul className="-my-4 divide-y">
             {company.applications.map((application) => (
               <li
                 key={application.id}
-                className="flex flex-wrap items-center justify-between gap-3 p-4"
+                className="flex flex-wrap items-center justify-between gap-3 py-4"
               >
                 <div className="flex min-w-0 flex-col gap-1">
                   <Link
@@ -78,7 +82,10 @@ async function CompanyDetails({
                     {application.position}
                   </Link>
                   <p className="text-xs text-muted-foreground">
-                    Tanggal apply: {formatDate(application.appliedAt)}
+                    Tanggal apply:{" "}
+                    <span className="font-figure">
+                      {formatDate(application.appliedAt)}
+                    </span>
                   </p>
                 </div>
                 <StatusBadge status={application.status} />
@@ -86,18 +93,17 @@ async function CompanyDetails({
             ))}
           </ul>
         )}
-      </section>
+      </Panel>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="font-medium">Kontak</h2>
+      <Panel title="Kontak">
         {company.contacts.length === 0 ? (
-          <p className="rounded-lg border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Belum ada kontak di perusahaan ini. Tambahkan lewat halaman Kontak.
           </p>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul className="-my-4 divide-y">
             {company.contacts.map((contact) => (
-              <li key={contact.id} className="flex flex-col gap-1.5 p-4">
+              <li key={contact.id} className="flex flex-col gap-1.5 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{contact.name}</span>
                   <Badge variant="secondary">
@@ -134,7 +140,7 @@ async function CompanyDetails({
             ))}
           </ul>
         )}
-      </section>
+      </Panel>
     </>
   );
 }

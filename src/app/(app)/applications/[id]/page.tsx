@@ -2,6 +2,8 @@ import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
+import { Panel } from "@/components/panel";
 import { DetailSkeleton, TextSkeleton } from "@/components/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { DeleteApplicationButton } from "@/features/applications/components/delete-application-dialog";
@@ -56,38 +58,37 @@ async function ApplicationDetails({
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {application.position}
-          </h1>
+      <PageHeader
+        title={application.position}
+        description={
           <Link
             href={`/companies/${application.companyId}`}
-            className="w-fit text-muted-foreground underline-offset-4 hover:underline"
+            className="underline-offset-4 hover:underline"
           >
             {application.companyName}
           </Link>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/applications/${application.id}/edit`}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <Pencil />
-            Edit
-          </Link>
-          <DeleteApplicationButton
-            applicationId={application.id}
-            label={`${application.position} di ${application.companyName}`}
-          />
-        </div>
-      </div>
+        }
+        actions={
+          <>
+            <Link
+              href={`/applications/${application.id}/edit`}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Pencil />
+              Edit
+            </Link>
+            <DeleteApplicationButton
+              applicationId={application.id}
+              label={`${application.position} di ${application.companyName}`}
+            />
+          </>
+        }
+      />
 
-      <div className="grid gap-8 md:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-8">
-          <section className="flex flex-col gap-3">
-            <h2 className="font-medium">Informasi</h2>
-            <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-[2fr_1fr]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Panel title="Informasi">
+            <dl className="grid gap-x-6 gap-y-5 text-sm sm:grid-cols-2">
               <Item label="Status">
                 <StatusSelect
                   applicationId={application.id}
@@ -95,7 +96,9 @@ async function ApplicationDetails({
                 />
               </Item>
               <Item label="Tanggal apply">
-                {formatDate(application.appliedAt)}
+                <span className="font-figure">
+                  {formatDate(application.appliedAt)}
+                </span>
               </Item>
               <Item label="Sumber">
                 {SOURCE_LABELS[application.source]}
@@ -157,10 +160,9 @@ async function ApplicationDetails({
                 {formatDateTime(application.updatedAt)}
               </Item>
             </dl>
-          </section>
+          </Panel>
 
-          <section className="flex flex-col gap-3">
-            <h2 className="font-medium">Catatan</h2>
+          <Panel title="Catatan">
             {application.notes ? (
               <p className="text-sm whitespace-pre-wrap">{application.notes}</p>
             ) : (
@@ -168,28 +170,28 @@ async function ApplicationDetails({
                 Belum ada catatan. Tambahkan lewat tombol Edit.
               </p>
             )}
-          </section>
+          </Panel>
 
-          <section className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-medium">Interview</h2>
-              <AddInterviewButton applicationId={application.id} />
-            </div>
+          <Panel
+            title="Interview"
+            action={<AddInterviewButton applicationId={application.id} />}
+          >
             <Suspense fallback={<TextSkeleton />}>
               <Interviews applicationId={application.id} />
             </Suspense>
-          </section>
+          </Panel>
 
-          <section className="flex flex-col gap-3">
-            <h2 className="font-medium">Kontak</h2>
+          <Panel title="Kontak">
             <Suspense fallback={<TextSkeleton />}>
               <Contacts applicationId={application.id} />
             </Suspense>
-          </section>
+          </Panel>
         </div>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="font-medium">Riwayat status</h2>
+        {/* Not a Panel: board.spec.ts reaches the list through the heading's
+            parent, so the heading stays a direct child of the section. */}
+        <section className="flex flex-col gap-5 rounded-lg border bg-card p-5 sm:p-6">
+          <h2 className="text-[0.9375rem] font-medium">Riwayat status</h2>
           <StatusTimeline events={application.statusEvents} />
         </section>
       </div>
@@ -246,7 +248,7 @@ function Item({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-muted-foreground">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd>{children}</dd>
     </div>
   );

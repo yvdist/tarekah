@@ -119,7 +119,7 @@ export function FollowUpSettingsForm({
           </Field>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end border-t pt-5">
           <Button type="submit" disabled={pending}>
             {pending ? "Menyimpan…" : "Simpan"}
           </Button>

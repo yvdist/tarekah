@@ -11,12 +11,18 @@ import {
   type ContactFormOptions,
 } from "./contact-form-dialog";
 
-export function AddContactButton({ options }: { options: ContactFormOptions }) {
+export function AddContactButton({
+  options,
+  variant,
+  size,
+}: {
+  options: ContactFormOptions;
+} & Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button variant={variant} size={size} onClick={() => setOpen(true)}>
         <Plus />
         Tambah kontak
       </Button>

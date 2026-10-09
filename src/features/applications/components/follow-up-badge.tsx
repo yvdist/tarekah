@@ -1,25 +1,18 @@
 import { Badge } from "@/components/ui/badge";
-import type { FollowUpState } from "../follow-up";
-import { STATUS_LABELS } from "../labels";
+import { followUpLabel, type FollowUpState } from "../follow-up";
 
-// Renders nothing for an application that needs no attention. The ghosted
-// suggestion wins when both apply.
+// Renders nothing for an application that needs no attention.
 export function FollowUpBadge({ followUp }: { followUp: FollowUpState }) {
-  if (followUp.suggestGhosted) {
-    return (
-      <Badge variant="warning">
-        Saran: {STATUS_LABELS.ghosted} · {followUp.daysInStatus} hari
-      </Badge>
-    );
+  const label = followUpLabel(followUp);
+
+  if (!label) {
+    return null;
   }
 
-  if (followUp.needsFollowUp) {
-    return (
-      <Badge variant="warning">
-        Perlu follow-up · {followUp.daysSinceActivity} hari
-      </Badge>
-    );
-  }
-
-  return null;
+  return (
+    <Badge variant="warning">
+      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-kunyit" />
+      {label}
+    </Badge>
+  );
 }

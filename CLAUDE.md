@@ -30,7 +30,7 @@ Before calling work done: `npm run lint && npm run typecheck && npm run format:c
 - SQL that needs checking is tested against PGlite: `createTestDb()` in `src/test/db.ts` gives an in-memory Postgres with the real migrations applied, plus fixtures. Give each test its own user rather than resetting the database.
 - E2E specs are in `e2e/` and run against the production build on port 3100. They create and delete users, so they refuse to start without `E2E_DATABASE_URL` (in `.env.e2e` locally): a throwaway database, never the one in `.env.local`. The setup applies the migrations.
 - Sign-in is OAuth only, so `e2e/db.ts` writes the user and a `sessions` row and `authCookies()` builds the cookies a real sign-in leaves, including Auth.js's CSRF cookie. One spec: `npx playwright test board`.
-- `e2e/a11y.spec.ts` runs axe on the main pages in both themes; add a new page to its `PAGES` list.
+- `e2e/a11y.spec.ts` runs axe on the main pages in both themes; add a new page to its `PAGES` list, or to `PUBLIC_PAGES` when visitors can open it without signing in (those are also checked at phone width). The shared test user has almost no data, so `e2e/a11y-seeded.spec.ts` repeats the check for a user filled by the seed script (every status badge, follow-up warnings, full charts), at desktop and phone width. A new colour is only checked for contrast if a seeded page renders it.
 - CI (`.github/workflows/ci.yml`) runs lint, typecheck, format, unit tests and build on every pull request and on every push to `production`. The E2E job only runs when the workflow is started by hand (Actions → CI → Run workflow), so nothing checks E2E automatically: run `npm run test:e2e` locally before a release and after changing a page, a form or auth.
 
 ### Running locally
@@ -53,6 +53,7 @@ npm run db:seed -- <email> [--reset]   # demo data for one existing user
 
 - Workflow: edit `src/db/schema/*` → `db:generate` → review the generated SQL → `db:migrate` → commit schema and `drizzle/` together.
 - Never use `drizzle-kit push`, and never edit a migration that has already been applied; add a new one.
+- On Vercel, `vercel.json` sets the build command to `npm run db:migrate && npm run build`, so every deploy applies pending migrations to its own environment's database before building. A migration must work with the code that is still serving: add a column first, drop it in a later deploy.
 - `scripts/seed.ts` fills an account that already signed in once. It refuses to run when that user has data unless `--reset` is passed, which deletes that user's companies, documents, applications and contacts first. It writes straight to the database, so cached pages do not see it: restart the server afterwards.
 - `drizzle.config.ts` loads `.env.local` itself (drizzle-kit runs outside Next.js) and uses the direct, unpooled connection string. The app at runtime uses the pooled `DATABASE_URL`.
 
@@ -81,7 +82,7 @@ drizzle/                      generated SQL migrations (committed)
 drizzle.config.ts
 scripts/seed.ts               demo data; talks to the database directly
 e2e/                          Playwright specs and their database setup
-docs/                         deploy guide and README screenshots
+docs/                         deploy guide, README screenshots, design/ (guideline, mockups, decision notes)
 src/
   app/
     (marketing)/              public landing page
@@ -131,7 +132,7 @@ These three are not negotiable.
 - Reading the clock outside a cached function still needs `await connection()` first when the value feeds a render (see `resolveCurrentRange` in `src/features/dashboard/range.ts`); otherwise Next.js rejects `Date.now()` while prerendering.
 - `src/proxy.ts` only does an optimistic cookie check for redirects. Authorization happens in `queries.ts` / `actions.ts`.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
-- When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to `NAV_ITEMS` in `src/app/(app)/layout.tsx`.
+- When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to one of the item lists in `src/components/app-sidebar.tsx`.
 - `session.user.id` exists only because of the `session` callback in `src/auth.ts`; Auth.js drops it by default.
 
 ## Code conventions
@@ -157,9 +158,14 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 ## Styling
 
 - Tailwind v4 is CSS-first: there is no `tailwind.config.*` and no PostCSS config. Tailwind runs through the `@tailwindcss/turbopack` loader registered under `turbopack.rules` in `next.config.ts`.
-- All theme configuration lives in `src/app/globals.css`: the `@theme inline` block maps Tailwind tokens (`bg-primary`, `rounded-lg`, …) to CSS variables defined in `:root` and `.dark` (oklch, neutral base). Add or change design tokens there.
+- The look follows `docs/design/guideline.md`; read it before designing a page. The palette is kertas (warm paper background), tinta (text), nila (indigo: primary, active items), kunyit (turmeric) and the status colours.
+- All theme configuration lives in `src/app/globals.css`: the `@theme inline` block maps Tailwind tokens (`bg-primary`, `rounded-lg`, …) to CSS variables defined in `:root` and `.dark`. The palette is mapped onto the shadcn names (`--background` is kertas, `--muted` is permukaan-2, `--primary` is nila, `--accent` is nila-muda), so components need no palette-specific classes. Add or change design tokens there.
+- Kunyit means "this needs you" (follow-ups, deadlines) and is never decoration. `bg-kunyit` is for dots and icons only; kunyit text is `text-kunyit-tua`, which passes AA where the solid does not. At most one solid nila button per screen.
+- Each status has `--status-<name>` (dot, marks) and `--status-<name>-fg` (text). `src/features/applications/status-styles.ts` turns them into classes; use `StatusBadge` or `STATUS_STYLES` rather than picking a colour for a status.
+- Cards are white on kertas with a hairline `border`, `rounded-lg` (10px) and no shadow at rest; controls are `rounded-md` (8px), badges pills. A shadow only appears on a card being hovered or dragged.
 - Dark mode is class-based (`@custom-variant dark (&:is(.dark *))`), so it follows a `.dark` class on an ancestor, not `prefers-color-scheme`. `next-themes` (`src/components/theme-provider.tsx`) sets that class on `<html>`, following the OS until the user picks a theme in `ThemeToggle`. Use semantic tokens (`bg-background`, `text-muted-foreground`), never fixed colours. `global-error.tsx` renders outside the root layout and styles itself.
-- Fonts: `layout.tsx` defines `--font-geist-sans` and `--font-geist-mono`; `globals.css` maps `--font-sans`, `--font-heading` and `--font-mono` to them.
+- Fonts: `layout.tsx` defines `--font-geist-sans`, `--font-geist-mono` and `--font-fraunces`; `globals.css` maps `--font-sans`, `--font-mono` and `--font-heading` to them. `font-heading` is Fraunces with SOFT 100, the display face: page titles, large figures, empty states. Everything else, card titles included, is Geist. `font-figure` (Geist Mono, tabular) is for dates, day counts and small statistics.
+- The mega mendung cloud (`src/components/brand/mega-mendung.tsx`) is a signature used sparingly: behind the sidebar logo, in empty states, on the board's offer column. Never a background on a working page.
 
 ## UI components
 
@@ -167,13 +173,21 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - Add components with `npx shadcn@latest add <name>`; they land in `src/components/ui/` and are owned source, edited in place.
 - Class merging uses the `cn` npm package (shadcn's compiled replacement for `clsx` + `tailwind-merge`). `src/lib/utils.ts` only re-exports it, so `@/lib/utils` and `cn` are interchangeable imports.
 - Icons come from `lucide-react`.
-- Shared, non-shadcn components live in `src/components/`: `OptionSelect` (single choice over labelled options), `DeleteButton` (confirm, then run a bound delete action), `Markdown` (the only place user-written markdown is rendered; raw HTML is never rendered), the `*Skeleton` components in `skeletons.tsx` (the fallback of every data `<Suspense>`; pick the one shaped like the content), `StateMessage` (not-found and error boxes) and `NavLink`.
+- Shared, non-shadcn components live in `src/components/`: `OptionSelect` (single choice over labelled options), `DeleteButton` (confirm, then run a bound delete action), `Markdown` (the only place user-written markdown is rendered; raw HTML is never rendered), the `*Skeleton` components in `skeletons.tsx` (the fallback of every data `<Suspense>`; pick the one shaped like the content, and pass `bare` to `ListSkeleton` or `FormSkeleton` inside a `Panel`), `StateMessage` (not-found and error cards), `StandaloneState` (frames one outside the app shell), `EmptyState` (nothing here yet: cloud, inviting title, one action), `PageHeader` (the Fraunces title, one line of context, actions on the right), `Panel` (a titled card: one line of context or one action on the right) and `NavLink`.
+- The app shell is `AppSidebar` (`src/components/app-sidebar.tsx`): a fixed sidebar from `md` up, and the same component inside the `MobileNav` sheet below it. Page content is capped at `max-w-6xl` by the layout; a page that needs the full width puts `data-full-width` on its root element, as the board does.
+- The logo is `Logomark`, `Wordmark` and `Logo` in `src/components/brand/logo.tsx`. `src/app/icon.svg` and `apple-icon.png` repeat the mark's shapes, so change them together.
 - Error boundaries (`error.tsx`) take `retry`, not `reset`, and render the shared `ErrorState`.
 - Accessibility: every control has a visible label or an `aria-label`; in forms the hint and error get ids and the control points at them with `describedBy()` from `src/lib/form-errors.ts`, and required fields set `aria-required`. `NavLink` calls `usePathname`, so it sits inside `<Suspense>`: on routes with a dynamic segment the pathname is unknown while prerendering.
 - Forms inside a `Dialog` put `key={useOpenKey(open)}` (`src/hooks/use-open-key.ts`) on the form component, because the dialog popup keeps its state across closes.
 - Shared Zod field helpers (`optionalText`, `requiredText`, `optionalHttpUrl`, `optionalId`) are in `src/lib/form-schemas.ts`; `invalidResult` in `src/lib/action-result.ts` turns a Zod error into an `ActionResult`; `setFieldErrors` in `src/lib/form-errors.ts` maps it back onto the form.
 - Forms are Client Components using `react-hook-form` with `zodResolver` and the schema from `schemas.ts`; the action re-parses the same raw values with the same schema. The form calls the action in a transition, maps `fieldErrors` onto fields, shows a `sonner` toast, then navigates. See `src/features/applications/components/application-form.tsx`.
+- The landing page draws its previews with the app's own components and made-up data (`src/features/marketing/components/`). `BoardCardBody` lives in its own file without `"use client"` so the landing page does not load the drag-and-drop code.
 - The kanban board (`src/features/applications/components/board.tsx`) uses `@dnd-kit/core` only, since cards have no order within a column. Moves go through `useOptimistic` inside a standalone `startTransition`, following `node_modules/next/dist/docs/01-app/02-guides/interactive-apps.md`; a failed action reverts by itself because nothing is revalidated.
-- Charts use the shadcn `chart` component over Recharts 3 and live in `src/features/dashboard/components/` as Client Components that only render: aggregation happens in SQL in `src/features/dashboard/queries.ts`, and labels are formatted on the server and passed in. Series colours are `--chart-1` to `--chart-5` in `globals.css`, assigned in that order.
+- Charts use the shadcn `chart` component over Recharts 3 and live in `src/features/dashboard/components/` as Client Components that only render: aggregation happens in SQL in `src/features/dashboard/queries.ts`, and labels are formatted on the server and passed in. Series colours are `--chart-1` to `--chart-5` in `globals.css`, assigned in that order; they were chosen with the `dataviz` validator for colour-blind separation, so re-run it before changing one. The funnel is not a chart: `StepPath` draws it as a path of status-coloured dots in plain markup.
 - Tables use TanStack Table v9 (`useTable` + `tableFeatures`), whose API differs from v8; its docs ship in `node_modules/@tanstack/react-table/skills/`.
 - Path alias: `@/*` maps to `src/*`. `components.json` also reserves `@/hooks` for hooks.
+
+## Design notes
+
+- The mockups in `docs/design/reference/` use sample data and English status names; the app keeps its own labels and data.
+- "Data yang ditunda" in `docs/design/rollout.md` is the backlog of mockup elements that wait for a new query or column.

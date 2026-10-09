@@ -9,9 +9,13 @@ import { cn } from "@/lib/utils";
 // dynamic segment the pathname is not known while prerendering.
 export function NavLink({
   href,
+  className,
+  activeClassName,
   children,
 }: {
   href: string;
+  className?: string;
+  activeClassName?: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -21,10 +25,7 @@ export function NavLink({
     <Link
       href={href}
       aria-current={current ? "page" : undefined}
-      className={cn(
-        "shrink-0 rounded-sm text-muted-foreground hover:text-foreground",
-        current && "font-medium text-foreground",
-      )}
+      className={cn(className, current && activeClassName)}
     >
       {children}
     </Link>

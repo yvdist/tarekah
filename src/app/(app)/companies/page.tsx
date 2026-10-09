@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { ListSkeleton } from "@/components/skeletons";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,7 +20,10 @@ export const metadata: Metadata = { title: "Perusahaan" };
 export default function CompaniesPage() {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Perusahaan</h1>
+      <PageHeader
+        title="Perusahaan"
+        description="Tercatat otomatis saat kamu menambah lamaran."
+      />
       <Suspense fallback={<ListSkeleton />}>
         <Companies />
       </Suspense>
@@ -30,17 +36,22 @@ async function Companies() {
 
   if (companies.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-16 text-center">
-        <h2 className="text-lg font-medium">Belum ada perusahaan</h2>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Perusahaan tercatat otomatis saat kamu menambah lamaran.
-        </p>
-      </div>
+      <EmptyState
+        title="Ke mana léngkah pertamamu?"
+        description="Perusahaan muncul di sini begitu kamu mencatat lamaran ke sana."
+      >
+        <Link
+          href="/applications/new"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Catat lamaran
+        </Link>
+      </EmptyState>
     );
   }
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-lg border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -74,7 +85,7 @@ async function Companies() {
                   <span className="text-muted-foreground">—</span>
                 )}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell className="text-right font-figure">
                 {company.applicationCount}
               </TableCell>
             </TableRow>
