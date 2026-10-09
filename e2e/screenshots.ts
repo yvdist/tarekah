@@ -133,6 +133,8 @@ for (const colorScheme of ["light", "dark"] as const) {
       deviceScaleFactor: 2,
       locale: "id-ID",
       timezoneId: "Asia/Jakarta",
+      // The landing page at rest, not partway through its entrance.
+      reducedMotion: "reduce",
     });
     const publicPage = await visitor.newPage();
 
@@ -189,6 +191,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         deviceScaleFactor: 2,
         locale: "id-ID",
         timezoneId: "Asia/Jakarta",
+        reducedMotion: "reduce",
       });
       const publicPhone = await phoneVisitor.newPage();
 
