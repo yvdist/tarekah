@@ -7,7 +7,7 @@ export function SummaryCards({
   responseTime,
 }: Pick<DashboardStats, "summary" | "responseTime">) {
   return (
-    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <Stat label="Total lamaran" value={summary.total} />
       <Stat label="Aktif" value={summary.active} hint="Menunggu kabar" />
       <Stat
@@ -34,10 +34,12 @@ export function SummaryCards({
             : `Dari Dilamar ke respons pertama, ${responseTime.sample} lamaran`
         }
       />
-    </dl>
+    </div>
   );
 }
 
+// Each card is its own description list: a <dl> may not have its terms nested
+// two elements deep, which is what wrapping all the cards in one would do.
 function Stat({
   label,
   value,
@@ -49,12 +51,14 @@ function Stat({
 }) {
   return (
     <Card size="sm">
-      <CardContent className="flex flex-col gap-1">
-        <dt className="text-sm text-muted-foreground">{label}</dt>
-        <dd className="text-2xl font-semibold tracking-tight">{value}</dd>
-        {hint ? (
-          <dd className="text-xs text-muted-foreground">{hint}</dd>
-        ) : null}
+      <CardContent>
+        <dl className="flex flex-col gap-1">
+          <dt className="text-sm text-muted-foreground">{label}</dt>
+          <dd className="text-2xl font-semibold tracking-tight">{value}</dd>
+          {hint ? (
+            <dd className="text-xs text-muted-foreground">{hint}</dd>
+          ) : null}
+        </dl>
       </CardContent>
     </Card>
   );
