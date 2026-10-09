@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { applications, applicationStatusEvents, companies } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { daysSince } from "./format";
 import { applicationIdSchema } from "./schemas";
 
 export type ApplicationListItem = Awaited<
@@ -19,6 +20,25 @@ export async function getApplications() {
   const user = await requireUser();
 
   return listApplicationsByUserId(user.id);
+}
+
+// Cards for the board, most recent status change first. The day count is
+// worked out here, at request time and outside the cached list, so it is
+// neither cached nor recomputed on the client.
+export async function getBoardItems() {
+  const applications = await getApplications();
+  const now = Date.now();
+
+  return [...applications]
+    .sort((a, b) => b.statusChangedAt.getTime() - a.statusChangedAt.getTime())
+    .map((application) => ({
+      id: application.id,
+      companyName: application.companyName,
+      position: application.position,
+      source: application.source,
+      status: application.status,
+      daysInStatus: daysSince(application.statusChangedAt, now),
+    }));
 }
 
 // A row that does not exist or belongs to someone else is a 404 either way.
@@ -59,6 +79,7 @@ async function listApplicationsByUserId(userId: string) {
       companyName: companies.name,
       position: applications.position,
       status: applications.status,
+      statusChangedAt: applications.statusChangedAt,
       source: applications.source,
       workType: applications.workType,
       location: applications.location,

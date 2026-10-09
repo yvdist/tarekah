@@ -21,6 +21,18 @@ export function formatDateTime(value: Date) {
   return `${dateTimeFormatter.format(value)} WIB`;
 }
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+// Whole days elapsed. `now` is passed in so the caller decides where the clock
+// is read (on the server, at request time).
+export function daysSince(value: Date, now: number) {
+  return Math.max(0, Math.floor((now - value.getTime()) / DAY_IN_MS));
+}
+
+export function formatDaysInStatus(days: number) {
+  return days === 0 ? "Hari ini" : `${days} hari`;
+}
+
 export function formatSalary(
   min: number | null,
   max: number | null,
