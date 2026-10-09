@@ -42,3 +42,6 @@ export const CONTACT_ROLES = [
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type JobSource = (typeof JOB_SOURCES)[number];
 export type WorkType = (typeof WORK_TYPES)[number];
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+export type InterviewStage = (typeof INTERVIEW_STAGES)[number];
+export type ContactRole = (typeof CONTACT_ROLES)[number];
