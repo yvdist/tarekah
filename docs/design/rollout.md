@@ -163,11 +163,23 @@ Catatan:
 - Dua kolom detail baru muncul dari `lg`; di bawah itu riwayat status turun ke bawah, karena di `md` sidebar sudah memakan tempat.
 - Detail perusahaan tidak masuk `a11y-seeded.spec.ts`: alamatnya butuh id, dan badge status di atas kartu putih sudah diperiksa lewat tabel Lamaran.
 
+## Fase 10: halaman arsip, state dan overlay
+
+Tanpa mockup; mengikuti pola halaman yang sudah jadi.
+
+- [x] Kontak: `PageHeader` dengan "Tambah kontak", daftar di dalam kartu, empty state dengan mega mendung
+
+Catatan:
+
+- Judul empty state diganti ajakan ("Catat siapa yang kamu temui", bukan "Belum ada kontak") mengikuti guideline bagian 9; kalimat penjelasnya tetap.
+- "Tambah kontak" di header menunggu daftar perusahaan dan lamaran untuk formnya, jadi ia punya `Suspense` sendiri. Di empty state tombol yang sama tampil bergaya outline, supaya tombol nila tetap satu.
+- Kontak tetap daftar, bukan tabel: catatan dan lamaran terkait tidak muat dalam sel.
+- Nama perusahaan di baris kontak menjadi tautan ke detail perusahaan; id-nya sudah ada di query.
+
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Kontak
 - [ ] Dokumen
 - [ ] Pertanyaan
 - [ ] Pengaturan
