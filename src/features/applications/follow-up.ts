@@ -1,6 +1,7 @@
 import type { ApplicationStatus } from "@/db/schema/enum-values";
 import type { FollowUpSettings } from "@/features/settings/constants";
 import { daysSince } from "./format";
+import { STATUS_LABELS } from "./labels";
 
 // Statuses where the next move is the company's, so silence is worth chasing.
 export const FOLLOW_UP_STATUSES = [
@@ -25,6 +26,20 @@ export const FRESH_FOLLOW_UP_STATE: FollowUpState = {
   needsFollowUp: false,
   suggestGhosted: false,
 };
+
+// Why an application needs attention, in one line, or null when it does not.
+// The ghosted suggestion wins when both apply.
+export function followUpLabel(followUp: FollowUpState) {
+  if (followUp.suggestGhosted) {
+    return `Saran: ${STATUS_LABELS.ghosted} · ${followUp.daysInStatus} hari`;
+  }
+
+  if (followUp.needsFollowUp) {
+    return `Perlu follow-up · ${followUp.daysSinceActivity} hari`;
+  }
+
+  return null;
+}
 
 export function isFollowUpStatus(status: ApplicationStatus) {
   return FOLLOW_UP_STATUSES.some((value) => value === status);
