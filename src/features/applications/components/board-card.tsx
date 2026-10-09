@@ -4,10 +4,9 @@ import { useDraggable } from "@dnd-kit/core";
 import Link from "next/link";
 import type { ApplicationStatus, JobSource } from "@/db/schema/enum-values";
 import { cn } from "@/lib/utils";
-import type { FollowUpState } from "../follow-up";
+import { followUpLabel, type FollowUpState } from "../follow-up";
 import { formatDaysInStatus } from "../format";
 import { SOURCE_LABELS } from "../labels";
-import { FollowUpBadge } from "./follow-up-badge";
 
 export type BoardItem = {
   id: string;
@@ -29,8 +28,9 @@ export function BoardCard({ item }: { item: BoardItem }) {
       ref={setNodeRef}
       href={`/applications/${item.id}`}
       draggable={false}
+      title={followUpLabel(item.followUp) ?? undefined}
       className={cn(
-        "block touch-manipulation rounded-lg outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-ring",
+        "group block touch-manipulation rounded-lg outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-ring",
         isDragging && "opacity-40",
       )}
       {...attributes}
@@ -41,6 +41,17 @@ export function BoardCard({ item }: { item: BoardItem }) {
   );
 }
 
+// A wishlist card has not been sent yet, so its count reads as time kept.
+function daysLabel(item: BoardItem) {
+  const days = item.followUp.daysInStatus;
+
+  if (item.status !== "wishlist") {
+    return formatDaysInStatus(days);
+  }
+
+  return days === 0 ? "disimpan hari ini" : `disimpan ${days} hari`;
+}
+
 // Also rendered on its own inside the drag overlay.
 export function BoardCardBody({
   item,
@@ -49,22 +60,43 @@ export function BoardCardBody({
   item: BoardItem;
   className?: string;
 }) {
+  // Past the follow-up limit the day count turns kunyit and a dot marks the
+  // corner. The reason itself is read out and shown as the link's tooltip.
+  const attention = followUpLabel(item.followUp);
+
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-lg border bg-card p-3 text-sm text-card-foreground shadow-xs",
+        "relative flex flex-col gap-2.5 rounded-lg border bg-card p-3.5 text-card-foreground transition-shadow group-hover:shadow-sm",
         className,
       )}
     >
-      <div className="flex flex-col gap-0.5">
-        <p className="font-medium break-words">{item.companyName}</p>
-        <p className="break-words text-muted-foreground">{item.position}</p>
+      {attention ? (
+        <span
+          aria-hidden
+          className="absolute top-3 right-3 size-1.5 rounded-full bg-kunyit"
+        />
+      ) : null}
+      <div className="flex flex-col gap-1">
+        <p className="pr-3 text-[0.9375rem] leading-snug font-medium break-words">
+          {item.companyName}
+        </p>
+        <p className="text-[0.8125rem] break-words text-muted-foreground">
+          {item.position}
+        </p>
       </div>
-      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+      <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
         <span>{SOURCE_LABELS[item.source]}</span>
-        <span>{formatDaysInStatus(item.followUp.daysInStatus)}</span>
+        <span
+          className={cn(
+            "font-figure",
+            attention && "font-medium text-kunyit-tua",
+          )}
+        >
+          {daysLabel(item)}
+        </span>
       </div>
-      <FollowUpBadge followUp={item.followUp} />
+      {attention ? <span className="sr-only">{attention}</span> : null}
     </div>
   );
 }

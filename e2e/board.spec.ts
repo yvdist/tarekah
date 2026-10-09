@@ -97,3 +97,35 @@ test("moves a card with the keyboard", async ({ page }) => {
     page.getByRole("region", { name: "Dilamar" }).getByText(company),
   ).toBeVisible();
 });
+
+test.describe("on a wide screen", () => {
+  // Wide enough for every column, so the drag needs no scrolling.
+  test.use({ viewport: { width: 2400, height: 900 } });
+
+  test("marks an offer and a rejection with a quiet message", async ({
+    page,
+  }) => {
+    const company = uniqueName("PT Hasil");
+
+    await addApplication(page, { company, position: "Product Engineer" });
+    await page.goto("/board");
+
+    const card = page.getByRole("link", { name: new RegExp(company) });
+    const offer = page.getByRole("region", { name: "Offer" });
+    const rejected = page.getByRole("region", { name: "Ditolak" });
+
+    await drag(page, card, offer);
+    await expect(offer.getByText(company)).toBeVisible();
+    await expect(page.getByText("Hasil tarékah-mu.")).toBeVisible();
+
+    // dnd-kit ignores a new drag while the dropped card is still animating
+    // into place. Until then the card is on the page twice.
+    await expect(page.locator("p", { hasText: company })).toHaveCount(1);
+
+    await drag(page, card, rejected);
+    await expect(rejected.getByText(company)).toBeVisible();
+    await expect(
+      page.getByText("Dicatat. Satu léngkah tetap léngkah."),
+    ).toBeVisible();
+  });
+});

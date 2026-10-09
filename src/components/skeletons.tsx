@@ -91,12 +91,15 @@ export function DetailSkeleton() {
 
 export function BoardSkeleton() {
   return (
-    <Loading className="flex-row gap-4 overflow-hidden">
-      {items(4).map((column) => (
-        <div key={column} className="flex w-64 shrink-0 flex-col gap-3">
-          <Skeleton className="h-5 w-24" />
+    <Loading className="flex-row gap-3 overflow-hidden">
+      {items(5).map((column) => (
+        <div
+          key={column}
+          className="flex w-[82vw] shrink-0 flex-col gap-2.5 rounded-lg bg-muted p-2.5 sm:w-64"
+        >
+          <Skeleton className="m-1 h-5 w-24 bg-card" />
           {items(3 - (column % 2)).map((card) => (
-            <Skeleton key={card} className="h-20 w-full" />
+            <Skeleton key={card} className="h-24 w-full rounded-lg bg-card" />
           ))}
         </div>
       ))}
@@ -107,7 +110,7 @@ export function BoardSkeleton() {
 export function ChartSkeleton() {
   return (
     <Loading>
-      <Skeleton className="h-56 w-full" />
+      <Skeleton className="h-80 w-full" />
     </Loading>
   );
 }
@@ -115,16 +118,13 @@ export function ChartSkeleton() {
 export function StatsSkeleton() {
   return (
     <Loading className="gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Skeleton className="h-8 w-72 max-w-full" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {items(4).map((card) => (
-          <Skeleton key={card} className="h-24 w-full" />
+          <Skeleton key={card} className="h-36 w-full rounded-lg" />
         ))}
       </div>
-      <Skeleton className="h-56 w-full" />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Skeleton className="h-56 w-full" />
-        <Skeleton className="h-56 w-full" />
-      </div>
+      <Skeleton className="h-44 w-full rounded-lg" />
     </Loading>
   );
 }

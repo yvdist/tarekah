@@ -29,10 +29,13 @@ import {
   type ApplicationStatus,
 } from "@/db/schema/enum-values";
 import { changeApplicationStatus } from "../actions";
+import { filterBoardItems, isBoardFiltered } from "../board-filter";
+import { cn } from "@/lib/utils";
 import { FRESH_FOLLOW_UP_STATE } from "../follow-up";
 import { STATUS_LABELS } from "../labels";
 import { BoardCardBody, type BoardItem } from "./board-card";
 import { BoardColumn } from "./board-column";
+import { useBoardFilter } from "./board-filters";
 
 const COLLAPSIBLE_STATUSES: ReadonlySet<ApplicationStatus> = new Set([
   "rejected",
@@ -86,7 +89,13 @@ export function Board({ items }: { items: BoardItem[] }) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<ApplicationStatus>>(
     new Set(),
   );
+  const [celebration, setCelebration] = useState(0);
   const suppressClick = useRef(false);
+  const filter = useBoardFilter();
+  const visibleItems = filterBoardItems(optimisticItems, filter);
+  const emptyLabel = isBoardFiltered(filter)
+    ? "Tidak ada yang cocok"
+    : "Belum ada lamaran";
 
   const sensors = useSensors(
     // The distance keeps a plain click a click; the delay keeps a swipe a
@@ -163,6 +172,11 @@ export function Board({ items }: { items: BoardItem[] }) {
 
         if (!result.ok) {
           toast.error(result.message);
+        } else if (status === "offer") {
+          setCelebration((count) => count + 1);
+          toast("Hasil tarékah-mu.");
+        } else if (status === "rejected") {
+          toast("Dicatat. Satu léngkah tetap léngkah.");
         }
       } catch {
         toast.error("Status gagal diubah. Coba lagi.");
@@ -203,14 +217,21 @@ export function Board({ items }: { items: BoardItem[] }) {
       onDragCancel={endDrag}
     >
       <div
-        className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-4"
+        className={cn(
+          "-mx-4 flex scroll-px-4 gap-3 overflow-x-auto px-4 pb-4 md:-mx-8 md:scroll-px-8 md:px-8",
+          // One column per swipe on a phone, but not while a card is held:
+          // snapping would fight the drag.
+          activeId === null && "max-sm:snap-x max-sm:snap-mandatory",
+        )}
         onClickCapture={handleClickCapture}
       >
         {APPLICATION_STATUSES.map((status) => (
           <BoardColumn
             key={status}
             status={status}
-            items={optimisticItems.filter((item) => item.status === status)}
+            items={visibleItems.filter((item) => item.status === status)}
+            emptyLabel={emptyLabel}
+            celebration={status === "offer" ? celebration : undefined}
             collapsed={collapsed.has(status)}
             onToggleCollapsed={
               COLLAPSIBLE_STATUSES.has(status)
@@ -224,7 +245,7 @@ export function Board({ items }: { items: BoardItem[] }) {
         {activeItem ? (
           <BoardCardBody
             item={activeItem}
-            className="cursor-grabbing shadow-lg"
+            className="cursor-grabbing shadow-md"
           />
         ) : null}
       </DragOverlay>
