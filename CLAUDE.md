@@ -60,7 +60,7 @@ npm run db:seed -- <email> [--reset]   # demo data for one existing user
 
 Follow this without being asked, at the end of every task or phase.
 
-- Never commit on `main`. Create a branch first: `<type>/<short-kebab-description>`, for example `feat/applications-crud` or `chore/project-setup`.
+- The main branch is `production`: it is the default branch, pull requests target it, and release tags (`v0.1.0`) are cut from it. There is no `main`. Never commit on `production`. Create a branch from it first: `<type>/<short-kebab-description>`, for example `feat/applications-crud` or `chore/project-setup`.
 - Commit once the checks above pass. Split the work into one commit per context (dependencies, config, schema, a feature, docs, formatting) rather than one large commit; stage files explicitly, not `git add -A`.
 - Messages are Conventional Commits, subject line only, short and lowercase: `feat: add application form`, `chore: configure prettier`. Add a body only when the reason is not obvious from the diff.
 - Committing must not change code. If something needs fixing, fix it and re-run the checks before committing.
