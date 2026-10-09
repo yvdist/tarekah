@@ -5,9 +5,12 @@ import {
   DragOverlay,
   KeyboardSensor,
   MouseSensor,
+  pointerWithin,
+  rectIntersection,
   TouchSensor,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
@@ -38,6 +41,14 @@ const KEYBOARD_CODES = {
   start: ["Space"],
   cancel: ["Escape"],
   end: ["Space", "Enter"],
+};
+
+// The column under the pointer wins, so a card held by its edge does not land
+// next door. Keyboard drags have no pointer and fall back to the card's rect.
+const detectColumn: CollisionDetection = (args) => {
+  const underPointer = pointerWithin(args);
+
+  return underPointer.length > 0 ? underPointer : rectIntersection(args);
 };
 
 type Move = { id: string; status: ApplicationStatus };
@@ -143,6 +154,7 @@ export function Board({ items }: { items: BoardItem[] }) {
     <DndContext
       id={dndId}
       sensors={sensors}
+      collisionDetection={detectColumn}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={endDrag}
