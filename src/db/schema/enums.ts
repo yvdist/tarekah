@@ -1,40 +1,24 @@
 import { pgEnum } from "drizzle-orm/pg-core";
+import {
+  APPLICATION_STATUSES,
+  CONTACT_ROLES,
+  DOCUMENT_TYPES,
+  INTERVIEW_STAGES,
+  JOB_SOURCES,
+  WORK_TYPES,
+} from "./enum-values";
 
-export const applicationStatus = pgEnum("application_status", [
-  "wishlist",
-  "applied",
-  "screening",
-  "technical_test",
-  "interview",
-  "offer",
-  "rejected",
-  "ghosted",
-]);
+export const applicationStatus = pgEnum(
+  "application_status",
+  APPLICATION_STATUSES,
+);
 
-export const jobSource = pgEnum("job_source", [
-  "linkedin",
-  "glints",
-  "kalibrr",
-  "jobstreet",
-  "referral",
-  "other",
-]);
+export const jobSource = pgEnum("job_source", JOB_SOURCES);
 
-export const workType = pgEnum("work_type", ["onsite", "hybrid", "remote"]);
+export const workType = pgEnum("work_type", WORK_TYPES);
 
-export const documentType = pgEnum("document_type", ["cv", "cover_letter"]);
+export const documentType = pgEnum("document_type", DOCUMENT_TYPES);
 
-export const interviewStage = pgEnum("interview_stage", [
-  "hr",
-  "technical",
-  "user",
-  "final",
-  "other",
-]);
+export const interviewStage = pgEnum("interview_stage", INTERVIEW_STAGES);
 
-export const contactRole = pgEnum("contact_role", [
-  "recruiter",
-  "referral",
-  "hiring_manager",
-  "other",
-]);
+export const contactRole = pgEnum("contact_role", CONTACT_ROLES);
