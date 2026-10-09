@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { signInWithProvider } from "@/features/auth/actions";
 import type { Provider } from "@/features/auth/schemas";
@@ -11,7 +12,16 @@ const PROVIDERS: { id: Provider; label: string }[] = [
   { id: "google", label: "Lanjut dengan Google" },
 ];
 
-export default function LoginPage() {
+// Auth.js sends failed sign-ins back here with ?error=<code>.
+const ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked:
+    "Email ini sudah terdaftar lewat penyedia lain. Masuk dengan penyedia yang kamu pakai sebelumnya.",
+  AccessDenied: "Akses ditolak. Coba lagi atau pakai akun lain.",
+};
+
+const DEFAULT_ERROR_MESSAGE = "Gagal masuk. Coba lagi.";
+
+export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="flex flex-1 items-center justify-center px-4">
       <div className="flex w-full max-w-sm flex-col gap-6">
@@ -25,6 +35,9 @@ export default function LoginPage() {
             olehmu.
           </p>
         </div>
+        <Suspense fallback={null}>
+          <SignInError searchParams={searchParams} />
+        </Suspense>
         <div className="flex flex-col gap-2">
           {PROVIDERS.map((provider) => (
             <form
@@ -44,5 +57,22 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// searchParams is request-time data, so it is read behind the boundary.
+async function SignInError({
+  searchParams,
+}: Pick<PageProps<"/login">, "searchParams">) {
+  const { error } = await searchParams;
+
+  if (typeof error !== "string") {
+    return null;
+  }
+
+  return (
+    <p role="alert" className="text-sm text-destructive">
+      {ERROR_MESSAGES[error] ?? DEFAULT_ERROR_MESSAGE}
+    </p>
   );
 }
