@@ -31,7 +31,7 @@ Before calling work done: `npm run lint && npm run typecheck && npm run format:c
 - E2E specs are in `e2e/` and run against the production build on port 3100. They create and delete users, so they refuse to start without `E2E_DATABASE_URL` (in `.env.e2e` locally): a throwaway database, never the one in `.env.local`. The setup applies the migrations.
 - Sign-in is OAuth only, so `e2e/db.ts` writes the user and a `sessions` row and `authCookies()` builds the cookies a real sign-in leaves, including Auth.js's CSRF cookie. One spec: `npx playwright test board`.
 - `e2e/a11y.spec.ts` runs axe on the main pages in both themes; add a new page to its `PAGES` list.
-- CI (`.github/workflows/ci.yml`) runs all of the above on every push.
+- CI (`.github/workflows/ci.yml`) runs lint, typecheck, format, unit tests and build on every push. The E2E job only runs when the workflow is started by hand (Actions → CI → Run workflow), so nothing checks E2E automatically: run `npm run test:e2e` locally before a release and after changing a page, a form or auth.
 
 ### Running locally
 

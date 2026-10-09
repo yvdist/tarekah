@@ -3,6 +3,8 @@ name: CI
 on:
   push:
   pull_request:
+  # Run from the Actions tab; this is what starts the end-to-end job.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -34,8 +36,11 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # Not part of every push: it takes about two minutes. Start it by hand before
+  # a release, or run `npm run test:e2e` locally.
   e2e:
     name: End-to-end tests
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:

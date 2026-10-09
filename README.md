@@ -224,7 +224,7 @@ npm run test:e2e
 
 Branch Neon tersendiri juga bisa. Jangan arahkan `E2E_DATABASE_URL` ke database di `.env.local`. Migration diterapkan oleh setup test. Login lewat OAuth tidak bisa diotomasi, jadi setup menulis satu pengguna dan satu baris session langsung ke database itu.
 
-GitHub Actions menjalankan lint, typecheck, format, unit test, build dan end-to-end di setiap push ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+GitHub Actions menjalankan lint, typecheck, format, unit test dan build di setiap push ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Test end-to-end tidak ikut otomatis: jalankan dari tab Actions (Run workflow) atau di lokal sebelum rilis.
 
 ## Script
 
