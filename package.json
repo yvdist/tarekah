@@ -12,7 +12,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
@@ -32,6 +33,7 @@
     "react-dom": "19.3.0",
     "react-hook-form": "^7.89.0",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.8.0",
     "server-only": "^0.0.1",
     "shadcn": "^4.21.4",
     "sonner": "^2.0.8",
@@ -51,6 +53,7 @@
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
