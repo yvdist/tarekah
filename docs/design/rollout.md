@@ -152,6 +152,8 @@ Tanpa mockup; mengikuti pola halaman yang sudah jadi.
 
 - [x] Lamaran baru dan edit lamaran: `PageHeader`, form di dalam kartu, baris aksi di bawah garis
 - [x] Detail lamaran: `PageHeader` (posisi, perusahaan, Edit dan Hapus), tiap bagian jadi kartu, riwayat status di kolom kanan
+- [x] Perusahaan: `PageHeader`, tabel di dalam kartu, empty state dengan mega mendung
+- [x] Detail perusahaan: `PageHeader` (nama, website), catatan, lamaran dan kontak sebagai kartu
 
 Catatan:
 
@@ -159,13 +161,12 @@ Catatan:
 - `Panel` pindah dari fitur dashboard ke `src/components/panel.tsx` dan mendapat slot `action` (tombol "Tambah interview").
 - "Riwayat status" bukan `Panel`: e2e mencari daftarnya lewat induk heading, jadi heading tetap anak langsung `<section>`.
 - Dua kolom detail baru muncul dari `lg`; di bawah itu riwayat status turun ke bawah, karena di `md` sidebar sudah memakan tempat.
+- Detail perusahaan tidak masuk `a11y-seeded.spec.ts`: alamatnya butuh id, dan badge status di atas kartu putih sudah diperiksa lewat tabel Lamaran.
 
 ## Halaman berikutnya
 
 Mewarisi token dan shell baru, tapi tata letaknya belum dipoles.
 
-- [ ] Perusahaan
-- [ ] Detail perusahaan
 - [ ] Kontak
 - [ ] Dokumen
 - [ ] Pertanyaan

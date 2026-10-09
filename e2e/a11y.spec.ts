@@ -10,6 +10,7 @@ const PAGES = [
   { path: "/applications", heading: "Lamaran" },
   { path: "/applications/new", heading: "Tambah lamaran" },
   { path: "/board", heading: "Board" },
+  { path: "/companies", heading: "Perusahaan" },
   { path: "/settings", heading: "Pengaturan" },
 ];
 
