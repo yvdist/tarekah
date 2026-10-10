@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
+import { ArrowLeft, ExternalLink, MessagesSquare, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { DetailSkeleton, TextSkeleton } from "@/components/skeletons";
 import { buttonVariants } from "@/components/ui/button";
+import type { ApplicationStatus } from "@/db/schema/enum-values";
 import { DeleteApplicationButton } from "@/features/applications/components/delete-application-dialog";
 import { FollowUpActions } from "@/features/applications/components/follow-up-actions";
 import { FollowUpBadge } from "@/features/applications/components/follow-up-badge";
@@ -27,6 +28,7 @@ import { getContactsForApplication } from "@/features/contacts/queries";
 import { AddInterviewButton } from "@/features/interviews/components/interview-actions";
 import { InterviewList } from "@/features/interviews/components/interview-list";
 import { getInterviews } from "@/features/interviews/queries";
+import { getPracticeOffer } from "@/features/practice/queries";
 
 export const metadata: Metadata = { title: "Detail lamaran" };
 
@@ -70,6 +72,9 @@ async function ApplicationDetails({
         }
         actions={
           <>
+            <Suspense fallback={null}>
+              <PracticeLink id={application.id} status={application.status} />
+            </Suspense>
             <Link
               href={`/applications/${application.id}/edit`}
               className={buttonVariants({ variant: "outline" })}
@@ -200,6 +205,30 @@ async function ApplicationDetails({
         </section>
       </div>
     </>
+  );
+}
+
+// Shown once an interview is on the way. It opens the settings of a
+// simulation filled in from this application.
+async function PracticeLink({
+  id,
+  status,
+}: {
+  id: string;
+  status: ApplicationStatus;
+}) {
+  if (!(await getPracticeOffer({ id, status }))) {
+    return null;
+  }
+
+  return (
+    <Link
+      href={`/practice/simulation/new?application=${id}`}
+      className={buttonVariants()}
+    >
+      <MessagesSquare />
+      Latihan untuk interview ini
+    </Link>
   );
 }
 

@@ -3,6 +3,7 @@ import {
   NoObjectGeneratedError,
   NoOutputGeneratedError,
   RetryError,
+  StreamProviderError,
 } from "ai";
 import type { AiProvider } from "@/db/schema/enum-values";
 import { AiConfigError } from "./crypto";
@@ -96,9 +97,13 @@ function errorWords(data: unknown): string[] {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-function classifyApiCall(error: APICallError): AiErrorCode {
-  const status = error.statusCode;
-  const words = errorWords(error.data);
+// What a provider's answer means, from its HTTP status and the words of its
+// error body. The same reading serves a request that was refused and a stream
+// that broke off halfway.
+function classifyResponse(
+  status: number | undefined,
+  words: string[],
+): AiErrorCode {
   const has = (set: Set<string>) => words.some((word) => set.has(word));
 
   // Checked before the status: OpenAI reports an empty balance as 429, the
@@ -146,7 +151,19 @@ export function classifyAiError(error: unknown): AiErrorCode {
   }
 
   if (APICallError.isInstance(error)) {
-    return classifyApiCall(error);
+    return classifyResponse(error.statusCode, errorWords(error.data));
+  }
+
+  // A stream that started and then failed: the provider reports it in the
+  // stream, with the same words and no HTTP response of its own.
+  if (StreamProviderError.isInstance(error)) {
+    return classifyResponse(error.statusCode, [
+      ...[error.type, error.code]
+        .filter((word) => typeof word === "string")
+        .map((word) => word.toLowerCase()),
+      ...errorWords(error.data),
+      ...errorWords({ error: error.data }),
+    ]);
   }
 
   if (
@@ -185,7 +202,10 @@ export function reportAiError(
     where: context.where,
     code,
     provider: context.provider,
-    status: APICallError.isInstance(last) ? last.statusCode : undefined,
+    status:
+      APICallError.isInstance(last) || StreamProviderError.isInstance(last)
+        ? last.statusCode
+        : undefined,
   });
 
   return { code, message: AI_ERROR_MESSAGES[code] };

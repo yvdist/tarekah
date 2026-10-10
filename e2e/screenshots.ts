@@ -53,6 +53,9 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.goto("/applications");
     await capture("applications");
 
+    await page.goto("/practice");
+    await capture("practice");
+
     for (const name of ARCHIVE_PAGES) {
       await page.goto(`/${name}`);
       await capture(name);
@@ -108,6 +111,16 @@ for (const colorScheme of ["light", "dark"] as const) {
         .click();
       await page.waitForURL(/\/applications\/[0-9a-f-]{36}$/);
       await capture("application");
+
+      // A finished simulation: its summary, then the conversation.
+      await page.goto("/practice");
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: "Selesai" })
+        .getByRole("link", { name: /^Buka simulasi/ })
+        .click();
+      await page.waitForURL(/\/practice\/simulation\/[0-9a-f-]{36}$/);
+      await capture("simulation", true);
 
       await page.goto("/companies");
       await capture("companies");

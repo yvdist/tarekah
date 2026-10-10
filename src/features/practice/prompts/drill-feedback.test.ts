@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildDrillFeedbackPrompt,
   DRILL_FEEDBACK_PROMPT_VERSION,
-  escapeTags,
 } from "./drill-feedback";
 
 const context = {
@@ -98,19 +97,5 @@ describe("buildDrillFeedbackPrompt", () => {
     }
 
     expect(prompt).not.toMatch(/<\s*\/\s*answer\s*>[^]*<\/answer>/i);
-  });
-});
-
-describe("escapeTags", () => {
-  it("leaves other angle brackets as written", () => {
-    const code = "if (a < b) return List<String>(); // <div> </div>";
-
-    expect(escapeTags(code)).toBe(code);
-  });
-
-  it("neutralizes the delimiter tags only", () => {
-    expect(escapeTags("<answer> </story> <storyboard>")).toBe(
-      "&lt;answer> &lt;/story> <storyboard>",
-    );
   });
 });

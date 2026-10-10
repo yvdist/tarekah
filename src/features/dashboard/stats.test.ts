@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { practiceSessions } from "@/db/schema";
 import {
   createApplication,
   createCv,
@@ -6,7 +7,7 @@ import {
   createUser,
   type TestDb,
 } from "@/test/db";
-import { queryStats, queryWeekly } from "./stats";
+import { queryPracticeSteps, queryStats, queryWeekly } from "./stats";
 
 let db: TestDb;
 let close: () => Promise<void>;
@@ -438,5 +439,118 @@ describe("queryWeekly", () => {
     const weeks = await queryWeekly(db, owner, TODAY);
 
     expect(weeks.every((week) => week.count === 0)).toBe(true);
+  });
+});
+
+describe("queryPracticeSteps", () => {
+  type Session = Pick<
+    typeof practiceSessions.$inferInsert,
+    "mode" | "status"
+  > & { endedAt: string | null };
+
+  const steps = (
+    userId: string,
+    from: string | null = null,
+    to: string | null = null,
+  ) => queryPracticeSteps(db, userId, from, to);
+
+  const addSessions = (userId: string, sessions: Session[]) =>
+    db.insert(practiceSessions).values(
+      sessions.map(({ mode, status, endedAt }) => ({
+        userId,
+        mode,
+        status,
+        language: "id" as const,
+        endedAt: endedAt ? new Date(endedAt) : null,
+        ...(mode === "simulation"
+          ? {
+              interviewType: "behavioral" as const,
+              level: "mid" as const,
+              tone: "friendly" as const,
+              maxTurns: 6,
+            }
+          : {}),
+      })),
+    );
+
+  it("counts completed drills and simulations", async () => {
+    const userId = await newUser();
+
+    await addSessions(userId, [
+      { mode: "drill", status: "completed", endedAt: "2026-10-01T03:00:00Z" },
+      { mode: "drill", status: "completed", endedAt: "2026-10-02T03:00:00Z" },
+      {
+        mode: "simulation",
+        status: "completed",
+        endedAt: "2026-10-03T03:00:00Z",
+      },
+    ]);
+
+    expect(await steps(userId)).toEqual({
+      simulations: 1,
+      drills: 2,
+      total: 3,
+    });
+  });
+
+  it("leaves out sessions that are in progress or were abandoned", async () => {
+    const userId = await newUser();
+
+    await addSessions(userId, [
+      { mode: "simulation", status: "in_progress", endedAt: null },
+      {
+        mode: "simulation",
+        status: "abandoned",
+        endedAt: "2026-10-03T03:00:00Z",
+      },
+    ]);
+
+    expect(await steps(userId)).toEqual({
+      simulations: 0,
+      drills: 0,
+      total: 0,
+    });
+  });
+
+  it("filters by the day a session ended, in Jakarta time", async () => {
+    const userId = await newUser();
+
+    await addSessions(userId, [
+      // 23:30 on 1 October in Jakarta.
+      { mode: "drill", status: "completed", endedAt: "2026-10-01T16:30:00Z" },
+      // 00:30 on 2 October in Jakarta, still 1 October in UTC.
+      {
+        mode: "simulation",
+        status: "completed",
+        endedAt: "2026-10-01T17:30:00Z",
+      },
+      { mode: "drill", status: "completed", endedAt: "2026-10-05T03:00:00Z" },
+    ]);
+
+    expect(await steps(userId, "2026-10-01", "2026-10-01")).toMatchObject({
+      drills: 1,
+      simulations: 0,
+    });
+    expect(await steps(userId, "2026-10-02", "2026-10-04")).toMatchObject({
+      drills: 0,
+      simulations: 1,
+    });
+    expect(await steps(userId, "2026-10-02", null)).toMatchObject({ total: 2 });
+    expect(await steps(userId, null, "2026-10-01")).toMatchObject({ total: 1 });
+    expect(await steps(userId, "2026-11-01", null)).toMatchObject({ total: 0 });
+  });
+
+  it("never counts another user's sessions", async () => {
+    const userId = await newUser();
+
+    await addSessions(await newUser(), [
+      { mode: "drill", status: "completed", endedAt: "2026-10-01T03:00:00Z" },
+    ]);
+
+    expect(await steps(userId)).toEqual({
+      simulations: 0,
+      drills: 0,
+      total: 0,
+    });
   });
 });

@@ -1,4 +1,6 @@
 import type { PracticeLanguage } from "@/db/schema/enum-values";
+import { type StoryContext, storyBlock } from "./blocks";
+import { escapeTags, LANGUAGE_NAMES } from "./tags";
 
 // Stored with every piece of feedback, so a later change to the wording can be
 // told apart from what an older version produced. Bump it with the prompt.
@@ -7,52 +9,9 @@ export const DRILL_FEEDBACK_PROMPT_VERSION = "drill-feedback-v1";
 export type DrillFeedbackContext = {
   question: string;
   answer: string;
-  stories: ReadonlyArray<{
-    title: string;
-    situation: string | null;
-    task: string | null;
-    action: string | null;
-    result: string | null;
-  }>;
+  stories: ReadonlyArray<StoryContext>;
   language: PracticeLanguage;
 };
-
-const LANGUAGE_NAMES: Record<PracticeLanguage, string> = {
-  id: 'Indonesian (Bahasa Indonesia, relaxed and polite, addressing the candidate as "kamu")',
-  en: "English",
-};
-
-const TAG_NAMES = ["question", "answer", "stories", "story"];
-
-// Text the user wrote must not be able to open or close one of the tags it is
-// wrapped in. Only those tags are touched, so code in an answer (a < b,
-// List<String>) reaches the model as written.
-const TAG_PATTERN = new RegExp(
-  `<(?=\\s*/?\\s*(?:${TAG_NAMES.join("|")})\\b)`,
-  "gi",
-);
-
-export const escapeTags = (text: string) => text.replace(TAG_PATTERN, "&lt;");
-
-const STORY_PARTS = [
-  ["Situation", "situation"],
-  ["Task", "task"],
-  ["Action", "action"],
-  ["Result", "result"],
-] as const;
-
-function storyBlock(story: DrillFeedbackContext["stories"][number]) {
-  const parts = STORY_PARTS.flatMap(([label, key]) =>
-    story[key] ? [`${label}: ${escapeTags(story[key])}`] : [],
-  );
-
-  return [
-    "<story>",
-    `Title: ${escapeTags(story.title)}`,
-    ...parts,
-    "</story>",
-  ].join("\n");
-}
 
 export function buildDrillFeedbackPrompt(context: DrillFeedbackContext) {
   const instructions = `You are a senior interviewer giving feedback on one practice answer. You are supportive and honest: you say plainly what works and what does not, without flattery and without talking down. The candidate is preparing for real interviews and may be anxious, so be calm and specific.
@@ -76,7 +35,7 @@ Write every field in ${LANGUAGE_NAMES[context.language]}, whatever language the 
 
   if (context.stories.length > 0) {
     sections.push(
-      `<stories>\n${context.stories.map(storyBlock).join("\n")}\n</stories>`,
+      `<stories>\n${context.stories.map((story) => storyBlock(story)).join("\n")}\n</stories>`,
     );
   }
 

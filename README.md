@@ -6,11 +6,12 @@ Setiap pengguna masuk dengan akun GitHub atau Google dan hanya melihat datanya s
 
 ![Dashboard](docs/screenshots/dashboard-light.png)
 
-|                                                           |                                                           |
-| --------------------------------------------------------- | --------------------------------------------------------- |
-| ![Board](docs/screenshots/board-light.png)                | ![Detail lamaran](docs/screenshots/application-light.png) |
-| ![Tabel lamaran](docs/screenshots/applications-light.png) | ![Board, tema gelap](docs/screenshots/board-dark.png)     |
-| ![Dokumen](docs/screenshots/documents-light.png)          | ![Kontak, tema gelap](docs/screenshots/contacts-dark.png) |
+|                                                           |                                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------ |
+| ![Board](docs/screenshots/board-light.png)                | ![Detail lamaran](docs/screenshots/application-light.png)    |
+| ![Tabel lamaran](docs/screenshots/applications-light.png) | ![Board, tema gelap](docs/screenshots/board-dark.png)        |
+| ![Dokumen](docs/screenshots/documents-light.png)          | ![Kontak, tema gelap](docs/screenshots/contacts-dark.png)    |
+| ![Latihan](docs/screenshots/practice-light.png)           | ![Simulasi interview](docs/screenshots/simulation-light.png) |
 
 Screenshot dibuat otomatis dari data contoh (`npm run screenshots`).
 
@@ -30,9 +31,11 @@ Masuk dengan akun GitHub atau Google. Setiap akun mulai dari kosong dan hanya me
 - **Bank pertanyaan.** Semua pertanyaan dari seluruh interview plus yang ditulis sendiri, dengan kategori, sumber, dan kesiapan yang dinilai sendiri (siap, cukup, belum siap) tanpa skor. Bisa dicari, difilter, dan ditautkan ke cerita.
 - **Cerita.** Bank pengalaman dalam format STAR (situasi, tugas, aksi, hasil) dengan tag kompetensi. Satu cerita bisa menjawab banyak pertanyaan.
 - **Latihan singkat.** Pilih satu pertanyaan (acak dari yang belum siap, atau dari bank), tulis jawabannya, lalu dapat masukan tanpa skor: yang sudah kuat, yang bisa dipertajam, versi yang lebih rapi, dan pertanyaan lanjutan yang bisa disimpan ke bank. Setiap percobaan tersimpan, dengan atau tanpa AI.
-- **AI dengan key sendiri.** Masukan latihan memakai key Anthropic, OpenAI, Google atau DeepSeek milik pengguna, disimpan terenkripsi dan tidak pernah ditampilkan lagi. Tanpa key, semua fitur lain tetap berjalan.
+- **Simulasi interview.** AI menjadi interviewer: pilih jenis (HR, behavioral, teknis backend, system design ringan, AI builder), level, bahasa, nada dan durasi, dengan atau tanpa lamaran. Satu pertanyaan tiap giliran, tanpa penilaian di tengah sesi, dengan tombol untuk meminta pertanyaan diulang atau waktu berpikir. Setiap giliran tersimpan, jadi sesi bisa dilanjutkan setelah halaman dimuat ulang. Di akhir ada ringkasan tanpa skor, pertanyaan yang bisa disimpan ke bank, dan saran cerita yang bisa ditautkan dengan satu klik.
+- **Persiapan dari lamaran.** Lamaran yang sudah di tahap interview atau punya interview terjadwal menawarkan "Latihan untuk interview ini": simulasi yang membaca posisi, deskripsi pekerjaan dan catatan perusahaannya.
+- **AI dengan key sendiri.** Masukan latihan dan simulasi memakai key Anthropic, OpenAI, Google atau DeepSeek milik pengguna, disimpan terenkripsi dan tidak pernah ditampilkan lagi. Tanpa key, semua fitur lain tetap berjalan.
 - **Kontak.** Recruiter, pemberi referral dan hiring manager, terhubung ke perusahaan dan lamaran.
-- **Dashboard.** Funnel per tahap, response rate dan conversion ke interview per sumber dan per versi CV, rata-rata waktu respons, jumlah lamaran per minggu, dengan filter rentang tanggal.
+- **Dashboard.** Funnel per tahap, response rate dan conversion ke interview per sumber dan per versi CV, rata-rata waktu respons, jumlah lamaran per minggu, dan jumlah sesi latihan yang selesai ("léngkah latihan"), dengan filter rentang tanggal.
 - **Export CSV.** Semua lamaran dengan kolom lengkap, aman dibuka di spreadsheet.
 - **Tema terang dan gelap**, mengikuti sistem atau dipilih sendiri.
 
@@ -284,9 +287,9 @@ npm test            # unit test (Vitest), tanpa database eksternal
 npm run test:e2e    # end-to-end (Playwright)
 ```
 
-**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan, semua skema Zod, enkripsi key AI (termasuk ciphertext yang diubah), pemetaan error provider ke pesan yang ramah, prompt masukan (isi pengguna tidak bisa keluar dari tag pembatasnya) dan alur masukan dengan model tiruan dari AI SDK. Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, backfill pertanyaan (idempoten), penyimpanan key AI (query pengaturan tidak pernah mengembalikan key atau ciphertext-nya), serta sesi latihan dan pertanyaan lanjutan (kepemilikan, duplikat) diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
+**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan, semua skema Zod, enkripsi key AI (termasuk ciphertext yang diubah), pemetaan error provider ke pesan yang ramah, prompt masukan, interviewer dan ringkasan (isi pengguna tidak bisa keluar dari tag pembatasnya), aturan giliran simulasi (batas jawaban, penutupan paksa, sesi yang ditinggal), dan alur masukan serta ringkasan dengan model tiruan dari AI SDK. Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, backfill pertanyaan (idempoten), penyimpanan key AI (query pengaturan tidak pernah mengembalikan key atau ciphertext-nya), sesi latihan dan pertanyaan lanjutan (kepemilikan, duplikat), giliran simulasi (batas ditegakkan di server, balasan yang gagal di tengah stream tidak tersimpan dan bisa diminta lagi), pertanyaan dan cerita hasil sesi, serta hitungan léngkah latihan diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
 
-**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, menyimpan key AI lalu mengetes, mengganti model dan menghapusnya, latihan singkat tanpa key (jawaban tersimpan, ajakan muncul) dan dengan key (masukan, simpan pertanyaan lanjutan, tulis cerita) memakai provider tiruan tanpa panggilan API sungguhan, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
+**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, menyimpan key AI lalu mengetes, mengganti model dan menghapusnya, latihan singkat tanpa key (jawaban tersimpan, ajakan muncul) dan dengan key (masukan, simpan pertanyaan lanjutan, tulis cerita), simulasi dari detail lamaran (beberapa giliran yang di-stream, muat ulang, akhiri sesi, ringkasan, simpan pertanyaan ke bank) memakai provider tiruan tanpa panggilan API sungguhan, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
 
 Test end-to-end membuat dan menghapus pengguna, jadi wajib memakai database terpisah, misalnya Postgres sekali-pakai di Docker:
 

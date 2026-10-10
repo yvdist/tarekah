@@ -3,7 +3,7 @@
 Status: disetujui · Oktober 2026
 Dokumen ini adalah rancangan besar. Detail implementasi per fase ada di prompt masing-masing fase. Kalau kode yang ada berbeda dari dokumen ini, kode yang benar dan dokumen ini diperbarui.
 
-Penomoran fase di dokumen ini berbeda dari `PLAN.md`: Fase 1 di sini adalah Fase 8 di sana, Fase 2 adalah Fase 9 (keduanya sudah selesai).
+Penomoran fase di dokumen ini berbeda dari `PLAN.md`: Fase 1 di sini adalah Fase 8 di sana, Fase 2 adalah Fase 9, Fase 3 adalah Fase 10 (ketiganya sudah selesai).
 
 ## Latar belakang
 
@@ -43,7 +43,7 @@ Pertanyaan dinormalisasi dari field markdown `interviews.questions` menjadi tabe
   - jenis: HR, behavioral, teknis backend/Laravel, system design ringan, AI builder (`hr_screening`, `behavioral`, `technical_backend`, `system_design_light`, `ai_builder`; daftar ini terpisah dari kategori pertanyaan);
   - level: mid atau senior;
   - bahasa: Indonesia atau Inggris;
-  - durasi: 15 atau 30 menit;
+  - durasi: 15 atau 30 menit, disimpan sebagai jumlah jawaban (`max_turns` 6 atau 10, jawaban terakhir membalas "Ada yang ingin kamu tanyakan ke kami?"). Server yang menentukan giliran siapa dan kapan sesi berakhir; model hanya diberi tahu fasenya;
   - nada: ramah, netral, atau menantang.
 - **Format masukan, tanpa skor:**
   - yang sudah kuat;
@@ -54,7 +54,8 @@ Pertanyaan dinormalisasi dari field markdown `interviews.questions` menjadi tabe
   Di kode: `strengths`, `improvements` (`aspect` salah satu dari `structure`, `specificity`, `relevance`, `technical_clarity`, `conciseness`, ditambah `note`), `improvedAnswer`, `followUpQuestion`. Semua wajib, tanpa field angka.
 
 - Bahasa masukan latihan singkat ditebak dari bahasa pertanyaan dan bisa diganti sebelum jawaban disimpan; yang tersimpan di sesi selalu `id` atau `en`.
-- Setelah sesi simulasi selesai, pertanyaan bisa disimpan ke bank dan saran cerita bisa diterapkan dengan satu klik.
+- Setiap giliran simulasi disimpan sebelum giliran berikutnya diminta, jadi sesi bisa dilanjutkan setelah halaman dimuat ulang dan balasan yang gagal bisa diminta lagi. Sesi yang 6 jam tidak dilanjutkan dibaca sebagai tidak dilanjutkan (dihitung saat dibaca); yang sudah punya jawaban masih bisa diakhiri untuk mendapat ringkasan.
+- Setelah sesi simulasi selesai ada ringkasan tanpa skor (`overallStrengths`, `focusAreas` maksimal tiga, `perQuestion`, `extractedQuestions`, `storySuggestions`). Pertanyaannya bisa disimpan ke bank lewat checklist (sumber `ai`, dilewati bila teks yang sama sudah ada) dan saran cerita bisa diterapkan dengan satu klik; `storyId` di saran hanya diterima bila cerita itu milik pengguna.
 
 ### 4. Persiapan dari lamaran
 
@@ -90,7 +91,7 @@ practice_turns      id, session_id, user_id, position,
                     content, question_id?, feedback? (jsonb), created_at
 ```
 
-`interview_type`, `level`, `tone` dan `max_turns` hanya milik simulasi: kolomnya nullable, dan CHECK di database mewajibkannya saat `mode = 'simulation'`. Satu latihan singkat adalah satu sesi dengan dua giliran, `interviewer` (teks pertanyaan) lalu `candidate` (jawaban). `feedback` di giliran kandidat menyimpan masukan bersama versi prompt, provider dan model yang menghasilkannya.
+`interview_type`, `level`, `tone` dan `max_turns` hanya milik simulasi: kolomnya nullable, dan CHECK di database mewajibkannya saat `mode = 'simulation'`. Satu latihan singkat adalah satu sesi dengan dua giliran, `interviewer` (teks pertanyaan) lalu `candidate` (jawaban). `feedback` di giliran kandidat menyimpan masukan bersama versi prompt, provider dan model yang menghasilkannya; di giliran interviewer sebuah simulasi, kolom yang sama menyimpan versi prompt, provider dan model yang menulis giliran itu. Durasi simulasi tidak punya kolom: yang disimpan `max_turns`.
 
 Masukan dan ringkasan AI dihasilkan sebagai structured output dengan skema Zod (`generateText` dengan `Output.object` di AI SDK 7; `generateObject` sudah deprecated). Isi dari pengguna (pertanyaan, jawaban, cerita) masuk ke prompt di dalam tag pembatas dan diperlakukan sebagai data. Test memakai mock model dari AI SDK, tanpa panggilan API sungguhan.
 

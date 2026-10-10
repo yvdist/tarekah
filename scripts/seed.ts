@@ -17,6 +17,10 @@ import { Pool } from "pg";
 import * as schema from "../src/db/schema";
 import { FOLLOW_UP_STATUSES } from "../src/features/applications/follow-up";
 import type {
+  StoredSummary,
+  TurnOrigin,
+} from "../src/features/practice/schemas";
+import type {
   ApplicationStatus,
   Competency,
   InterviewStage,
@@ -35,6 +39,7 @@ const {
   documents,
   interviews,
   practiceSessions,
+  practiceTurns,
   questions,
   questionStories,
   stories,
@@ -43,6 +48,7 @@ const {
 
 const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
+const MINUTE = 60 * 1000;
 
 // Deterministic, so two runs on the same day produce the same data.
 function createRandom(seed: number) {
@@ -330,6 +336,103 @@ const STORIES: ReadonlyArray<{
 ];
 
 // Pasted postings, for a few applications.
+// Practice. A drill is a question from the bank and one answer to it.
+const DRILL_ANSWERS = [
+  "Waktu itu datanya belum lengkap, jadi saya ambil spike satu hari, lalu memutuskan dengan tim berdasarkan hasilnya.",
+  "Saya mulai dari apakah jawabannya boleh salah. Kalau tidak boleh, LLM hanya jadi pembantu, bukan penentu.",
+  "Setiap pekerjaan membawa kunci idempoten, dan pekerja mencatat kunci yang sudah selesai sebelum mengirim hasil.",
+  "Saya pernah merilis tanpa rencana rollback. Sejak itu setiap rilis punya langkah mundur yang sudah dicoba.",
+];
+
+// One simulation, as it reads on its page: what was said, in order.
+const SIMULATION_TURNS: ReadonlyArray<
+  readonly ["interviewer" | "candidate", string]
+> = [
+  [
+    "interviewer",
+    "Terima kasih sudah meluangkan waktu. Boleh ceritakan sedikit tentang dirimu dan pekerjaanmu sekarang?",
+  ],
+  [
+    "candidate",
+    "Saya backend engineer, lima tahun terakhir di fintech. Sekarang memegang layanan pembayaran dan antrean pekerjaannya.",
+  ],
+  [
+    "interviewer",
+    "Ceritakan saat kamu harus mengambil keputusan teknis dengan informasi yang belum lengkap.",
+  ],
+  [
+    "candidate",
+    "Kami harus memilih antara menulis ulang layanan lama atau menambalnya. Saya minta satu hari untuk spike, lalu mengusulkan menambal dulu dengan batas waktu yang jelas.",
+  ],
+  ["interviewer", "Apa yang membuatmu yakin satu hari itu cukup?"],
+];
+
+// One simulation in each state the history shows: finished with a summary,
+// left alone for days, and still going.
+const SIMULATIONS = [
+  { ago: 3 * DAY, turns: 5, status: "completed" },
+  { ago: 2 * DAY, turns: 1, status: "in_progress" },
+  { ago: 20 * MINUTE, turns: 3, status: "in_progress" },
+] as const;
+
+const SIMULATION_ORIGIN: TurnOrigin = {
+  promptVersion: "interviewer-v1",
+  provider: "anthropic",
+  model: "claude-sonnet-5-5",
+};
+
+// The summary of that simulation. Its first question is one the bank already
+// has; `storyId` is filled in with a seeded story.
+const SIMULATION_SUMMARY: StoredSummary = {
+  promptVersion: "simulation-summary-v1",
+  provider: "anthropic",
+  model: "claude-sonnet-5-5",
+  result: {
+    overallStrengths: [
+      "Kamu langsung menyebut peranmu dan apa yang kamu pegang.",
+      "Keputusan soal spike satu hari diceritakan runtut: masalah, pilihan, lalu alasannya.",
+    ],
+    focusAreas: [
+      {
+        aspect: "specificity",
+        note: "Sebut hasilnya: berapa lama tambalan itu bertahan, dan apa yang terjadi setelah batas waktunya.",
+      },
+      {
+        aspect: "conciseness",
+        note: "Perkenalan bisa dua kalimat. Sisanya biarkan ditanya.",
+      },
+    ],
+    perQuestion: [
+      {
+        question: "Boleh ceritakan sedikit tentang dirimu?",
+        note: "Jelas dan relevan dengan posisi, tapi belum menyebut kenapa kamu melamar ke sini.",
+        improvedAnswerHint:
+          "Tutup dengan satu kalimat yang menghubungkan layanan pembayaran yang kamu pegang ke posisi ini.",
+      },
+      {
+        question:
+          "Ceritakan saat kamu harus mengambil keputusan teknis dengan informasi yang belum lengkap.",
+        note: "Pilihannya jelas dan alasannya masuk akal. Hasil akhirnya belum diceritakan.",
+        improvedAnswerHint:
+          "Tambahkan apa yang terjadi setelah tambalan itu berjalan, dengan satu angka kalau ada.",
+      },
+    ],
+    extractedQuestions: [
+      "Ceritakan saat kamu harus mengambil keputusan teknis dengan informasi yang belum lengkap.",
+      "Apa yang membuatmu yakin waktu yang kamu minta untuk spike itu cukup?",
+    ],
+    storySuggestions: [
+      {
+        question:
+          "Apa yang membuatmu yakin waktu yang kamu minta untuk spike itu cukup?",
+        storyId: null,
+        suggestion:
+          "Cerita ini menunjukkan caramu membatasi risiko sebelum memutuskan. Pakai bagian aksinya.",
+      },
+    ],
+  },
+};
+
 const JOB_DESCRIPTIONS = [
   `Tentang peran
 Kami mencari Backend Engineer untuk tim pembayaran. Kamu akan merancang API, menjaga keandalan sistem antrean, dan bekerja dekat dengan tim produk.
@@ -725,6 +828,8 @@ async function main() {
       const applicationIdsByCompany = new Map<string, string[]>();
       // Stories are linked to questions by their text, see STORIES.answers.
       const questionIdsByText = new Map<string, string>();
+      const interviewingIds: string[] = [];
+      const storyIds: string[] = [];
 
       for (const item of seeded) {
         const companyId = companyIds.get(item.company);
@@ -762,6 +867,10 @@ async function main() {
             updatedAt: last.at,
           })
           .returning({ id: applications.id });
+
+        if (last.status === "interview") {
+          interviewingIds.push(application.id);
+        }
 
         await tx.insert(applicationStatusEvents).values(
           item.events.map((event, index) => ({
@@ -873,6 +982,9 @@ async function main() {
             updatedAt: new Date(now - (10 - index * 2) * DAY),
           })
           .returning({ id: stories.id });
+
+        storyIds.push(row.id);
+
         const linked = answers.flatMap((text) => {
           const questionId = questionIdsByText.get(text);
 
@@ -889,10 +1001,96 @@ async function main() {
           );
         }
       }
+
+      // Nothing below draws from the random sequence, so adding to it does
+      // not change the data above.
+      for (const [index, question] of manualRows.entries()) {
+        const endedAt = new Date(now - (index * 2 + 1) * DAY);
+        const [drill] = await tx
+          .insert(practiceSessions)
+          .values({
+            userId: user.id,
+            mode: "drill",
+            language: "id",
+            status: "completed",
+            startedAt: endedAt,
+            endedAt,
+          })
+          .returning({ id: practiceSessions.id });
+
+        await tx.insert(practiceTurns).values(
+          [question.text, DRILL_ANSWERS[index % DRILL_ANSWERS.length]].map(
+            (content, position) => ({
+              userId: user.id,
+              sessionId: drill.id,
+              position,
+              role:
+                position === 0
+                  ? ("interviewer" as const)
+                  : ("candidate" as const),
+              content,
+              questionId: question.id,
+              createdAt: endedAt,
+            }),
+          ),
+        );
+      }
+
+      for (const [index, simulation] of SIMULATIONS.entries()) {
+        const completed = simulation.status === "completed";
+        const startedAt = now - simulation.ago;
+        const at = (position: number) =>
+          new Date(startedAt + position * 2 * MINUTE);
+        const [session] = await tx
+          .insert(practiceSessions)
+          .values({
+            userId: user.id,
+            applicationId: interviewingIds[index] ?? null,
+            mode: "simulation",
+            interviewType: index === 1 ? "technical_backend" : "behavioral",
+            level: "senior",
+            tone: "friendly",
+            maxTurns: 6,
+            language: "id",
+            status: simulation.status,
+            startedAt: new Date(startedAt),
+            endedAt: completed ? at(simulation.turns) : null,
+            summary: completed
+              ? {
+                  ...SIMULATION_SUMMARY,
+                  result: {
+                    ...SIMULATION_SUMMARY.result,
+                    storySuggestions:
+                      SIMULATION_SUMMARY.result.storySuggestions.map(
+                        (suggestion) => ({
+                          ...suggestion,
+                          storyId: storyIds[0] ?? null,
+                        }),
+                      ),
+                  },
+                }
+              : null,
+          })
+          .returning({ id: practiceSessions.id });
+
+        await tx.insert(practiceTurns).values(
+          SIMULATION_TURNS.slice(0, simulation.turns).map(
+            ([role, content], position) => ({
+              userId: user.id,
+              sessionId: session.id,
+              position,
+              role,
+              content,
+              feedback: role === "interviewer" ? SIMULATION_ORIGIN : null,
+              createdAt: at(position),
+            }),
+          ),
+        );
+      }
     });
 
     console.log(
-      `Seeded ${seeded.length} applications, ${STORIES.length} stories and ${MANUAL_QUESTIONS.length} manual questions.`,
+      `Seeded ${seeded.length} applications, ${STORIES.length} stories, ${MANUAL_QUESTIONS.length} manual questions and ${MANUAL_QUESTIONS.length + SIMULATIONS.length} practice sessions.`,
     );
   } finally {
     await pool.end();

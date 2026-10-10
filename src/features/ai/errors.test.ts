@@ -1,4 +1,9 @@
-import { APICallError, NoObjectGeneratedError, RetryError } from "ai";
+import {
+  APICallError,
+  NoObjectGeneratedError,
+  RetryError,
+  StreamProviderError,
+} from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AiConfigError } from "./crypto";
 import {
@@ -110,6 +115,34 @@ describe("classifyAiError", () => {
       "timeout",
     );
     expect(classifyAiError(apiError(504))).toBe("timeout");
+  });
+
+  it("reads an error reported inside a stream like a refused request", () => {
+    const stream = (
+      options: Partial<ConstructorParameters<typeof StreamProviderError>[0]>,
+    ) =>
+      new StreamProviderError({
+        message: `Incorrect API key provided: ${SECRET_KEY}`,
+        ...options,
+      });
+
+    expect(classifyAiError(stream({ statusCode: 429 }))).toBe("rate_limit");
+    expect(classifyAiError(stream({ type: "overloaded_error" }))).toBe(
+      "unavailable",
+    );
+    expect(classifyAiError(stream({ code: "insufficient_quota" }))).toBe(
+      "quota",
+    );
+    expect(
+      classifyAiError(stream({ data: { type: "authentication_error" } })),
+    ).toBe("invalid_key");
+    expect(
+      classifyAiError(
+        stream({ data: { error: { type: "authentication_error" } } }),
+      ),
+    ).toBe("invalid_key");
+    // Cut off with nothing to go on: the provider, not the user.
+    expect(classifyAiError(stream({}))).toBe("unavailable");
   });
 
   it("looks inside a RetryError", () => {

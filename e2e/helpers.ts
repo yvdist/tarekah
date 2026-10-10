@@ -83,3 +83,45 @@ export async function seedDemoUser() {
     stdio: "inherit",
   });
 }
+
+// Not a real key. The server runs with AI_FAKE_PROVIDER, so nothing is sent to
+// a provider and every answer is the canned one in
+// src/features/ai/fake-model.ts.
+export const FAKE_API_KEY = "sk-ant-api03-e2e-not-a-real-key-Lt9w";
+export const ANTHROPIC = "Anthropic (Claude)";
+
+// Deletes every saved AI key. Specs that depend on which keys are saved start
+// with this: one that failed halfway may have left a key behind.
+export async function clearAiKeys(page: Page) {
+  await page.goto("/settings");
+
+  const panel = page.locator("section#ai");
+  const rows = panel.getByRole("listitem");
+
+  await expect(panel.getByLabel("API key")).toBeVisible();
+
+  for (let left = await rows.count(); left > 0; left -= 1) {
+    await rows
+      .first()
+      .getByRole("button", { name: /^Hapus key/ })
+      .click();
+    await page.getByRole("button", { name: "Hapus", exact: true }).click();
+    await expect(rows).toHaveCount(left - 1);
+  }
+}
+
+// Saves the fake key through the settings form, which makes it the active one.
+export async function saveAiKey(page: Page) {
+  await page.goto("/settings");
+
+  const panel = page.locator("section#ai");
+
+  await panel.getByLabel("API key").fill(FAKE_API_KEY);
+  await panel.getByRole("button", { name: "Simpan key" }).click();
+  await expect(
+    panel
+      .getByRole("listitem")
+      .filter({ hasText: ANTHROPIC })
+      .getByText("Aktif"),
+  ).toBeVisible();
+}

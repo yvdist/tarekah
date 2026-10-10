@@ -79,3 +79,22 @@ export function authCookies(sessionToken: string, baseURL: string) {
     { ...cookie, name: "authjs.csrf-token", value: `${csrfToken}|${csrfHash}` },
   ];
 }
+
+// Makes every simulation of a user look as if nothing had been said in it for
+// that many hours, which is how a session comes to read as left alone.
+export function agePracticeSessions(email: string, hours: number) {
+  return withClient(async (client) => {
+    const age = [email, `${hours} hours`];
+
+    await client.query(
+      `update practice_turns set created_at = created_at - $2::interval
+       where user_id = (select id from users where email = $1)`,
+      age,
+    );
+    await client.query(
+      `update practice_sessions set started_at = started_at - $2::interval
+       where user_id = (select id from users where email = $1)`,
+      age,
+    );
+  });
+}
