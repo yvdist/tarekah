@@ -5,7 +5,8 @@
 // Users only exist through OAuth, so sign in once before seeding. The script
 // refuses to touch an account that already has data unless --reset is given,
 // which deletes that user's companies, documents, applications, contacts,
-// questions and stories first. Other users are never touched.
+// questions, stories and practice sessions first. Saved AI keys and settings
+// are kept. Other users are never touched.
 //
 // This runs outside Next.js, so it cannot use src/db/index.ts (server-only,
 // env validation) and opens its own short-lived connection instead.
@@ -33,6 +34,7 @@ const {
   contacts,
   documents,
   interviews,
+  practiceSessions,
   questions,
   questionStories,
   stories,
@@ -666,7 +668,11 @@ async function main() {
     const seeded = buildApplications(now);
 
     await db.transaction(async (tx) => {
-      // Questions and stories only point at applications, so they go first.
+      // Practice sessions, questions and stories only point at applications,
+      // so they go first.
+      await tx
+        .delete(practiceSessions)
+        .where(eq(practiceSessions.userId, user.id));
       // Then applications: they hold the restricting reference to companies,
       // and their events, interviews and contact links go with them.
       await tx.delete(questions).where(eq(questions.userId, user.id));

@@ -1,13 +1,13 @@
 "use client";
 
-import { BookOpen, Pencil, Plus } from "lucide-react";
+import { BookOpen, MessagesSquare, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { DeleteButton } from "@/components/delete-button";
 import { OptionSelect } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type {
   QuestionCategory,
   QuestionReadiness,
@@ -154,6 +154,14 @@ export function QuestionRow({
             ? `${question.stories.length} cerita`
             : "Tautkan cerita"}
         </Button>
+        <Link
+          href={`/practice/drill/${question.id}`}
+          aria-label={`Latih pertanyaan ini: ${shortText}`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <MessagesSquare />
+          Latih
+        </Link>
         {question.stories.map((story) => (
           <Link
             key={story.id}

@@ -28,6 +28,7 @@ Before calling work done: `npm run lint && npm run typecheck && npm run format:c
 - Unit tests are Vitest, in `*.test.ts` next to the file they cover. One file: `npx vitest run src/features/applications/follow-up.test.ts`; one test: add `-t "name"`.
 - `vitest.config.mts` aliases `server-only` to an empty stub. Pure logic lives in files that import neither `@/db` nor `next/*`, which is what makes it testable.
 - SQL that needs checking is tested against PGlite: `createTestDb()` in `src/test/db.ts` gives an in-memory Postgres with the real migrations applied, plus fixtures. Give each test its own user rather than resetting the database.
+- Nothing in a test calls a real AI provider. Unit tests pass a `MockLanguageModelV4` from `ai/test`; the E2E server runs with `AI_FAKE_PROVIDER=1` (set in `playwright.config.ts`), which makes `getModelForUser` return the canned model in `src/features/ai/fake-model.ts`. `src/lib/env.ts` refuses that variable on Vercel.
 - E2E specs are in `e2e/` and run against the production build on port 3100. They create and delete users, so they refuse to start without `E2E_DATABASE_URL` (in `.env.e2e` locally): a throwaway database, never the one in `.env.local`. The setup applies the migrations.
 - Sign-in is OAuth only, so `e2e/db.ts` writes the user and a `sessions` row and `authCookies()` builds the cookies a real sign-in leaves, including Auth.js's CSRF cookie. One spec: `npx playwright test board`.
 - `e2e/a11y.spec.ts` runs axe on the main pages in both themes; add a new page to its `PAGES` list, or to `PUBLIC_PAGES` when visitors can open it without signing in (those are also checked at phone width, and with reduced motion so axe reads the landing page at rest). The shared test user has almost no data, so `e2e/a11y-seeded.spec.ts` repeats the check for a user filled by the seed script (every status badge, follow-up warnings, full charts), at desktop and phone width. A new colour is only checked for contrast if a seeded page renders it.
@@ -35,7 +36,7 @@ Before calling work done: `npm run lint && npm run typecheck && npm run format:c
 
 ### Running locally
 
-1. `npm install`
+1. Node 22 or newer (`.nvmrc`; the AI SDK requires it), then `npm install`
 2. `cp .env.example .env.local` and fill in the Neon connection strings, `AUTH_SECRET` (`npx auth secret`) and the GitHub/Google OAuth credentials. The OAuth callback URLs are `http://localhost:3000/api/auth/callback/{github,google}`.
 3. `npm run db:migrate`
 4. `npm run dev`
@@ -69,7 +70,7 @@ Follow this without being asked, at the end of every task or phase.
 
 ## Stack
 
-Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui on Base UI · PostgreSQL on Neon through `pg` (node-postgres) · Drizzle ORM + drizzle-kit · Auth.js v5 (`next-auth@beta`, GitHub + Google, database sessions through `@auth/drizzle-adapter`) · Zod 4 · Prettier · deployed on Vercel.
+Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui on Base UI · PostgreSQL on Neon through `pg` (node-postgres) · Drizzle ORM + drizzle-kit · Auth.js v5 (`next-auth@beta`, GitHub + Google, database sessions through `@auth/drizzle-adapter`) · Zod 4 · Vercel AI SDK 7 (`ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@ai-sdk/google`, `@ai-sdk/deepseek`) with the users' own keys · Prettier · deployed on Vercel. Node 22.
 
 `next-auth@latest` is still v4 and does not support this Next.js version; stay on the `beta` tag.
 
@@ -98,6 +99,8 @@ src/
     queries.ts                reads (server-only)
     actions.ts                Server Actions ("use server")
     schemas.ts                Zod schemas shared by forms and actions
+    data.ts                   SQL that takes the database as an argument, tested against PGlite
+    prompts/                  prompt builders for AI calls, versioned and tested (practice)
     components/               components specific to the domain
   components/ui/              shadcn/ui components
   test/                       Vitest helpers (PGlite database, server-only stub)
@@ -127,14 +130,32 @@ These three are not negotiable.
 
 - A component that reads the session must sit inside a `<Suspense>` boundary. Do not `await` the session at the top level of a layout; push it into a child component.
 - To cache per-user data, the exported query resolves the user and passes `user.id` into an unexported `"use cache"` function. Never export a cached function that takes a `userId` argument.
-- Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`, `documents:<userId>`, `interviews:<userId>`, `contacts:<userId>`). A cached query that joins another domain carries that domain's tag too, and an action that changes what another domain displays updates that tag as well. Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
+- Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`, `documents:<userId>`, `interviews:<userId>`, `contacts:<userId>`, `questions:<userId>`, `stories:<userId>`, `ai:<userId>`). Practice sessions have no tag yet: nothing cached reads them. A cached query that joins another domain carries that domain's tag too, and an action that changes what another domain displays updates that tag as well. Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
 - Anything that depends on the clock (days in status, follow-up and ghosted flags) is computed in the exported query, after the cached read, never inside a `"use cache"` function. The rules live in `src/features/applications/follow-up.ts`.
 - Reading the clock outside a cached function still needs `await connection()` first when the value feeds a render (see `resolveCurrentRange` in `src/features/dashboard/range.ts`); otherwise Next.js rejects `Date.now()` while prerendering.
 - `src/proxy.ts` only does an optimistic cookie check for redirects. Authorization happens in `queries.ts` / `actions.ts`.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
 - When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to one of the item lists in `src/components/app-sidebar.tsx`.
 - `session.user.id` exists only because of the `session` callback in `src/auth.ts`; Auth.js drops it by default.
+- `auth()` is random when the visitor brings no valid CSRF cookie: Auth.js mints a token on every such call, and a signed-in browser often has none (the session cookie lasts thirty days, the CSRF cookie until the browser closes). Next.js rejects a random value after `cookies()` alone, so `getCurrentUser` calls `await connection()` first in exactly that case, and returns early for a visitor without a session cookie. Read the session through `getCurrentUser` / `requireUser`, never by calling `auth()` in a component.
 - The public pages are static, so they only know about a session where they ask: `SessionLink` (`src/features/auth/components/session-link.tsx`) turns the landing page's calls to action into dashboard links for a signed-in user, and `/login` redirects one to `/dashboard`. Sessions are database sessions with the Auth.js defaults: 30 days idle, extended on use.
+
+## AI (bring your own key)
+
+Every AI call runs on the server with a key the user saved in Pengaturan. Without a key the app works as before; AI is an addition, never a requirement.
+
+- Keys live in `ai_credentials`, one per user and provider, encrypted with AES-256-GCM under `AI_KEY_ENCRYPTION_KEY` (`src/features/ai/crypto.ts`). The ciphertext is bound to the user and provider, so a copied row does not decrypt. `user_settings.active_ai_provider` names the key in use.
+- `getModelForUser(db, userId)` in `src/features/ai/model.ts` is the only place a key is decrypted. Get a model from it and nowhere else; it returns null when the user has no key, and the caller answers with `AI_ERROR_MESSAGES.not_configured` rather than an error.
+- A key never goes back to the client. `findAiSummary` returns provider, model and the last four characters; keep it that way when adding fields.
+- Failures go through `reportAiError` (`src/features/ai/errors.ts`), which returns a friendly Indonesian message and logs only a code, the provider and the HTTP status. Never log or return an error from the SDK: it carries the request body (the user's text) and a provider message that can quote the key.
+- `maxDuration` cannot be exported from `actions.ts`. A page whose Server Actions call a provider exports it itself (`/settings` and `/practice/drill/[questionId]` do), and the call gets a shorter SDK `timeout` so the user sees a message before the platform cuts the request.
+- Practice (`src/features/practice`) saves the answer first and asks for feedback second: `saveDrillAnswer` writes a completed drill session with two turns, then `requestDrillFeedback` reads the question and answer back from the database and returns stored feedback when there is some, so asking twice never bills twice. Having no key is a result (`status: "not_configured"`, shown as an invitation), not an error.
+- The bank holds one row per interview a question was asked in, so the same question can be there many times. Practice treats them as one: `getPracticeQuestions` folds rows with the same normalized text (`groupSameQuestions` in `src/features/practice/same-question.ts`), and the list, the summary and the random pick all work on those groups. The Pertanyaan page keeps showing every row.
+- Prompts live in `src/features/practice/prompts/`, each with a version constant that is stored with what it produced. Text the user wrote goes into `prompt` inside delimiter tags, through `escapeTags`, and never into `instructions`.
+- A schema given to `Output.object` has no `.optional()` and no length bounds, which the providers' strict mode rejects; bounds are applied afterwards (`tidyFeedback`). No field holds a score. `FAKE_FEEDBACK` in `fake-model.ts` must keep passing `feedbackSchema`.
+- A provider is a value in `AI_PROVIDERS` (adding one is a migration, `ALTER TYPE … ADD VALUE`), a label and suggested models in `providers.ts`, and a factory in `model.ts`. Settings that only one provider understands live in `AI_PROVIDER_OPTIONS` (`src/features/ai/provider-options.ts`) and go into every call as `providerOptions`; each provider reads only its own entry.
+- DeepSeek has no schema-constrained output: its SDK provider puts the JSON schema into a system message and asks for JSON mode, and the answer is still validated by the same Zod schema. Its thinking is turned off in `AI_PROVIDER_OPTIONS`, because the calls here are short and bounded.
+- The suggested model ids in `src/features/ai/providers.ts` are checked against the providers' docs, with the date in a comment. Do not add one from memory.
 
 ## Code conventions
 
@@ -144,6 +165,7 @@ These three are not negotiable.
 - No `any` and no non-null assertions on external data. Derive types instead of rewriting them: `typeof table.$inferSelect` / `$inferInsert` for rows, `z.infer<typeof schema>` for inputs.
 - Database identifiers are snake_case, TypeScript properties camelCase; the mapping comes from `casing: "snake_case"` (set in `drizzle.config.ts` and on the Drizzle client), so do not pass column names by hand.
 - Enum values are lowercase snake_case in the database (`technical_test`); display labels are mapped in the UI. The allowed values live as plain tuples in `src/db/schema/enum-values.ts`; Zod schemas and Client Components import from there, never from `enums.ts` (which pulls in Drizzle).
+- AI SDK 7 differs from earlier majors: structured output is `generateText` with `output: Output.object({ schema })` (`generateObject` is deprecated), `instructions` replaces `system`, the Google factory is `createGoogle`. Its docs ship in `node_modules/ai/docs/`; read them before writing a call.
 - Read environment variables through `src/lib/env.ts`, not `process.env`, and add new ones to `.env.example`. `siteUrl` from the same file is the base for absolute URLs in metadata (`SITE_URL`, else Vercel's production host). The exception is the OAuth provider variables (`AUTH_GITHUB_*`, `AUTH_GOOGLE_*`), which Auth.js reads itself by naming convention.
 - Multi-statement writes that must stay consistent (for example a status change plus its history row) run inside `db.transaction`.
 - Timestamps are `timestamptz`; calendar dates without a time (applied date) are `date`.
@@ -179,6 +201,8 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - The logo is `Logomark`, `Wordmark` and `Logo` in `src/components/brand/logo.tsx`: a stem and one rising kunyit stroke, nila on light and kertas on dark. The numbers live in `brand/mark-paths.ts`, shared with `src/app/apple-icon.tsx` and `opengraph-image.tsx`; `src/app/icon.svg` is a static file and repeats them, so change both together. `AccentE` is the wordmark's "e" under that stroke; it renders a plain "e", so the caller supplies the real word in an `sr-only` span.
 - Error boundaries (`error.tsx`) take `retry`, not `reset`, and render the shared `ErrorState`.
 - Accessibility: every control has a visible label or an `aria-label`; in forms the hint and error get ids and the control points at them with `describedBy()` from `src/lib/form-errors.ts`, and required fields set `aria-required`. `NavLink` calls `usePathname`, so it sits inside `<Suspense>`: on routes with a dynamic segment the pathname is unknown while prerendering.
+- A render must not depend on chance: the next practice question is picked in a click handler (`pickQuestionId` takes `random` as an argument) and its id goes into the URL.
+- `StoryForm` navigates to the story after saving; inside a dialog it takes `onSaved`, `onCancel` and `bare` instead.
 - Forms inside a `Dialog` put `key={useOpenKey(open)}` (`src/hooks/use-open-key.ts`) on the form component, because the dialog popup keeps its state across closes.
 - Shared Zod field helpers (`optionalText`, `requiredText`, `optionalHttpUrl`, `optionalId`) are in `src/lib/form-schemas.ts`; `invalidResult` in `src/lib/action-result.ts` turns a Zod error into an `ActionResult`; `setFieldErrors` in `src/lib/form-errors.ts` maps it back onto the form.
 - Forms are Client Components using `react-hook-form` with `zodResolver` and the schema from `schemas.ts`; the action re-parses the same raw values with the same schema. The form calls the action in a transition, maps `fieldErrors` onto fields, shows a `sonner` toast, then navigates. See `src/features/applications/components/application-form.tsx`.

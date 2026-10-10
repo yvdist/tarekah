@@ -23,8 +23,33 @@ export async function addApplication(
 export const uniqueName = (prefix: string) =>
   `${prefix} ${Math.random().toString(36).slice(2, 8)}`;
 
+const SETTLE_LIMIT_MS = 2000;
+
 // WCAG 2.1 A and AA rules; anything axe rates serious or critical fails.
 export async function expectNoSeriousViolations(page: Page) {
+  // Text that is still fading in (a toast, a dialog) has partial opacity, which
+  // axe reads as low contrast. Wait, briefly, for what is moving to arrive.
+  // Left alone: what loops forever (a skeleton), what is paused, and what
+  // follows the scroll position instead of the clock.
+  await page.evaluate(
+    (limit) =>
+      Promise.race([
+        new Promise((resolve) => setTimeout(resolve, limit)),
+        Promise.all(
+          document
+            .getAnimations()
+            .filter(
+              (animation) =>
+                animation.playState === "running" &&
+                animation.timeline instanceof DocumentTimeline &&
+                animation.effect?.getComputedTiming().iterations !== Infinity,
+            )
+            .map((animation) => animation.finished.catch(() => undefined)),
+        ),
+      ]),
+    SETTLE_LIMIT_MS,
+  );
+
   const { violations } = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();

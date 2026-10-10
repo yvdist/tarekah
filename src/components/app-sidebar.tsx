@@ -7,6 +7,7 @@ import {
   FileText,
   List,
   type LucideIcon,
+  MessagesSquare,
   SlidersHorizontal,
   Users,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const MAIN_ITEMS: NavItem[] = [
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/applications", label: "Lamaran", icon: List },
   { href: "/dashboard", label: "Dashboard", icon: ChartLine },
+  { href: "/practice", label: "Latihan", icon: MessagesSquare },
 ];
 
 const ARCHIVE_ITEMS: NavItem[] = [

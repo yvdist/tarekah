@@ -1,9 +1,12 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { cache } from "react";
 import { auth } from "@/auth";
-import { SESSION_COOKIES } from "./session-cookie";
+import { env } from "./env";
+import { CSRF_COOKIES, SESSION_COOKIES } from "./session-cookie";
 
 export type CurrentUser = {
   id: string;
@@ -24,6 +27,16 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     return null;
   }
 
+  // Auth.js also mints a CSRF token for a signed-in visitor who brings no
+  // valid one, and that is common: the session cookie lasts thirty days, the
+  // CSRF cookie only until the browser closes, and a render cannot set it
+  // again. Reading a cookie does not make a random value acceptable to
+  // Next.js; connection() does. It takes what depends on the session out of
+  // prefetching, so it is only called when a token is about to be minted.
+  if (!hasValidCsrfCookie(jar)) {
+    await connection();
+  }
+
   const session = await auth();
   const user = session?.user;
 
@@ -38,6 +51,22 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     image: user.image ?? null,
   };
 });
+
+// The check Auth.js makes itself (createCSRFToken in @auth/core): the cookie
+// is "token|hash", the hash being SHA-256 of the token and the secret. Should
+// Auth.js change that, this answers false and only the prefetch is lost.
+function hasValidCsrfCookie(jar: Awaited<ReturnType<typeof cookies>>) {
+  return CSRF_COOKIES.some((name) => {
+    const [token, hash] = jar.get(name)?.value.split("|") ?? [];
+
+    return (
+      !!token &&
+      createHash("sha256")
+        .update(`${token}${env.AUTH_SECRET}`)
+        .digest("hex") === hash
+    );
+  });
+}
 
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();

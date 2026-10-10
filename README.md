@@ -29,6 +29,8 @@ Masuk dengan akun GitHub atau Google. Setiap akun mulai dari kosong dan hanya me
 - **Catatan interview.** Jadwal, tahap, pewawancara, daftar pertanyaan yang ditanyakan, dan refleksi dalam markdown.
 - **Bank pertanyaan.** Semua pertanyaan dari seluruh interview plus yang ditulis sendiri, dengan kategori, sumber, dan kesiapan yang dinilai sendiri (siap, cukup, belum siap) tanpa skor. Bisa dicari, difilter, dan ditautkan ke cerita.
 - **Cerita.** Bank pengalaman dalam format STAR (situasi, tugas, aksi, hasil) dengan tag kompetensi. Satu cerita bisa menjawab banyak pertanyaan.
+- **Latihan singkat.** Pilih satu pertanyaan (acak dari yang belum siap, atau dari bank), tulis jawabannya, lalu dapat masukan tanpa skor: yang sudah kuat, yang bisa dipertajam, versi yang lebih rapi, dan pertanyaan lanjutan yang bisa disimpan ke bank. Setiap percobaan tersimpan, dengan atau tanpa AI.
+- **AI dengan key sendiri.** Masukan latihan memakai key Anthropic, OpenAI, Google atau DeepSeek milik pengguna, disimpan terenkripsi dan tidak pernah ditampilkan lagi. Tanpa key, semua fitur lain tetap berjalan.
 - **Kontak.** Recruiter, pemberi referral dan hiring manager, terhubung ke perusahaan dan lamaran.
 - **Dashboard.** Funnel per tahap, response rate dan conversion ke interview per sumber dan per versi CV, rata-rata waktu respons, jumlah lamaran per minggu, dengan filter rentang tanggal.
 - **Export CSV.** Semua lamaran dengan kolom lengkap, aman dibuka di spreadsheet.
@@ -36,7 +38,7 @@ Masuk dengan akun GitHub atau Google. Setiap akun mulai dari kosong dan hanya me
 
 ## Stack
 
-Next.js 16 (App Router, Cache Components) · React 19 · TypeScript strict · Tailwind CSS v4 · shadcn/ui di atas Base UI · PostgreSQL di Neon · Drizzle ORM · Auth.js v5 · Zod 4 · Vitest · Playwright · Vercel.
+Next.js 16 (App Router, Cache Components) · React 19 · TypeScript strict · Tailwind CSS v4 · shadcn/ui di atas Base UI · PostgreSQL di Neon · Drizzle ORM · Auth.js v5 · Zod 4 · Vercel AI SDK 7 · Vitest · Playwright · Vercel.
 
 ### Alasan pemilihan
 
@@ -95,6 +97,11 @@ erDiagram
     applications |o--o{ questions : "terkait"
     questions ||--o{ question_stories : ""
     stories ||--o{ question_stories : ""
+    users ||--o{ ai_credentials : "key AI"
+    users ||--o{ practice_sessions : "berlatih"
+    applications |o--o{ practice_sessions : "untuk"
+    practice_sessions ||--o{ practice_turns : "giliran"
+    questions |o--o{ practice_turns : "dilatih"
 
     users {
         text id PK
@@ -106,6 +113,7 @@ erDiagram
         text user_id PK
         int follow_up_after_days
         int ghosted_after_days
+        ai_provider active_ai_provider
     }
     companies {
         uuid id PK
@@ -189,13 +197,42 @@ erDiagram
         uuid story_id PK
         text user_id FK
     }
+    ai_credentials {
+        uuid id PK
+        text user_id FK
+        ai_provider provider
+        text encrypted_key
+        text key_last4
+        text model
+    }
+    practice_sessions {
+        uuid id PK
+        text user_id FK
+        uuid application_id FK
+        practice_mode mode
+        practice_language language
+        practice_session_status status
+        timestamptz started_at
+        timestamptz ended_at
+        jsonb summary
+    }
+    practice_turns {
+        uuid id PK
+        uuid session_id FK
+        text user_id FK
+        int position
+        practice_turn_role role
+        text content
+        uuid question_id FK
+        jsonb feedback
+    }
 ```
 
 Setiap tabel domain, termasuk tabel anak dan tabel penghubung, punya `user_id`. Kolom dan indeks lengkap ada di [`PLAN.md`](PLAN.md#skema-database).
 
 ## Setup lokal
 
-Prasyarat: Node.js 20.9 atau lebih baru, project [Neon](https://neon.tech), OAuth app GitHub dan OAuth client Google.
+Prasyarat: Node.js 22 atau lebih baru (ada `.nvmrc`), project [Neon](https://neon.tech), OAuth app GitHub dan OAuth client Google.
 
 1. Pasang dependensi.
 
@@ -209,13 +246,14 @@ Prasyarat: Node.js 20.9 atau lebih baru, project [Neon](https://neon.tech), OAut
    cp .env.example .env.local
    ```
 
-   | Variabel                               | Sumber                                                                                                                                                               |
-   | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `DATABASE_URL`                         | Neon, connection string **pooled** (host mengandung `-pooler`). Dipakai aplikasi saat berjalan.                                                                      |
-   | `DATABASE_URL_UNPOOLED`                | Neon, connection string **direct**. Dipakai drizzle-kit untuk migration dan oleh script seed.                                                                        |
-   | `AUTH_SECRET`                          | Jalankan `npx auth secret`.                                                                                                                                          |
-   | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | GitHub → Settings → Developer settings → OAuth Apps. Callback URL: `http://localhost:3000/api/auth/callback/github`.                                                 |
-   | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google Cloud Console → APIs & Services → Credentials → OAuth client ID (Web application). Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`. |
+   | Variabel                               | Sumber                                                                                                                                                                             |
+   | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                         | Neon, connection string **pooled** (host mengandung `-pooler`). Dipakai aplikasi saat berjalan.                                                                                    |
+   | `DATABASE_URL_UNPOOLED`                | Neon, connection string **direct**. Dipakai drizzle-kit untuk migration dan oleh script seed.                                                                                      |
+   | `AUTH_SECRET`                          | Jalankan `npx auth secret`.                                                                                                                                                        |
+   | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | GitHub → Settings → Developer settings → OAuth Apps. Callback URL: `http://localhost:3000/api/auth/callback/github`.                                                               |
+   | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google Cloud Console → APIs & Services → Credentials → OAuth client ID (Web application). Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`.               |
+   | `AI_KEY_ENCRYPTION_KEY`                | Opsional. Jalankan `openssl rand -base64 32`. Mengenkripsi key AI yang disimpan pengguna di Pengaturan; tanpa variabel ini aplikasi tetap berjalan, hanya key belum bisa disimpan. |
 
 3. Terapkan migration.
 
@@ -246,9 +284,9 @@ npm test            # unit test (Vitest), tanpa database eksternal
 npm run test:e2e    # end-to-end (Playwright)
 ```
 
-**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan dan semua skema Zod. Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, dan backfill pertanyaan (idempoten) diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
+**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan, semua skema Zod, enkripsi key AI (termasuk ciphertext yang diubah), pemetaan error provider ke pesan yang ramah, prompt masukan (isi pengguna tidak bisa keluar dari tag pembatasnya) dan alur masukan dengan model tiruan dari AI SDK. Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, backfill pertanyaan (idempoten), penyimpanan key AI (query pengaturan tidak pernah mengembalikan key atau ciphertext-nya), serta sesi latihan dan pertanyaan lanjutan (kepemilikan, duplikat) diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
 
-**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
+**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, menyimpan key AI lalu mengetes, mengganti model dan menghapusnya, latihan singkat tanpa key (jawaban tersimpan, ajakan muncul) dan dengan key (masukan, simpan pertanyaan lanjutan, tulis cerita) memakai provider tiruan tanpa panggilan API sungguhan, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
 
 Test end-to-end membuat dan menghapus pengguna, jadi wajib memakai database terpisah, misalnya Postgres sekali-pakai di Docker:
 

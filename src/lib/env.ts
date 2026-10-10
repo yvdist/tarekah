@@ -9,6 +9,13 @@ const envSchema = z.object({
   SITE_URL: z.url().optional(),
   // Set by Vercel: the production host, without the protocol.
   VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1).optional(),
+  // Encrypts the users' AI keys. Optional so the app runs without AI; its
+  // content is checked where it is used (src/features/ai/crypto.ts).
+  AI_KEY_ENCRYPTION_KEY: z.string().optional(),
+  // "1" swaps every provider for a canned model. For the end-to-end tests
+  // only, so it is refused on Vercel below.
+  AI_FAKE_PROVIDER: z.literal("1").optional(),
+  VERCEL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -18,6 +25,10 @@ if (!parsed.success) {
   throw new Error(
     `Missing or invalid environment variables: ${names.join(", ")}. See .env.example.`,
   );
+}
+
+if (parsed.data.AI_FAKE_PROVIDER && parsed.data.VERCEL) {
+  throw new Error("AI_FAKE_PROVIDER must not be set on a deployment.");
 }
 
 export const env = parsed.data;

@@ -67,8 +67,13 @@ Di Vercel, Settings → Environment Variables, untuk environment Production:
 | `AUTH_SECRET`                          | Hasil `npx auth secret`. Buat yang baru, jangan pakai milik lokal. |
 | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | Dari OAuth app production                                          |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Dari OAuth client production                                       |
+| `AI_KEY_ENCRYPTION_KEY`                | Hasil `openssl rand -base64 32`. Opsional; lihat catatan di bawah. |
 
-Bersama dua variabel database dari langkah 2, totalnya tujuh.
+Bersama dua variabel database dari langkah 2, totalnya delapan.
+
+`AI_KEY_ENCRYPTION_KEY` mengenkripsi key AI milik pengguna (Pengaturan → AI). Tanpa variabel ini aplikasi tetap berjalan dan bagian AI hanya menampilkan pemberitahuan. Simpan nilainya di tempat aman dan jangan diganti: begitu berubah, semua key yang tersimpan tidak bisa dibuka lagi dan tiap pengguna harus menyimpan ulang key-nya. Jangan pernah mengisi `AI_FAKE_PROVIDER` di Vercel; variabel itu hanya untuk test end-to-end dan aplikasi menolak menyala bila menemukannya di sana.
+
+Node.js: proyek ini butuh versi 22 atau lebih baru. Vercel membacanya dari `engines` di `package.json`.
 
 `AUTH_TRUST_HOST` tidak perlu diisi: Auth.js mempercayai host secara otomatis di Vercel. `AUTH_URL` juga tidak perlu.
 

@@ -112,9 +112,10 @@ Jangan dipakai sebagai background penuh di halaman kerja (board, tabel, form).
 ## 7. Komponen kunci
 
 - **Sidebar**: latar permukaan-2, logo di atas, grup navigasi
-  [Board, Lamaran, Dashboard], grup "Arsip" [Perusahaan, Kontak, Dokumen,
-  Pertanyaan, Cerita], lalu Pengaturan dan avatar di bawah. Item aktif: latar
-  nila-muda, teks nila-tua, garis kecil nila di kiri. Di mobile menjadi sheet.
+  [Board, Lamaran, Dashboard, Latihan], grup "Arsip" [Perusahaan, Kontak,
+  Dokumen, Pertanyaan, Cerita], lalu Pengaturan dan avatar di bawah. Item
+  aktif: latar nila-muda, teks nila-tua, garis kecil nila di kiri. Di mobile
+  menjadi sheet.
 - **Page header**: judul Fraunces, satu baris konteks di bawahnya
   ("14 lamaran aktif · 3 perlu follow-up"), aksi utama di kanan.
 - **Kartu lamaran (board)**: nama perusahaan medium, posisi, baris bawah
@@ -154,7 +155,8 @@ Bahasa Indonesia santai-sopan, seperti teman yang tenang.
 Publik: Landing (/), Login (/login).
 Butuh login: Dashboard, Board, Lamaran (tabel), Lamaran baru, Detail
 lamaran, Edit lamaran, Perusahaan, Detail perusahaan, Kontak, Dokumen,
-Pertanyaan, Cerita, Cerita baru, Detail cerita, Edit cerita, Pengaturan.
+Pertanyaan, Cerita, Cerita baru, Detail cerita, Edit cerita, Latihan,
+Latihan singkat, Pengaturan.
 Lainnya: loading (skeleton), error, not-found, dialog form, dialog
 konfirmasi hapus, toggle tema.
 

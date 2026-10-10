@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { describedBy, setFieldErrors } from "@/lib/form-errors";
+import { cn } from "@/lib/utils";
 import { createStory, updateStory } from "../actions";
 import { COMPETENCY_OPTIONS, STAR_PARTS } from "../labels";
 import {
@@ -47,10 +48,19 @@ const FIELD_NAMES = [
 export function StoryForm({
   storyId,
   defaultValues = EMPTY_VALUES,
+  onSaved,
+  onCancel,
+  bare,
 }: {
   // Present when editing; absent when creating.
   storyId?: string;
   defaultValues?: StoryFormInput;
+  // For a form shown in a dialog: the caller decides what follows a save or a
+  // cancel, instead of the form navigating to the story.
+  onSaved?: (story: { id: string }) => void;
+  onCancel?: () => void;
+  // Without the card frame, inside a container that has its own.
+  bare?: boolean;
 }) {
   const router = useRouter();
   const id = useId();
@@ -80,7 +90,12 @@ export function StoryForm({
         }
 
         toast.success(storyId ? "Perubahan disimpan" : "Cerita disimpan");
-        router.push(`/stories/${result.data.id}`);
+
+        if (onSaved) {
+          onSaved(result.data);
+        } else {
+          router.push(`/stories/${result.data.id}`);
+        }
       } catch {
         toast.error("Cerita gagal disimpan. Coba lagi.");
       }
@@ -91,7 +106,7 @@ export function StoryForm({
     <form
       onSubmit={form.handleSubmit(submit)}
       noValidate
-      className="rounded-lg border bg-card p-5 sm:p-6"
+      className={cn(!bare && "rounded-lg border bg-card p-5 sm:p-6")}
     >
       <FieldGroup>
         <Field data-invalid={!!errors.title}>
@@ -178,12 +193,18 @@ export function StoryForm({
         </Field>
 
         <div className="flex justify-end gap-2 border-t pt-5">
-          <Link
-            href={cancelHref}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Batal
-          </Link>
+          {onCancel ? (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Batal
+            </Button>
+          ) : (
+            <Link
+              href={cancelHref}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Batal
+            </Link>
+          )}
           <Button type="submit" disabled={pending}>
             {pending ? "Menyimpan…" : "Simpan"}
           </Button>

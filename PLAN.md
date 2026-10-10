@@ -2,29 +2,35 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 8 selesai, kecuali 3b.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql` dan `0002_interview_prep.sql`. Berikutnya: Fase 9 (BYOK dan latihan singkat; rancangan di `docs/specs/latihan-interview.md`) dan Fase 3b.
+Status: **Fase 0 sampai 9 selesai, kecuali 3b.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql` dan `0004_deepseek_provider.sql`. Berikutnya: simulasi interview (`docs/specs/phase-3-interview-simulation.md`) dan Fase 3b.
 
 ## Keputusan
 
-| Hal                   | Pilihan                                                                   | Alasan                                                                                                               |
-| --------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Database              | Neon (PostgreSQL)                                                         | Serverless, cocok dengan Vercel, branch DB per preview                                                               |
-| Driver                | `pg` (node-postgres) + `attachDatabasePool`                               | Rekomendasi Neon untuk Vercel Fluid compute; mendukung transaksi untuk ubah status beserta riwayatnya                |
-| Auth                  | Auth.js v5, GitHub + Google, database session                             | Session bisa dicabut dari server; `userId` selalu berasal dari DB                                                    |
-| Dokumen CV            | Metadata + link eksternal                                                 | Tanpa storage file; upload bisa ditambah nanti tanpa mengubah relasi                                                 |
-| Perusahaan            | Tabel sendiri                                                             | Kontak menempel ke perusahaan; beberapa lamaran ke perusahaan yang sama tergabung                                    |
-| Follow-up             | Diturunkan dari `status_changed_at` dan `last_followed_up_at` saat dibaca | Tidak ada flag yang bisa basi, tidak butuh cron                                                                      |
-| Pengaturan            | Tabel `user_settings`, baris opsional                                     | `users` mengikuti bentuk adapter Auth.js; user tanpa baris memakai default                                           |
-| Pertanyaan interview  | Tabel `questions`, ditulis dari editor daftar di form interview           | Tiap pertanyaan punya kategori, kesiapan dan tautan cerita; `interviews.questions` tidak lagi ditulis (lihat Fase 8) |
-| Kesiapan pertanyaan   | Enum `not_ready`, `somewhat`, `ready`, dinilai sendiri                    | Tanpa skor dan persentase, sesuai nada aplikasi; ringkasan hanya hitungan "X siap · Y cukup · Z belum siap"          |
-| Kompetensi cerita     | Enum `competency` dalam kolom array                                       | Database menolak nilai di luar daftar; filter dilakukan di memori setelah cached read, jadi tanpa GIN index          |
-| Pertanyaan vs lamaran | FK `interview_id` dan `application_id` `on delete set null`               | Bank pertanyaan bertahan saat lamaran dihapus, seperti kontak                                                        |
-| Markdown              | `react-markdown` lewat `src/components/markdown.tsx`                      | HTML mentah tidak dirender; elemen dibatasi; dirender di server                                                      |
-| Test statistik        | Vitest terhadap PGlite, SQL di `src/features/dashboard/stats.ts`          | Agregasi ada di SQL; diuji di Postgres sungguhan dalam proses test, dengan migration asli, tanpa server database     |
-| Test end-to-end       | Playwright terhadap database terpisah (`E2E_DATABASE_URL`)                | Test membuat dan menghapus user; login OAuth tidak bisa diotomasi, jadi setup menulis user dan session langsung      |
-| Export                | Route Handler GET `/applications/export`                                  | Hanya membaca; mutasi tetap lewat Server Action                                                                      |
-| Tema                  | `next-themes`, class `dark` di `<html>`                                   | Mengikuti sistem sampai pengguna memilih; tanpa kedipan saat dimuat                                                  |
-| Mode demo             | Tidak dikerjakan                                                          | Di luar scope: aplikasi untuk dipakai sendiri dulu; data contoh tetap ada lewat `npm run db:seed`                    |
+| Hal                   | Pilihan                                                                    | Alasan                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Database              | Neon (PostgreSQL)                                                          | Serverless, cocok dengan Vercel, branch DB per preview                                                               |
+| Driver                | `pg` (node-postgres) + `attachDatabasePool`                                | Rekomendasi Neon untuk Vercel Fluid compute; mendukung transaksi untuk ubah status beserta riwayatnya                |
+| Auth                  | Auth.js v5, GitHub + Google, database session                              | Session bisa dicabut dari server; `userId` selalu berasal dari DB                                                    |
+| Dokumen CV            | Metadata + link eksternal                                                  | Tanpa storage file; upload bisa ditambah nanti tanpa mengubah relasi                                                 |
+| Perusahaan            | Tabel sendiri                                                              | Kontak menempel ke perusahaan; beberapa lamaran ke perusahaan yang sama tergabung                                    |
+| Follow-up             | Diturunkan dari `status_changed_at` dan `last_followed_up_at` saat dibaca  | Tidak ada flag yang bisa basi, tidak butuh cron                                                                      |
+| Pengaturan            | Tabel `user_settings`, baris opsional                                      | `users` mengikuti bentuk adapter Auth.js; user tanpa baris memakai default                                           |
+| Pertanyaan interview  | Tabel `questions`, ditulis dari editor daftar di form interview            | Tiap pertanyaan punya kategori, kesiapan dan tautan cerita; `interviews.questions` tidak lagi ditulis (lihat Fase 8) |
+| Kesiapan pertanyaan   | Enum `not_ready`, `somewhat`, `ready`, dinilai sendiri                     | Tanpa skor dan persentase, sesuai nada aplikasi; ringkasan hanya hitungan "X siap · Y cukup · Z belum siap"          |
+| Kompetensi cerita     | Enum `competency` dalam kolom array                                        | Database menolak nilai di luar daftar; filter dilakukan di memori setelah cached read, jadi tanpa GIN index          |
+| Pertanyaan vs lamaran | FK `interview_id` dan `application_id` `on delete set null`                | Bank pertanyaan bertahan saat lamaran dihapus, seperti kontak                                                        |
+| Markdown              | `react-markdown` lewat `src/components/markdown.tsx`                       | HTML mentah tidak dirender; elemen dibatasi; dirender di server                                                      |
+| Test statistik        | Vitest terhadap PGlite, SQL di `src/features/dashboard/stats.ts`           | Agregasi ada di SQL; diuji di Postgres sungguhan dalam proses test, dengan migration asli, tanpa server database     |
+| Test end-to-end       | Playwright terhadap database terpisah (`E2E_DATABASE_URL`)                 | Test membuat dan menghapus user; login OAuth tidak bisa diotomasi, jadi setup menulis user dan session langsung      |
+| Export                | Route Handler GET `/applications/export`                                   | Hanya membaca; mutasi tetap lewat Server Action                                                                      |
+| Tema                  | `next-themes`, class `dark` di `<html>`                                    | Mengikuti sistem sampai pengguna memilih; tanpa kedipan saat dimuat                                                  |
+| AI                    | Vercel AI SDK 7, key milik pengguna (Anthropic, OpenAI, Google, DeepSeek)  | Tanpa biaya API di sisi aplikasi; semua fitur non-AI tetap jalan tanpa key; butuh Node 22                            |
+| Key AI                | AES-256-GCM di server, secret `AI_KEY_ENCRYPTION_KEY`, AAD user + provider | Key tidak pernah kembali ke client (UI hanya 4 karakter terakhir); baris yang disalin ke user lain gagal didekripsi  |
+| Panggilan AI          | Server Action, `maxDuration` di page pemanggil                             | Mutasi tetap lewat Server Action; error provider dipetakan ke pesan ramah, log hanya kode dan status                 |
+| Latihan singkat       | Jawaban disimpan dulu sebagai sesi `drill`, masukan diminta sesudahnya     | Jawaban tidak hilang saat provider gagal; tanpa key tetap tercatat; meminta ulang tidak menagih dua kali             |
+| Masukan               | `Output.object` dengan skema Zod tanpa skor, tersimpan di giliran kandidat | Tanpa angka, sesuai nada aplikasi; isi pengguna dibungkus tag pembatas dan diperlakukan sebagai data                 |
+| Pertanyaan acak       | Dipilih di browser saat tombol diklik, id masuk URL                        | Render tidak boleh bergantung pada acak (`cacheComponents`); refresh tidak mengganti pertanyaan                      |
+| Mode demo             | Tidak dikerjakan                                                           | Di luar scope: aplikasi untuk dipakai sendiri dulu; data contoh tetap ada lewat `npm run db:seed`                    |
 
 ## Skema database
 
@@ -37,18 +43,26 @@ Status: **Fase 0 sampai 8 selesai, kecuali 3b.** Aplikasi live di <https://tarek
 
 ### Enum
 
-| Enum                 | Nilai                                                                                                       |
-| -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `application_status` | `wishlist`, `applied`, `screening`, `technical_test`, `interview`, `offer`, `rejected`, `ghosted`           |
-| `job_source`         | `linkedin`, `glints`, `kalibrr`, `jobstreet`, `referral`, `other`                                           |
-| `work_type`          | `onsite`, `hybrid`, `remote`                                                                                |
-| `document_type`      | `cv`, `cover_letter`                                                                                        |
-| `interview_stage`    | `hr`, `technical`, `user`, `final`, `other`                                                                 |
-| `contact_role`       | `recruiter`, `referral`, `hiring_manager`, `other`                                                          |
-| `competency`         | `ownership`, `conflict`, `failure`, `technical_depth`, `leadership`, `ambiguity`, `collaboration`, `impact` |
-| `question_category`  | `behavioral`, `technical_backend`, `system_design`, `ai_llm`, `hr_general`, `other`                         |
-| `question_source`    | `interview`, `manual`, `ai` (`ai` dipakai mulai fase latihan)                                               |
-| `question_readiness` | `not_ready`, `somewhat`, `ready`                                                                            |
+| Enum                      | Nilai                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `application_status`      | `wishlist`, `applied`, `screening`, `technical_test`, `interview`, `offer`, `rejected`, `ghosted`           |
+| `job_source`              | `linkedin`, `glints`, `kalibrr`, `jobstreet`, `referral`, `other`                                           |
+| `work_type`               | `onsite`, `hybrid`, `remote`                                                                                |
+| `document_type`           | `cv`, `cover_letter`                                                                                        |
+| `interview_stage`         | `hr`, `technical`, `user`, `final`, `other`                                                                 |
+| `contact_role`            | `recruiter`, `referral`, `hiring_manager`, `other`                                                          |
+| `competency`              | `ownership`, `conflict`, `failure`, `technical_depth`, `leadership`, `ambiguity`, `collaboration`, `impact` |
+| `question_category`       | `behavioral`, `technical_backend`, `system_design`, `ai_llm`, `hr_general`, `other`                         |
+| `question_source`         | `interview`, `manual`, `ai` (`ai`: pertanyaan lanjutan yang disimpan dari masukan latihan)                  |
+| `question_readiness`      | `not_ready`, `somewhat`, `ready`                                                                            |
+| `ai_provider`             | `anthropic`, `openai`, `google`, `deepseek`                                                                 |
+| `practice_mode`           | `drill`, `simulation`                                                                                       |
+| `practice_interview_type` | `hr_screening`, `behavioral`, `technical_backend`, `system_design_light`, `ai_builder` (hanya simulasi)     |
+| `practice_level`          | `mid`, `senior`                                                                                             |
+| `practice_language`       | `id`, `en`                                                                                                  |
+| `practice_tone`           | `friendly`, `neutral`, `challenging`                                                                        |
+| `practice_session_status` | `in_progress`, `completed`, `abandoned`                                                                     |
+| `practice_turn_role`      | `interviewer`, `candidate`, `system_event`                                                                  |
 
 ### Tabel Auth.js
 
@@ -182,11 +196,12 @@ PK (`application_id`, `contact_id`); index (`contact_id`).
 
 **`user_settings`** — satu baris opsional per user, tanpa `id`
 
-| Kolom                  | Tipe                        | Keterangan                             |
-| ---------------------- | --------------------------- | -------------------------------------- |
-| `user_id`              | text PK → users, cascade    |                                        |
-| `follow_up_after_days` | integer not null default 7  | batas hari penanda follow-up           |
-| `ghosted_after_days`   | integer not null default 21 | batas hari saran pindah ke Tanpa kabar |
+| Kolom                  | Tipe                        | Keterangan                                      |
+| ---------------------- | --------------------------- | ----------------------------------------------- |
+| `user_id`              | text PK → users, cascade    |                                                 |
+| `follow_up_after_days` | integer not null default 7  | batas hari penanda follow-up                    |
+| `ghosted_after_days`   | integer not null default 21 | batas hari saran pindah ke Tanpa kabar          |
+| `active_ai_provider`   | `ai_provider`               | key AI yang sedang dipakai; null bila belum ada |
 
 Check: kedua kolom `> 0`. User tanpa baris memakai default (`src/features/settings/constants.ts`).
 
@@ -226,6 +241,49 @@ Index: (`user_id`).
 | `user_id`     | text not null → users, cascade     |
 
 PK (`question_id`, `story_id`); index (`story_id`).
+
+**`ai_credentials`** — key API milik pengguna, satu per provider
+
+| Kolom                             | Tipe                       | Keterangan                                            |
+| --------------------------------- | -------------------------- | ----------------------------------------------------- |
+| `provider`                        | `ai_provider` not null     |                                                       |
+| `encrypted_key`, `iv`, `auth_tag` | text not null              | AES-256-GCM, base64                                   |
+| `key_version`                     | integer not null default 1 | secret server yang dipakai mengenkripsi; untuk rotasi |
+| `key_last4`                       | text not null              | satu-satunya bagian key yang ditampilkan              |
+| `model`                           | text not null              | ID model pilihan pengguna                             |
+
+Index: unique (`user_id`, `provider`).
+
+**`practice_sessions`** — satu percobaan latihan, tanpa `created_at` dan `updated_at`
+
+| Kolom                             | Tipe                                                     | Keterangan                                           |
+| --------------------------------- | -------------------------------------------------------- | ---------------------------------------------------- |
+| `application_id`                  | uuid → applications, set null                            | sesi bertahan saat lamaran dihapus                   |
+| `mode`                            | `practice_mode` not null                                 |                                                      |
+| `interview_type`, `level`, `tone` | enum masing-masing                                       | hanya simulasi; null untuk drill                     |
+| `max_turns`                       | integer                                                  | hanya simulasi; ditegakkan di server                 |
+| `language`                        | `practice_language` not null                             |                                                      |
+| `status`                          | `practice_session_status` not null default `in_progress` |                                                      |
+| `started_at`                      | timestamptz not null default now()                       |                                                      |
+| `ended_at`                        | timestamptz                                              |                                                      |
+| `summary`                         | jsonb                                                    | ringkasan akhir simulasi; divalidasi Zod saat dibaca |
+
+Index: (`user_id`, `started_at`). Check: bila `mode = 'simulation'`, `interview_type`, `level`, `tone` terisi dan `max_turns > 0`.
+
+**`practice_turns`** — giliran dalam sesi, tanpa `updated_at`
+
+| Kolom         | Tipe                                       | Keterangan                                                |
+| ------------- | ------------------------------------------ | --------------------------------------------------------- |
+| `session_id`  | uuid not null → practice_sessions, cascade |                                                           |
+| `position`    | integer not null                           | urutan dalam sesi                                         |
+| `role`        | `practice_turn_role` not null              |                                                           |
+| `content`     | text not null                              |                                                           |
+| `question_id` | uuid → questions, set null                 |                                                           |
+| `feedback`    | jsonb                                      | masukan atas giliran kandidat; divalidasi Zod saat dibaca |
+
+Index: unique (`session_id`, `position`), (`question_id`).
+
+Satu percobaan drill adalah satu sesi dengan dua giliran: posisi 0 `interviewer` (teks pertanyaan saat itu) dan posisi 1 `candidate` (jawaban). `feedback` giliran kandidat berisi `{ promptVersion, provider, model, result }`, dengan `result` berbentuk `feedbackSchema` di `src/features/practice/schemas.ts`.
 
 ### Relasi
 
@@ -273,28 +331,30 @@ Transisi status bebas (mundur, lompat tahap, lamaran dicatat langsung di tahap l
 
 ## Route
 
-| Route                     | Akses  | Isi                                                                                                                                                                                     |
-| ------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                       | publik | Landing page                                                                                                                                                                            |
-| `/login`                  | publik | Tombol masuk GitHub dan Google                                                                                                                                                          |
-| `/api/auth/[...nextauth]` | publik | Handler Auth.js                                                                                                                                                                         |
-| `/dashboard`              | login  | Panel "Perlu Follow-up"; statistik dengan filter rentang tanggal di URL: kartu ringkasan, funnel, rate per sumber dan per versi CV, waktu respons, lamaran per minggu                   |
-| `/board`                  | login  | Kanban: kolom per status, drag-and-drop antar kolom mengubah status dan menulis riwayat; kolom Ditolak dan Tanpa kabar bisa diciutkan                                                   |
-| `/applications`           | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort                                                                                                                           |
-| `/applications/new`       | login  | Form lamaran baru                                                                                                                                                                       |
-| `/applications/[id]`      | login  | Detail: data lamaran, ubah status, riwayat status, versi dokumen yang dipakai, catatan interview, kontak terhubung                                                                      |
-| `/applications/[id]/edit` | login  | Form edit                                                                                                                                                                               |
-| `/applications/export`    | login  | Unduhan CSV semua lamaran dengan kolom lengkap (Route Handler, hanya GET)                                                                                                               |
-| `/companies`              | login  | Daftar perusahaan dengan jumlah lamaran                                                                                                                                                 |
-| `/companies/[id]`         | login  | Detail perusahaan: lamaran dan kontak (baca saja)                                                                                                                                       |
-| `/contacts`               | login  | Daftar dan kelola kontak, tautkan ke lamaran                                                                                                                                            |
-| `/documents`              | login  | Versi CV dan cover letter: tambah, edit, arsipkan, hapus; jumlah pemakaian per versi                                                                                                    |
-| `/questions`              | login  | Bank pertanyaan: ringkasan kesiapan, cari (`?q=`) dan filter kategori, kesiapan, sumber, lamaran di URL; tambah pertanyaan manual; ubah kategori dan kesiapan inline; tautkan ke cerita |
-| `/stories`                | login  | Daftar cerita STAR dengan cari (`?q=`) dan filter kompetensi (`?competency=`)                                                                                                           |
-| `/stories/new`            | login  | Form cerita baru                                                                                                                                                                        |
-| `/stories/[id]`           | login  | Detail cerita: empat bagian STAR, kompetensi, pertanyaan yang tertaut                                                                                                                   |
-| `/stories/[id]/edit`      | login  | Form edit cerita                                                                                                                                                                        |
-| `/settings`               | login  | Profil, batas hari follow-up dan saran Tanpa kabar, keluar, hapus akun                                                                                                                  |
+| Route                          | Akses  | Isi                                                                                                                                                                                                                                    |
+| ------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                            | publik | Landing page                                                                                                                                                                                                                           |
+| `/login`                       | publik | Tombol masuk GitHub dan Google                                                                                                                                                                                                         |
+| `/api/auth/[...nextauth]`      | publik | Handler Auth.js                                                                                                                                                                                                                        |
+| `/dashboard`                   | login  | Panel "Perlu Follow-up"; statistik dengan filter rentang tanggal di URL: kartu ringkasan, funnel, rate per sumber dan per versi CV, waktu respons, lamaran per minggu                                                                  |
+| `/board`                       | login  | Kanban: kolom per status, drag-and-drop antar kolom mengubah status dan menulis riwayat; kolom Ditolak dan Tanpa kabar bisa diciutkan                                                                                                  |
+| `/applications`                | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort                                                                                                                                                                          |
+| `/applications/new`            | login  | Form lamaran baru                                                                                                                                                                                                                      |
+| `/applications/[id]`           | login  | Detail: data lamaran, ubah status, riwayat status, versi dokumen yang dipakai, catatan interview, kontak terhubung                                                                                                                     |
+| `/applications/[id]/edit`      | login  | Form edit                                                                                                                                                                                                                              |
+| `/applications/export`         | login  | Unduhan CSV semua lamaran dengan kolom lengkap (Route Handler, hanya GET)                                                                                                                                                              |
+| `/companies`                   | login  | Daftar perusahaan dengan jumlah lamaran                                                                                                                                                                                                |
+| `/companies/[id]`              | login  | Detail perusahaan: lamaran dan kontak (baca saja)                                                                                                                                                                                      |
+| `/contacts`                    | login  | Daftar dan kelola kontak, tautkan ke lamaran                                                                                                                                                                                           |
+| `/documents`                   | login  | Versi CV dan cover letter: tambah, edit, arsipkan, hapus; jumlah pemakaian per versi                                                                                                                                                   |
+| `/questions`                   | login  | Bank pertanyaan: ringkasan kesiapan, cari (`?q=`) dan filter kategori, kesiapan, sumber, lamaran di URL; tambah pertanyaan manual; ubah kategori dan kesiapan inline; tautkan ke cerita                                                |
+| `/stories`                     | login  | Daftar cerita STAR dengan cari (`?q=`) dan filter kompetensi (`?competency=`)                                                                                                                                                          |
+| `/stories/new`                 | login  | Form cerita baru                                                                                                                                                                                                                       |
+| `/stories/[id]`                | login  | Detail cerita: empat bagian STAR, kompetensi, pertanyaan yang tertaut                                                                                                                                                                  |
+| `/stories/[id]/edit`           | login  | Form edit cerita                                                                                                                                                                                                                       |
+| `/practice`                    | login  | Latihan: ringkasan kesiapan, tombol "Mulai dari yang belum siap" (acak, dipilih saat diklik), bank pertanyaan dengan filter kategori di URL (`?category=`) dan tautan Latih; pertanyaan yang sama di beberapa baris bank tampil sekali |
+| `/practice/drill/[questionId]` | login  | Latihan singkat: pertanyaan, contekan cerita tertaut, jawaban dengan timer opsional, masukan tanpa skor (atau ajakan mengatur key), simpan pertanyaan lanjutan ke bank, ubah kesiapan, tautkan atau tulis cerita                       |
+| `/settings`                    | login  | Profil, batas hari follow-up dan saran Tanpa kabar, keluar; bagian AI: simpan key per provider, pilih model, tes key, hapus key                                                                                                        |
 
 Interview dan perubahan status dikelola di halaman detail lamaran, tanpa route sendiri. Kontak dibuat dan diedit di `/contacts`; di detail lamaran kontak yang ada bisa dihubungkan atau dilepas.
 
@@ -313,8 +373,9 @@ Interview dan perubahan status dikelola di halaman detail lamaran, tanpa route s
 | 7    | Polish: skeleton saat memuat, `error.tsx`, `not-found`, tema gelap, aksesibilitas dasar, export CSV; test Vitest (logika murni, skema Zod, statistik lewat PGlite) dan Playwright; GitHub Actions; README portfolio dan panduan deploy Vercel + Neon | Semua pemeriksaan dan test lolos di CI; aplikasi live dan bisa didemokan                           |
 
 | 8 | Persiapan interview, fondasi tanpa AI: tabel `questions` (dengan backfill dari `interviews.questions`), `stories`, `question_stories`, kolom `job_description`; halaman Pertanyaan v2 dan Cerita; editor daftar pertanyaan di form interview. Spec: `docs/specs/phase-1-story-bank-with-questions-v2-and-job-description.md` | Cerita dan pertanyaan bisa dibuat, ditautkan, dan ditandai kesiapannya; backfill idempoten teruji |
+| 9 | BYOK dan latihan singkat: Node 22 dan AI SDK 7; tabel `ai_credentials`, `practice_sessions`, `practice_turns`; modul `src/features/ai` (enkripsi, resolver model, pemetaan error) dan bagian AI di Pengaturan; `src/features/practice` (prompt berversi, masukan terstruktur tanpa skor, sesi drill) dan halaman Latihan (`/practice`, `/practice/drill/[questionId]`) dengan simpan pertanyaan lanjutan ke bank. Spec: `docs/specs/phase-2-byok-and-short-practice.md` | Key bisa disimpan, dites dan dihapus; satu pertanyaan bisa dilatih dan mendapat masukan; tanpa key semuanya tetap jalan |
 
-Fase berikutnya mengikuti `docs/specs/latihan-interview.md`: BYOK dan latihan singkat, simulasi interview, lalu input suara. Pekerjaan susulan dari Fase 8: hapus kolom `interviews.questions` lewat migration terpisah setelah backfill produksi (`docs/deploy.md`) dijalankan.
+Fase berikutnya mengikuti `docs/specs/latihan-interview.md`: simulasi interview, lalu input suara. Pekerjaan susulan dari Fase 8: hapus kolom `interviews.questions` lewat migration terpisah setelah backfill produksi (`docs/deploy.md`) dijalankan.
 
 Penerapan identitas brand (guideline di `docs/design/guideline.md`) berjalan di luar tabel ini, halaman demi halaman; daftar dan statusnya ada di `docs/design/rollout.md`.
 
