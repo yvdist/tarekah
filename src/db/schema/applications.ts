@@ -46,6 +46,7 @@ export const applications = pgTable(
       onDelete: "set null",
     }),
     notes: text(),
+    jobDescription: text(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

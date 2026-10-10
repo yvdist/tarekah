@@ -15,6 +15,13 @@
       "when": 1791528595652,
       "tag": "0001_follow_up",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791613069876,
+      "tag": "0002_interview_prep",
+      "breakpoints": true
     }
   ]
 }
