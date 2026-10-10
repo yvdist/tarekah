@@ -60,3 +60,31 @@ test("saves an AI key, tests it, changes its model and deletes it", async ({
   await expect(panel.getByRole("listitem")).toHaveCount(0);
   await expect(panel.getByRole("button", { name: "Simpan key" })).toBeVisible();
 });
+
+// A provider added after the first three: its key is stored under an enum
+// value that a later migration introduced.
+test("saves and tests a DeepSeek key with its default model", async ({
+  page,
+}) => {
+  await page.goto("/settings");
+
+  const panel = page.locator("section#ai");
+  const row = panel.getByRole("listitem").filter({ hasText: "DeepSeek" });
+
+  await panel.getByRole("combobox", { name: "Provider" }).click();
+  await page.getByRole("option", { name: "DeepSeek" }).click();
+  await panel.getByLabel("API key").fill("sk-e2e-not-a-real-deepseek-key-Dk4p");
+  await panel.getByRole("button", { name: "Simpan key" }).click();
+
+  await expect(row.getByText("Aktif")).toBeVisible();
+  await expect(row.getByText("deepseek-flash")).toBeVisible();
+  await expect(row).toContainText("Dk4p");
+
+  await row.getByRole("button", { name: "Tes key DeepSeek" }).click();
+  await expect(row.getByRole("status")).toHaveText("Key berfungsi.");
+
+  await row.getByRole("button", { name: "Hapus key DeepSeek" }).click();
+  await page.getByRole("button", { name: "Hapus", exact: true }).click();
+
+  await expect(panel.getByRole("listitem")).toHaveCount(0);
+});
