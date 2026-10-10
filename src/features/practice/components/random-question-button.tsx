@@ -12,26 +12,21 @@ export type PickableQuestion = { id: string; readiness: QuestionReadiness };
 // otherwise change the question under the user.
 export function RandomQuestionButton({
   items,
-  excludeId,
   variant,
   children,
 }: {
   items: ReadonlyArray<PickableQuestion>;
-  // The question being practised, when asking for the next one.
-  excludeId?: string;
   variant?: React.ComponentProps<typeof Button>["variant"];
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const hasChoice = items.some((item) => item.id !== excludeId);
-
   return (
     <Button
       type="button"
       variant={variant}
-      disabled={!hasChoice}
+      disabled={items.length === 0}
       onClick={() => {
-        const id = pickQuestionId(items, { excludeId, random: Math.random });
+        const id = pickQuestionId(items, Math.random);
 
         if (id) {
           router.push(`/practice/drill/${id}`);

@@ -13,16 +13,14 @@ type Pickable = { id: string; readiness: QuestionReadiness };
 // never while rendering: a render must not depend on chance.
 export function pickQuestionId(
   items: ReadonlyArray<Pickable>,
-  options: { excludeId?: string; random: () => number },
+  random: () => number,
 ): string | null {
-  const candidates = items.filter((item) => item.id !== options.excludeId);
-
   for (const readiness of QUESTION_READINESS) {
-    const group = candidates.filter((item) => item.readiness === readiness);
+    const group = items.filter((item) => item.readiness === readiness);
 
     if (group.length > 0) {
       const index = Math.min(
-        Math.floor(options.random() * group.length),
+        Math.floor(random() * group.length),
         group.length - 1,
       );
 

@@ -8,13 +8,13 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAiStatus } from "@/features/ai/queries";
 import { RandomQuestionButton } from "@/features/practice/components/random-question-button";
+import { getPracticeQuestions } from "@/features/practice/queries";
 import { ReadinessSummaryLine } from "@/features/questions/components/readiness-summary";
 import {
   QUESTION_CATEGORY_LABELS,
   QUESTION_CATEGORY_OPTIONS,
   QUESTION_READINESS_LABELS,
 } from "@/features/questions/labels";
-import { getQuestions } from "@/features/questions/queries";
 
 export const metadata: Metadata = { title: "Latihan" };
 
@@ -39,7 +39,7 @@ export default function PracticePage({ searchParams }: PageProps<"/practice">) {
 
 // Starts with a question the user has not marked ready, while there is one.
 async function StartButton() {
-  const { total, summary, matches } = await getQuestions({});
+  const { total, summary, matches } = await getPracticeQuestions();
 
   if (total === 0) {
     return null;
@@ -68,8 +68,8 @@ async function PracticeList({
   searchParams,
 }: Pick<PageProps<"/practice">, "searchParams">) {
   const params = await searchParams;
-  const [{ total, summary, matches, filter }, ai] = await Promise.all([
-    getQuestions({ category: first(params.category) }),
+  const [{ total, summary, matches, category }, ai] = await Promise.all([
+    getPracticeQuestions(first(params.category)),
     getAiStatus(),
   ]);
 
@@ -108,7 +108,7 @@ async function PracticeList({
       <form className="flex flex-wrap items-center gap-2">
         <select
           name="category"
-          defaultValue={filter.category}
+          defaultValue={category}
           aria-label="Filter kategori"
           className={SELECT_CLASS}
         >
@@ -122,7 +122,7 @@ async function PracticeList({
         <Button type="submit" variant="outline">
           Terapkan
         </Button>
-        {filter.category !== "" ? (
+        {category !== "" ? (
           <Link
             href="/practice"
             className={buttonVariants({ variant: "ghost" })}
@@ -151,6 +151,9 @@ async function PracticeList({
                     {QUESTION_READINESS_LABELS[question.readiness]}
                     {question.stories.length > 0
                       ? ` · ${question.stories.length} cerita`
+                      : null}
+                    {question.copies > 1
+                      ? ` · muncul ${question.copies} kali di bank`
                       : null}
                   </p>
                 </div>

@@ -78,7 +78,7 @@ export function Drill({
   // asked of a provider.
   aiReady: boolean;
   storyOptions: ReadonlyArray<StoryOption>;
-  // Every question of the user, to pick the next one from.
+  // The other questions of the user, to pick the next one from.
   questions: ReadonlyArray<PickableQuestion>;
 }) {
   const id = useId();
@@ -418,7 +418,7 @@ function AfterAnswer({
           <RotateCcw />
           Coba jawab lagi
         </Button>
-        <RandomQuestionButton items={questions} excludeId={question.id}>
+        <RandomQuestionButton items={questions}>
           Pertanyaan berikutnya
         </RandomQuestionButton>
       </div>

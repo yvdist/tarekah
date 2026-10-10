@@ -19,7 +19,6 @@ import {
   createDrillSession,
   findDrillSession,
   findPracticeQuestion,
-  normalizeQuestionText,
   saveTurnFeedback,
 } from "./data";
 import type { StoredFeedback } from "./schemas";
@@ -286,16 +285,6 @@ describe("findDrillSession and saveTurnFeedback", () => {
       .orderBy(asc(practiceTurns.position));
 
     expect(await saveTurnFeedback(db, userId, asked.id, feedback)).toBe(false);
-  });
-});
-
-describe("normalizeQuestionText", () => {
-  it.each([
-    ["Apa yang kamu pelajari?", "apa yang kamu pelajari"],
-    ["  APA   yang\nkamu pelajari ?! ", "apa yang kamu pelajari"],
-    ["Apa itu CAP theorem", "apa itu cap theorem"],
-  ])("reads %j as %j", (text, normalized) => {
-    expect(normalizeQuestionText(text)).toBe(normalized);
   });
 });
 

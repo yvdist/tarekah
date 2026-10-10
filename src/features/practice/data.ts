@@ -8,6 +8,7 @@ import {
 } from "@/db/schema";
 import type { PracticeLanguage } from "@/db/schema/enum-values";
 import type { Database } from "@/features/questions/data";
+import { normalizeQuestionText } from "./same-question";
 import type { StoredFeedback } from "./schemas";
 
 // The SQL of practice. The database is passed in rather than imported, so the
@@ -208,16 +209,6 @@ export async function saveTurnFeedback(
     .returning({ id: practiceTurns.id });
 
   return updated.length > 0;
-}
-
-// How two questions are compared: case, spacing and closing punctuation do not
-// make a different question.
-export function normalizeQuestionText(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[\s?.!]+$/, "");
 }
 
 // Adds a follow-up question from feedback to the bank, marked as coming from

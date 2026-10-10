@@ -8,9 +8,11 @@ import { FormSkeleton } from "@/components/skeletons";
 import { getAiStatus } from "@/features/ai/queries";
 import { Drill } from "@/features/practice/components/drill";
 import { StoryCrib } from "@/features/practice/components/story-crib";
-import { getPracticeQuestion } from "@/features/practice/queries";
+import {
+  getPracticeQuestion,
+  getPracticeQuestions,
+} from "@/features/practice/queries";
 import { QUESTION_CATEGORY_LABELS } from "@/features/questions/labels";
-import { getQuestions } from "@/features/questions/queries";
 import { getStoryOptions } from "@/features/stories/queries";
 
 export const metadata: Metadata = { title: "Latihan singkat" };
@@ -51,8 +53,10 @@ async function DrillContent({
     getPracticeQuestion(questionId),
     getAiStatus(),
     getStoryOptions(),
-    getQuestions({}),
+    getPracticeQuestions(),
   ]);
+  // The next question is another question, not another row asking this one.
+  const others = matches.filter((item) => !item.ids.includes(question.id));
 
   return (
     <div className="flex flex-col gap-4">
@@ -71,7 +75,7 @@ async function DrillContent({
         question={question}
         aiReady={ai.ready}
         storyOptions={storyOptions}
-        questions={matches.map(({ id, readiness }) => ({ id, readiness }))}
+        questions={others.map(({ id, readiness }) => ({ id, readiness }))}
       />
     </div>
   );
