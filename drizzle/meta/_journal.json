@@ -22,6 +22,13 @@
       "when": 1791613069876,
       "tag": "0002_interview_prep",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791620975373,
+      "tag": "0003_byok_practice",
+      "breakpoints": true
     }
   ]
 }

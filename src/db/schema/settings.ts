@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { check, integer, pgTable, text } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 import { createdAt, updatedAt } from "./columns";
+import { aiProvider } from "./enums";
 
 // One optional row per user. A user without a row gets the defaults, which
 // are repeated in src/features/settings/constants.ts.
@@ -13,6 +14,8 @@ export const userSettings = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     followUpAfterDays: integer().notNull().default(7),
     ghostedAfterDays: integer().notNull().default(21),
+    // Which of the user's saved keys practice feedback uses; null without one.
+    activeAiProvider: aiProvider(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
