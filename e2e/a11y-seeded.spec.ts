@@ -9,6 +9,7 @@ import { expectNoSeriousViolations, seedDemoUser } from "./helpers";
 
 const PAGES = [
   "/dashboard",
+  "/practice",
   "/board",
   "/applications",
   "/contacts",

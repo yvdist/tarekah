@@ -7,6 +7,7 @@ import {
 
 const PAGES = [
   { path: "/dashboard", heading: "Dashboard" },
+  { path: "/practice", heading: "Latihan" },
   { path: "/applications", heading: "Lamaran" },
   { path: "/applications/new", heading: "Tambah lamaran" },
   { path: "/board", heading: "Board" },
