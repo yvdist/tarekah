@@ -172,6 +172,10 @@ async function ApplicationDetails({
             )}
           </Panel>
 
+          <Panel title="Deskripsi pekerjaan">
+            <JobDescription text={application.jobDescription} />
+          </Panel>
+
           <Panel
             title="Interview"
             action={<AddInterviewButton applicationId={application.id} />}
@@ -212,6 +216,45 @@ async function Contacts({ applicationId }: { applicationId: string }) {
       linked={linked}
       available={available}
     />
+  );
+}
+
+// A posting is long; past a few paragraphs it starts folded. <details> needs
+// no script, and the open state does not have to survive a reload.
+const JOB_DESCRIPTION_FOLD = 600;
+
+function JobDescription({ text }: { text: string | null }) {
+  if (!text) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Belum ada deskripsi pekerjaan. Tempel teks lowongannya lewat tombol
+        Edit.
+      </p>
+    );
+  }
+
+  if (text.length <= JOB_DESCRIPTION_FOLD) {
+    return <p className="text-sm whitespace-pre-wrap">{text}</p>;
+  }
+
+  // The preview sits outside <details> (its body is hidden while closed) and
+  // disappears once the full text is open.
+  return (
+    <div className="group flex flex-col gap-3 text-sm">
+      <p
+        className="whitespace-pre-wrap text-muted-foreground group-has-[[open]]:hidden"
+        aria-hidden
+      >
+        {text.slice(0, JOB_DESCRIPTION_FOLD).trimEnd()}…
+      </p>
+      <details>
+        <summary className="w-fit cursor-pointer list-none rounded-sm text-muted-foreground underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+          <span className="group-has-[[open]]:hidden">Lihat selengkapnya</span>
+          <span className="hidden group-has-[[open]]:inline">Ciutkan</span>
+        </summary>
+        <p className="mt-3 whitespace-pre-wrap">{text}</p>
+      </details>
+    </div>
   );
 }
 

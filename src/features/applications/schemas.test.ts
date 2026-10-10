@@ -25,6 +25,7 @@ const input = (
   cvDocumentId: "",
   coverLetterDocumentId: "",
   notes: "",
+  jobDescription: "",
   ...overrides,
 });
 
@@ -53,6 +54,7 @@ describe("applicationFormSchema", () => {
       cvDocumentId: null,
       coverLetterDocumentId: null,
       notes: null,
+      jobDescription: null,
     });
   });
 
@@ -144,6 +146,13 @@ describe("applicationFormSchema", () => {
 
   it("limits notes to 10 000 characters", () => {
     expect(errorsOf({ notes: "a".repeat(10_001) })).toEqual(["notes"]);
+  });
+
+  it("limits the job description to 20 000 characters", () => {
+    expect(errorsOf({ jobDescription: "a".repeat(20_000) })).toEqual([]);
+    expect(errorsOf({ jobDescription: "a".repeat(20_001) })).toEqual([
+      "jobDescription",
+    ]);
   });
 });
 

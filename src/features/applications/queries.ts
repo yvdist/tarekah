@@ -186,6 +186,7 @@ async function listExportRowsByUserId(userId: string) {
       coverLetterLabel: coverLetterDocuments.label,
       jobUrl: applications.jobUrl,
       notes: applications.notes,
+      jobDescription: applications.jobDescription,
       createdAt: applications.createdAt,
     })
     .from(applications)

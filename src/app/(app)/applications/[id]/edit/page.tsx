@@ -55,6 +55,7 @@ async function EditApplicationForm({
         cvDocumentId: application.cvDocumentId ?? "",
         coverLetterDocumentId: application.coverLetterDocumentId ?? "",
         notes: application.notes ?? "",
+        jobDescription: application.jobDescription ?? "",
       }}
     />
   );

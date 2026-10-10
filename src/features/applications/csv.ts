@@ -64,6 +64,7 @@ const COLUMNS: ReadonlyArray<
   ["Versi cover letter", (row) => row.coverLetterLabel],
   ["Link loker", (row) => row.jobUrl],
   ["Catatan", (row) => row.notes],
+  ["Deskripsi pekerjaan", (row) => row.jobDescription],
   ["Dibuat (WIB)", (row) => formatTimestamp(row.createdAt)],
 ];
 
