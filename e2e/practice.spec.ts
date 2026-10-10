@@ -1,33 +1,18 @@
 import { expect, type Page, test } from "@playwright/test";
-import { expectNoSeriousViolations, uniqueName } from "./helpers";
+import {
+  ANTHROPIC,
+  clearAiKeys,
+  expectNoSeriousViolations,
+  FAKE_API_KEY,
+  uniqueName,
+} from "./helpers";
 
-// Not a real key. The server runs with AI_FAKE_PROVIDER, so nothing is sent
-// to a provider and the feedback is the canned one in
-// src/features/ai/fake-model.ts.
-const API_KEY = "sk-ant-api03-e2e-not-a-real-key-Lt9w";
-const ANTHROPIC = "Anthropic (Claude)";
+const API_KEY = FAKE_API_KEY;
 const FOLLOW_UP = "Apa yang akan kamu lakukan berbeda kalau mengulanginya?";
 const DRILL_URL = /\/practice\/drill\/[0-9a-f-]{36}$/;
 
-// Both tests depend on which keys are saved, and a spec that failed halfway
-// may have left one behind.
-test.beforeEach(async ({ page }) => {
-  await page.goto("/settings");
-
-  const panel = page.locator("section#ai");
-  const rows = panel.getByRole("listitem");
-
-  await expect(panel.getByLabel("API key")).toBeVisible();
-
-  for (let left = await rows.count(); left > 0; left -= 1) {
-    await rows
-      .first()
-      .getByRole("button", { name: /^Hapus key/ })
-      .click();
-    await page.getByRole("button", { name: "Hapus", exact: true }).click();
-    await expect(rows).toHaveCount(left - 1);
-  }
-});
+// Both tests depend on which keys are saved.
+test.beforeEach(({ page }) => clearAiKeys(page));
 
 // `rows` is how many rows of the bank read like `text` afterwards.
 async function addQuestion(page: Page, text: string, rows = 1) {
