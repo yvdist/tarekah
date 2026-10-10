@@ -70,7 +70,7 @@ Follow this without being asked, at the end of every task or phase.
 
 ## Stack
 
-Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui on Base UI · PostgreSQL on Neon through `pg` (node-postgres) · Drizzle ORM + drizzle-kit · Auth.js v5 (`next-auth@beta`, GitHub + Google, database sessions through `@auth/drizzle-adapter`) · Zod 4 · Vercel AI SDK 7 (`ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@ai-sdk/google`) with the users' own keys · Prettier · deployed on Vercel. Node 22.
+Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui on Base UI · PostgreSQL on Neon through `pg` (node-postgres) · Drizzle ORM + drizzle-kit · Auth.js v5 (`next-auth@beta`, GitHub + Google, database sessions through `@auth/drizzle-adapter`) · Zod 4 · Vercel AI SDK 7 (`ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@ai-sdk/google`, `@ai-sdk/deepseek`) with the users' own keys · Prettier · deployed on Vercel. Node 22.
 
 `next-auth@latest` is still v4 and does not support this Next.js version; stay on the `beta` tag.
 
@@ -151,6 +151,8 @@ Every AI call runs on the server with a key the user saved in Pengaturan. Withou
 - Practice (`src/features/practice`) saves the answer first and asks for feedback second: `saveDrillAnswer` writes a completed drill session with two turns, then `requestDrillFeedback` reads the question and answer back from the database and returns stored feedback when there is some, so asking twice never bills twice. Having no key is a result (`status: "not_configured"`, shown as an invitation), not an error.
 - Prompts live in `src/features/practice/prompts/`, each with a version constant that is stored with what it produced. Text the user wrote goes into `prompt` inside delimiter tags, through `escapeTags`, and never into `instructions`.
 - A schema given to `Output.object` has no `.optional()` and no length bounds, which the providers' strict mode rejects; bounds are applied afterwards (`tidyFeedback`). No field holds a score. `FAKE_FEEDBACK` in `fake-model.ts` must keep passing `feedbackSchema`.
+- A provider is a value in `AI_PROVIDERS` (adding one is a migration, `ALTER TYPE … ADD VALUE`), a label and suggested models in `providers.ts`, and a factory in `model.ts`. Settings that only one provider understands live in `AI_PROVIDER_OPTIONS` (`src/features/ai/provider-options.ts`) and go into every call as `providerOptions`; each provider reads only its own entry.
+- DeepSeek has no schema-constrained output: its SDK provider puts the JSON schema into a system message and asks for JSON mode, and the answer is still validated by the same Zod schema. Its thinking is turned off in `AI_PROVIDER_OPTIONS`, because the calls here are short and bounded.
 - The suggested model ids in `src/features/ai/providers.ts` are checked against the providers' docs, with the date in a comment. Do not add one from memory.
 
 ## Code conventions

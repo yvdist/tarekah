@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 9 selesai, kecuali 3b.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql` dan `0003_byok_practice.sql`. Berikutnya: simulasi interview (`docs/specs/phase-3-interview-simulation.md`) dan Fase 3b.
+Status: **Fase 0 sampai 9 selesai, kecuali 3b.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql` dan `0004_deepseek_provider.sql`. Berikutnya: simulasi interview (`docs/specs/phase-3-interview-simulation.md`) dan Fase 3b.
 
 ## Keputusan
 
@@ -24,7 +24,7 @@ Status: **Fase 0 sampai 9 selesai, kecuali 3b.** Aplikasi live di <https://tarek
 | Test end-to-end       | Playwright terhadap database terpisah (`E2E_DATABASE_URL`)                 | Test membuat dan menghapus user; login OAuth tidak bisa diotomasi, jadi setup menulis user dan session langsung      |
 | Export                | Route Handler GET `/applications/export`                                   | Hanya membaca; mutasi tetap lewat Server Action                                                                      |
 | Tema                  | `next-themes`, class `dark` di `<html>`                                    | Mengikuti sistem sampai pengguna memilih; tanpa kedipan saat dimuat                                                  |
-| AI                    | Vercel AI SDK 7, key milik pengguna (Anthropic, OpenAI, Google)            | Tanpa biaya API di sisi aplikasi; semua fitur non-AI tetap jalan tanpa key; butuh Node 22                            |
+| AI                    | Vercel AI SDK 7, key milik pengguna (Anthropic, OpenAI, Google, DeepSeek)  | Tanpa biaya API di sisi aplikasi; semua fitur non-AI tetap jalan tanpa key; butuh Node 22                            |
 | Key AI                | AES-256-GCM di server, secret `AI_KEY_ENCRYPTION_KEY`, AAD user + provider | Key tidak pernah kembali ke client (UI hanya 4 karakter terakhir); baris yang disalin ke user lain gagal didekripsi  |
 | Panggilan AI          | Server Action, `maxDuration` di page pemanggil                             | Mutasi tetap lewat Server Action; error provider dipetakan ke pesan ramah, log hanya kode dan status                 |
 | Latihan singkat       | Jawaban disimpan dulu sebagai sesi `drill`, masukan diminta sesudahnya     | Jawaban tidak hilang saat provider gagal; tanpa key tetap tercatat; meminta ulang tidak menagih dua kali             |
@@ -55,7 +55,7 @@ Status: **Fase 0 sampai 9 selesai, kecuali 3b.** Aplikasi live di <https://tarek
 | `question_category`       | `behavioral`, `technical_backend`, `system_design`, `ai_llm`, `hr_general`, `other`                         |
 | `question_source`         | `interview`, `manual`, `ai` (`ai`: pertanyaan lanjutan yang disimpan dari masukan latihan)                  |
 | `question_readiness`      | `not_ready`, `somewhat`, `ready`                                                                            |
-| `ai_provider`             | `anthropic`, `openai`, `google`                                                                             |
+| `ai_provider`             | `anthropic`, `openai`, `google`, `deepseek`                                                                 |
 | `practice_mode`           | `drill`, `simulation`                                                                                       |
 | `practice_interview_type` | `hr_screening`, `behavioral`, `technical_backend`, `system_design_light`, `ai_builder` (hanya simulasi)     |
 | `practice_level`          | `mid`, `senior`                                                                                             |

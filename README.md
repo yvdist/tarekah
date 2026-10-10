@@ -30,7 +30,7 @@ Masuk dengan akun GitHub atau Google. Setiap akun mulai dari kosong dan hanya me
 - **Bank pertanyaan.** Semua pertanyaan dari seluruh interview plus yang ditulis sendiri, dengan kategori, sumber, dan kesiapan yang dinilai sendiri (siap, cukup, belum siap) tanpa skor. Bisa dicari, difilter, dan ditautkan ke cerita.
 - **Cerita.** Bank pengalaman dalam format STAR (situasi, tugas, aksi, hasil) dengan tag kompetensi. Satu cerita bisa menjawab banyak pertanyaan.
 - **Latihan singkat.** Pilih satu pertanyaan (acak dari yang belum siap, atau dari bank), tulis jawabannya, lalu dapat masukan tanpa skor: yang sudah kuat, yang bisa dipertajam, versi yang lebih rapi, dan pertanyaan lanjutan yang bisa disimpan ke bank. Setiap percobaan tersimpan, dengan atau tanpa AI.
-- **AI dengan key sendiri.** Masukan latihan memakai key Anthropic, OpenAI atau Google milik pengguna, disimpan terenkripsi dan tidak pernah ditampilkan lagi. Tanpa key, semua fitur lain tetap berjalan.
+- **AI dengan key sendiri.** Masukan latihan memakai key Anthropic, OpenAI, Google atau DeepSeek milik pengguna, disimpan terenkripsi dan tidak pernah ditampilkan lagi. Tanpa key, semua fitur lain tetap berjalan.
 - **Kontak.** Recruiter, pemberi referral dan hiring manager, terhubung ke perusahaan dan lamaran.
 - **Dashboard.** Funnel per tahap, response rate dan conversion ke interview per sumber dan per versi CV, rata-rata waktu respons, jumlah lamaran per minggu, dengan filter rentang tanggal.
 - **Export CSV.** Semua lamaran dengan kolom lengkap, aman dibuka di spreadsheet.

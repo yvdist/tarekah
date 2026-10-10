@@ -62,7 +62,7 @@ Lamaran mendapat field `job_description`. Di halaman detail lamaran yang punya i
 
 ### 5. BYOK (Pengaturan → AI)
 
-- Provider: Anthropic, OpenAI, dan Google, lewat Vercel AI SDK.
+- Provider: Anthropic, OpenAI, Google, dan DeepSeek, lewat Vercel AI SDK. DeepSeek ditambahkan belakangan; ia tidak punya structured output berskema, jadi skemanya disisipkan ke prompt dan jawabannya diminta dalam mode JSON, lalu tetap divalidasi dengan skema Zod yang sama.
 - Key disimpan terenkripsi (AES-256-GCM, secret dari env `AI_KEY_ENCRYPTION_KEY`) dan tidak pernah dikirim ke client. UI hanya menampilkan 4 karakter terakhir.
 - Ada tombol tes key dan hapus key.
 - Semua panggilan AI dilakukan di server, lewat satu modul terpusat yang menjadi satu-satunya tempat key didekripsi.
