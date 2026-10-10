@@ -29,7 +29,8 @@ test.beforeEach(async ({ page }) => {
   }
 });
 
-async function addQuestion(page: Page, text: string) {
+// `rows` is how many rows of the bank read like `text` afterwards.
+async function addQuestion(page: Page, text: string, rows = 1) {
   await page.goto("/questions");
   await page.getByRole("button", { name: "Tambah pertanyaan" }).click();
   await page.getByLabel("Pertanyaan", { exact: true }).fill(text);
@@ -37,7 +38,7 @@ async function addQuestion(page: Page, text: string) {
 
   await expect(
     page.getByRole("listitem").filter({ hasText: text }),
-  ).toHaveCount(1);
+  ).toHaveCount(rows);
 }
 
 // Opens the drill of one question from the list on the Latihan page.
@@ -69,11 +70,20 @@ test("saves an answer and invites to set a key when there is none", async ({
   const question = uniqueName("Ceritakan konflik dengan rekan kerja");
 
   await addQuestion(page, question);
+  // The bank can hold a question more than once (one row per interview it was
+  // asked in). To practise, it is one question.
+  await addQuestion(page, question.toUpperCase(), 2);
 
   await page.goto("/practice");
   await expect(
     page.getByRole("heading", { level: 1, name: "Latihan" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("listitem").filter({ hasText: question }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("listitem").filter({ hasText: question }),
+  ).toContainText("muncul 2 kali di bank");
   await expect(
     page
       .getByRole("navigation", { name: "Navigasi utama" })
