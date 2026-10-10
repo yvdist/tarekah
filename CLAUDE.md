@@ -137,6 +137,7 @@ These three are not negotiable.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
 - When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to one of the item lists in `src/components/app-sidebar.tsx`.
 - `session.user.id` exists only because of the `session` callback in `src/auth.ts`; Auth.js drops it by default.
+- `auth()` is random when the visitor brings no valid CSRF cookie: Auth.js mints a token on every such call, and a signed-in browser often has none (the session cookie lasts thirty days, the CSRF cookie until the browser closes). Next.js rejects a random value after `cookies()` alone, so `getCurrentUser` calls `await connection()` first in exactly that case, and returns early for a visitor without a session cookie. Read the session through `getCurrentUser` / `requireUser`, never by calling `auth()` in a component.
 - The public pages are static, so they only know about a session where they ask: `SessionLink` (`src/features/auth/components/session-link.tsx`) turns the landing page's calls to action into dashboard links for a signed-in user, and `/login` redirects one to `/dashboard`. Sessions are database sessions with the Auth.js defaults: 30 days idle, extended on use.
 
 ## AI (bring your own key)
