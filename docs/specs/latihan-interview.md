@@ -22,16 +22,20 @@ Pengguna (pada awalnya pembuatnya sendiri) adalah engineer yang sudah lama tidak
 ## Fitur
 
 ### 1. Cerita (Arsip → Cerita)
+
 Bank pengalaman dengan format Situasi, Tugas, Aksi, Hasil, ditambah tag kompetensi: ownership, conflict, failure, technical_depth, leadership, ambiguity, collaboration, impact. Satu cerita bisa dihubungkan ke banyak pertanyaan. Kalau AI aktif (fase berikutnya), ada bantuan untuk merapikan tulisan bebas ke format STAR tanpa mengubah fakta.
 
 ### 2. Pertanyaan v2 (upgrade halaman Pertanyaan)
+
 Pertanyaan dinormalisasi dari field markdown `interviews.questions` menjadi tabel tersendiri. Setiap pertanyaan punya:
+
 - kategori: behavioral, technical_backend, system_design, ai_llm, hr_general, other;
 - sumber: interview, manual, ai;
 - kesiapan: not_ready, somewhat, ready (dinilai sendiri, bukan skor);
 - hubungan ke cerita.
 
 ### 3. Latihan (menu utama, setelah Dashboard)
+
 - **Latihan singkat.** Satu pertanyaan (default acak dari yang belum siap), jawab, lalu dapat masukan.
 - **Simulasi interview.** AI berperan sebagai interviewer, satu pertanyaan per giliran, maksimal 2 pertanyaan lanjutan per topik. Masukan baru diberikan di akhir sesi. Pengaturannya:
   - jenis: HR, behavioral, teknis backend/Laravel, system design ringan, AI builder;
@@ -47,9 +51,11 @@ Pertanyaan dinormalisasi dari field markdown `interviews.questions` menjadi tabe
 - Setelah sesi selesai, pertanyaan bisa disimpan ke bank dan saran cerita bisa diterapkan dengan satu klik.
 
 ### 4. Persiapan dari lamaran
+
 Lamaran mendapat field `job_description`. Di halaman detail lamaran yang punya interview terjadwal atau berada di tahap interview, muncul tombol "Latihan untuk interview ini". Tombol ini membuka simulasi yang sudah terisi JD, catatan perusahaan, dan tahap interview. Dashboard menghitung sesi latihan yang selesai sebagai "léngkah latihan".
 
 ### 5. BYOK (Pengaturan → AI)
+
 - Provider: Anthropic, OpenAI, dan Google, lewat Vercel AI SDK.
 - Key disimpan terenkripsi (AES-256-GCM, secret dari env `AI_KEY_ENCRYPTION_KEY`) dan tidak pernah dikirim ke client. UI hanya menampilkan 4 karakter terakhir.
 - Ada tombol tes key dan hapus key.
@@ -82,12 +88,12 @@ Masukan dan ringkasan AI dihasilkan sebagai structured output dengan skema Zod. 
 
 ## Fase
 
-| Fase | Isi | Alasan urutan |
-|---|---|---|
-| 1 | Cerita, Pertanyaan v2 + migrasi data, field JD | Tanpa AI, langsung berguna, dan jadi fondasi data |
-| 2 | BYOK + Latihan singkat (tabel latihan dibuat lengkap) | Lingkaran AI terkecil yang sudah bernilai |
-| 3 | Simulasi + tombol dari detail lamaran + léngkah latihan | Fitur utama, dibangun di atas fondasi yang sudah teruji |
-| 4 | Input suara (Web Speech API, cadangan transkripsi lewat key) | Dukungan browser tidak merata, jadi dibuat terpisah |
+| Fase | Isi                                                          | Alasan urutan                                           |
+| ---- | ------------------------------------------------------------ | ------------------------------------------------------- |
+| 1    | Cerita, Pertanyaan v2 + migrasi data, field JD               | Tanpa AI, langsung berguna, dan jadi fondasi data       |
+| 2    | BYOK + Latihan singkat (tabel latihan dibuat lengkap)        | Lingkaran AI terkecil yang sudah bernilai               |
+| 3    | Simulasi + tombol dari detail lamaran + léngkah latihan      | Fitur utama, dibangun di atas fondasi yang sudah teruji |
+| 4    | Input suara (Web Speech API, cadangan transkripsi lewat key) | Dukungan browser tidak merata, jadi dibuat terpisah     |
 
 Setiap fase bisa dirilis sendiri.
 
