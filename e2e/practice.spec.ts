@@ -9,6 +9,26 @@ const ANTHROPIC = "Anthropic (Claude)";
 const FOLLOW_UP = "Apa yang akan kamu lakukan berbeda kalau mengulanginya?";
 const DRILL_URL = /\/practice\/drill\/[0-9a-f-]{36}$/;
 
+// Both tests depend on which keys are saved, and a spec that failed halfway
+// may have left one behind.
+test.beforeEach(async ({ page }) => {
+  await page.goto("/settings");
+
+  const panel = page.locator("section#ai");
+  const rows = panel.getByRole("listitem");
+
+  await expect(panel.getByLabel("API key")).toBeVisible();
+
+  for (let left = await rows.count(); left > 0; left -= 1) {
+    await rows
+      .first()
+      .getByRole("button", { name: /^Hapus key/ })
+      .click();
+    await page.getByRole("button", { name: "Hapus", exact: true }).click();
+    await expect(rows).toHaveCount(left - 1);
+  }
+});
+
 async function addQuestion(page: Page, text: string) {
   await page.goto("/questions");
   await page.getByRole("button", { name: "Tambah pertanyaan" }).click();
