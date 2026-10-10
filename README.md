@@ -195,7 +195,7 @@ Setiap tabel domain, termasuk tabel anak dan tabel penghubung, punya `user_id`. 
 
 ## Setup lokal
 
-Prasyarat: Node.js 20.9 atau lebih baru, project [Neon](https://neon.tech), OAuth app GitHub dan OAuth client Google.
+Prasyarat: Node.js 22 atau lebih baru (ada `.nvmrc`), project [Neon](https://neon.tech), OAuth app GitHub dan OAuth client Google.
 
 1. Pasang dependensi.
 
@@ -209,13 +209,14 @@ Prasyarat: Node.js 20.9 atau lebih baru, project [Neon](https://neon.tech), OAut
    cp .env.example .env.local
    ```
 
-   | Variabel                               | Sumber                                                                                                                                                               |
-   | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `DATABASE_URL`                         | Neon, connection string **pooled** (host mengandung `-pooler`). Dipakai aplikasi saat berjalan.                                                                      |
-   | `DATABASE_URL_UNPOOLED`                | Neon, connection string **direct**. Dipakai drizzle-kit untuk migration dan oleh script seed.                                                                        |
-   | `AUTH_SECRET`                          | Jalankan `npx auth secret`.                                                                                                                                          |
-   | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | GitHub → Settings → Developer settings → OAuth Apps. Callback URL: `http://localhost:3000/api/auth/callback/github`.                                                 |
-   | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google Cloud Console → APIs & Services → Credentials → OAuth client ID (Web application). Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`. |
+   | Variabel                               | Sumber                                                                                                                                                                             |
+   | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                         | Neon, connection string **pooled** (host mengandung `-pooler`). Dipakai aplikasi saat berjalan.                                                                                    |
+   | `DATABASE_URL_UNPOOLED`                | Neon, connection string **direct**. Dipakai drizzle-kit untuk migration dan oleh script seed.                                                                                      |
+   | `AUTH_SECRET`                          | Jalankan `npx auth secret`.                                                                                                                                                        |
+   | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | GitHub → Settings → Developer settings → OAuth Apps. Callback URL: `http://localhost:3000/api/auth/callback/github`.                                                               |
+   | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google Cloud Console → APIs & Services → Credentials → OAuth client ID (Web application). Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`.               |
+   | `AI_KEY_ENCRYPTION_KEY`                | Opsional. Jalankan `openssl rand -base64 32`. Mengenkripsi key AI yang disimpan pengguna di Pengaturan; tanpa variabel ini aplikasi tetap berjalan, hanya key belum bisa disimpan. |
 
 3. Terapkan migration.
 
@@ -246,9 +247,9 @@ npm test            # unit test (Vitest), tanpa database eksternal
 npm run test:e2e    # end-to-end (Playwright)
 ```
 
-**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan dan semua skema Zod. Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, dan backfill pertanyaan (idempoten) diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
+**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan, semua skema Zod, enkripsi key AI (termasuk ciphertext yang diubah) dan pemetaan error provider ke pesan yang ramah. Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, backfill pertanyaan (idempoten), serta penyimpanan key AI (query pengaturan tidak pernah mengembalikan key atau ciphertext-nya) diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
 
-**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
+**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, menyimpan key AI lalu mengetes, mengganti model dan menghapusnya (dengan provider tiruan, tanpa panggilan API sungguhan), serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
 
 Test end-to-end membuat dan menghapus pengguna, jadi wajib memakai database terpisah, misalnya Postgres sekali-pakai di Docker:
 
