@@ -3,11 +3,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { Panel } from "@/components/panel";
 import { ListSkeleton } from "@/components/skeletons";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAiStatus } from "@/features/ai/queries";
 import { RandomQuestionButton } from "@/features/practice/components/random-question-button";
+import { SessionHistory } from "@/features/practice/components/session-history";
 import { getPracticeQuestions } from "@/features/practice/queries";
 import { ReadinessSummaryLine } from "@/features/questions/components/readiness-summary";
 import {
@@ -23,13 +25,32 @@ export default function PracticePage({ searchParams }: PageProps<"/practice">) {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Latihan"
-        description="Satu pertanyaan, satu jawaban, lalu catatan untuk mempertajamnya. Tanpa skor."
+        description="Latih satu pertanyaan, atau jalani satu interview utuh. Yang kamu dapat catatan untuk mempertajam jawaban, tanpa skor."
         actions={
           <Suspense fallback={<Skeleton className="h-9 w-56" />}>
             <StartButton />
           </Suspense>
         }
       />
+      <Panel
+        title="Simulasi interview"
+        action={
+          <Link
+            href="/practice/simulation/new"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Atur simulasi
+          </Link>
+        }
+      >
+        <p className="text-sm text-muted-foreground">
+          AI menjadi interviewer: satu pertanyaan tiap giliran, dan catatan baru
+          muncul setelah sesi selesai.
+        </p>
+        <Suspense fallback={<ListSkeleton rows={2} bare />}>
+          <SessionHistory />
+        </Suspense>
+      </Panel>
       <Suspense fallback={<ListSkeleton />}>
         <PracticeList searchParams={searchParams} />
       </Suspense>
