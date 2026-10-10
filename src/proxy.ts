@@ -25,6 +25,7 @@ export const config = {
     "/documents/:path*",
     "/questions/:path*",
     "/stories/:path*",
+    "/practice/:path*",
     "/settings/:path*",
   ],
 };
