@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_AUTH_SECRET } from "./e2e/constants";
+import { E2E_AI_KEY_ENCRYPTION_KEY, E2E_AUTH_SECRET } from "./e2e/constants";
 
 // The E2E run creates and deletes users, so it must never share a database
 // with real data. The connection string therefore has its own variable, set in
@@ -74,6 +74,10 @@ export default defineConfig({
       AUTH_GITHUB_SECRET: "e2e",
       AUTH_GOOGLE_ID: "e2e",
       AUTH_GOOGLE_SECRET: "e2e",
+      AI_KEY_ENCRYPTION_KEY: E2E_AI_KEY_ENCRYPTION_KEY,
+      // No spec may call a real provider: every model is the canned one in
+      // src/features/ai/fake-model.ts.
+      AI_FAKE_PROVIDER: "1",
     },
   },
 });
