@@ -29,6 +29,13 @@
       "when": 1791620975373,
       "tag": "0003_byok_practice",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791641214974,
+      "tag": "0004_deepseek_provider",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { generateText, type LanguageModel, Output } from "ai";
+import { AI_PROVIDER_OPTIONS } from "@/features/ai/provider-options";
 import { QUESTION_MAX_LENGTH } from "@/features/questions/schemas";
 import {
   buildDrillFeedbackPrompt,
@@ -29,6 +30,7 @@ export async function generateDrillFeedback({
     instructions,
     prompt,
     output: Output.object({ schema: feedbackSchema }),
+    providerOptions: AI_PROVIDER_OPTIONS,
     maxOutputTokens: FEEDBACK_MAX_OUTPUT_TOKENS,
     maxRetries: 1,
     timeout: FEEDBACK_TIMEOUT_MS,

@@ -70,6 +70,7 @@ describe("getModelForUser", () => {
     ["anthropic", "claude-sonnet-5-5"],
     ["openai", "gpt-6.1-sol"],
     ["google", "gemini-3.6-flash"],
+    ["deepseek", "deepseek-flash"],
   ] as const)(
     "builds the %s model the user chose",
     async (provider, modelId) => {

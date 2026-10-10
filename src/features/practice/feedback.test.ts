@@ -1,3 +1,4 @@
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
@@ -62,6 +63,59 @@ describe("generateDrillFeedback", () => {
     // instructions.
     expect(calls[0]).toMatchObject({ responseFormat: { type: "json" } });
     expect(JSON.stringify(calls[0])).toContain("<answer>");
+  });
+
+  // DeepSeek has no schema-constrained output and thinks unless told not to,
+  // so this checks the request it is actually sent. The fetch is a stand-in:
+  // nothing reaches the network.
+  it("asks DeepSeek for JSON with the schema in the prompt and thinking off", async () => {
+    const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+    const deepseek = createDeepSeek({
+      apiKey: "sk-not-a-real-key",
+      fetch: async (input, init) => {
+        requests.push({
+          url: String(input),
+          body: JSON.parse(String(init?.body)),
+        });
+
+        return Response.json({
+          id: "chatcmpl-1",
+          created: 1,
+          model: "deepseek-flash",
+          choices: [
+            {
+              index: 0,
+              message: { role: "assistant", content: JSON.stringify(feedback) },
+              finish_reason: "stop",
+            },
+          ],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        });
+      },
+    });
+
+    expect(
+      await generateDrillFeedback({
+        model: deepseek("deepseek-flash"),
+        ...context,
+      }),
+    ).toEqual(feedback);
+    expect(requests).toHaveLength(1);
+    expect(requests[0].url).toBe("https://api.deepseek.com/chat/completions");
+    expect(requests[0].body).toMatchObject({
+      model: "deepseek-flash",
+      response_format: { type: "json_object" },
+      thinking: { type: "disabled" },
+      max_tokens: 4000,
+    });
+
+    const system = JSON.stringify(requests[0].body.messages);
+
+    // DeepSeek's JSON mode needs the word and the shape in the prompt.
+    expect(system).toContain(
+      "Return JSON that conforms to the following schema",
+    );
+    expect(system).toContain("followUpQuestion");
   });
 
   it("returns the canned feedback of the fake provider", async () => {

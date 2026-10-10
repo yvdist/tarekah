@@ -68,9 +68,12 @@ const OVERLOADED = new Set([
   "unavailable",
 ]);
 
-// The machine-readable words of a provider's error body, lowercased. The three
-// providers nest them differently: Anthropic { error: { type } }, OpenAI
-// { error: { type, code } }, Google { error: { status, details: [{ reason }] } }.
+// The machine-readable words of a provider's error body, lowercased. The
+// providers nest them differently: Anthropic { error: { type } }, OpenAI and
+// DeepSeek { error: { type, code } }, Google
+// { error: { status, details: [{ reason }] } }. DeepSeek documents its errors by
+// HTTP status only (401 key, 402 balance, 429 rate, 500 and 503 server), which
+// the checks below already cover.
 function errorWords(data: unknown): string[] {
   const error = isRecord(data) ? data.error : undefined;
 

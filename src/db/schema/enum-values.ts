@@ -66,7 +66,12 @@ export const QUESTION_SOURCES = ["interview", "manual", "ai"] as const;
 export const QUESTION_READINESS = ["not_ready", "somewhat", "ready"] as const;
 
 // Whose API the user's own key belongs to (BYOK).
-export const AI_PROVIDERS = ["anthropic", "openai", "google"] as const;
+export const AI_PROVIDERS = [
+  "anthropic",
+  "openai",
+  "google",
+  "deepseek",
+] as const;
 
 // A drill is one question and one answer; a simulation is a conversation.
 export const PRACTICE_MODES = ["drill", "simulation"] as const;

@@ -10,6 +10,7 @@ import { encryptKey, parseEncryptionSecret } from "./crypto";
 import { deleteCredential, saveCredential, setActiveProvider } from "./data";
 import { AI_ERROR_MESSAGES, reportAiError } from "./errors";
 import { getModelForUser } from "./model";
+import { AI_PROVIDER_OPTIONS } from "./provider-options";
 import { aiCredentialFormSchema, aiProviderSchema } from "./schemas";
 
 const TEST_TIMEOUT_MS = 15_000;
@@ -106,6 +107,7 @@ export async function testAiCredential(
     await generateText({
       model: resolved.model,
       prompt: "Reply with the single word: ok",
+      providerOptions: AI_PROVIDER_OPTIONS,
       maxOutputTokens: 16,
       maxRetries: 0,
       timeout: TEST_TIMEOUT_MS,

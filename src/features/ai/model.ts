@@ -1,5 +1,6 @@
 import "server-only";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogle } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
@@ -22,6 +23,7 @@ const FACTORIES: Record<
   anthropic: (apiKey, modelId) => createAnthropic({ apiKey })(modelId),
   openai: (apiKey, modelId) => createOpenAI({ apiKey })(modelId),
   google: (apiKey, modelId) => createGoogle({ apiKey })(modelId),
+  deepseek: (apiKey, modelId) => createDeepSeek({ apiKey })(modelId),
 };
 
 // The model a user's own key gives access to: the active provider's, or the

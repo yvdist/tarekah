@@ -26,6 +26,10 @@ const anthropic = (type: string) => ({ type: "error", error: { type } });
 const openai = (code: string, type = "invalid_request_error") => ({
   error: { message: "…", type, code },
 });
+// DeepSeek answers in OpenAI's shape and documents only the HTTP status.
+const deepseek = (type: string) => ({
+  error: { message: "…", type, param: null, code: "invalid_request_error" },
+});
 const google = (status: string, reason?: string) => ({
   error: {
     code: 400,
@@ -40,6 +44,7 @@ describe("classifyAiError", () => {
     ["Anthropic 401", apiError(401, anthropic("authentication_error"))],
     ["Anthropic 403", apiError(403, anthropic("permission_error"))],
     ["OpenAI 401", apiError(401, openai("invalid_api_key"))],
+    ["DeepSeek 401", apiError(401, deepseek("authentication_error"))],
     [
       "Google 400",
       apiError(400, google("INVALID_ARGUMENT", "API_KEY_INVALID")),
@@ -63,6 +68,7 @@ describe("classifyAiError", () => {
       apiError(429, openai("project_spend_limit_exceeded")),
     ],
     ["Google 402", apiError(402, google("FAILED_PRECONDITION"))],
+    ["DeepSeek 402", apiError(402, deepseek("unknown_error"))],
   ])("reads %s as an empty balance", (_, error) => {
     expect(classifyAiError(error)).toBe("quota");
   });
@@ -71,6 +77,7 @@ describe("classifyAiError", () => {
     ["Anthropic", apiError(429, anthropic("rate_limit_error"))],
     ["OpenAI", apiError(429, openai("slow_down"))],
     ["Google", apiError(429, google("RESOURCE_EXHAUSTED"))],
+    ["DeepSeek", apiError(429, deepseek("rate_limit_reached_error"))],
   ])("reads a plain 429 from %s as a rate limit", (_, error) => {
     expect(classifyAiError(error)).toBe("rate_limit");
   });
@@ -79,6 +86,7 @@ describe("classifyAiError", () => {
     ["Anthropic 529", apiError(529, anthropic("overloaded_error"))],
     ["OpenAI 503", apiError(503, openai("server_is_overloaded"))],
     ["Google 503", apiError(503, google("UNAVAILABLE"))],
+    ["DeepSeek 503", apiError(503, deepseek("service_unavailable_error"))],
     ["a 500", apiError(500)],
     ["no response at all", apiError(undefined)],
     ["fetch failing", new TypeError("fetch failed")],
