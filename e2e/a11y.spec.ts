@@ -14,6 +14,8 @@ const PAGES = [
   { path: "/contacts", heading: "Kontak" },
   { path: "/documents", heading: "Dokumen" },
   { path: "/questions", heading: "Pertanyaan interview" },
+  { path: "/stories", heading: "Cerita" },
+  { path: "/stories/new", heading: "Tambah cerita" },
   { path: "/settings", heading: "Pengaturan" },
 ];
 
