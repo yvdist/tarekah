@@ -87,13 +87,11 @@ describe("listQuestions", () => {
       .insert(questions)
       .values({ userId: owner, source: "manual", text: "Punya owner" })
       .returning({ id: questions.id });
-    await db
-      .insert(questionStories)
-      .values({
-        userId: owner,
-        questionId: ownerQuestion.id,
-        storyId: ownerStory,
-      });
+    await db.insert(questionStories).values({
+      userId: owner,
+      questionId: ownerQuestion.id,
+      storyId: ownerStory,
+    });
 
     expect(await listQuestions(db, other)).toEqual([]);
     expect(await findOwnedStoryIds(db, other, [ownerStory])).toEqual([]);
