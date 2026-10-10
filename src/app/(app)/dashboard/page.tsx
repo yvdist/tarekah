@@ -27,6 +27,7 @@ import { RangeFilter } from "@/features/dashboard/components/range-filter";
 import { RateBreakdown } from "@/features/dashboard/components/rate-breakdown";
 import { StepPath } from "@/features/dashboard/components/step-path";
 import {
+  PracticeStats,
   ResponseStats,
   SummaryCards,
 } from "@/features/dashboard/components/summary-cards";
@@ -39,6 +40,7 @@ import {
 } from "@/features/dashboard/greeting";
 import {
   getDashboardStats,
+  getPracticeSteps,
   getWeeklyApplications,
 } from "@/features/dashboard/queries";
 import { resolveCurrentRange } from "@/features/dashboard/range";
@@ -224,13 +226,17 @@ async function Statistics({ searchParams }: SearchParams) {
   );
 }
 
-// Same range and same cached statistics as above, further down the page.
+// Same range and same cached statistics as above, further down the page,
+// with the practice done in that range.
 async function ResponseBreakdown({ searchParams }: SearchParams) {
   const range = await resolveCurrentRange(await searchParams);
-  const stats = await getDashboardStats(range);
+  const [stats, practice] = await Promise.all([
+    getDashboardStats(range),
+    getPracticeSteps(range),
+  ]);
 
   if (stats.summary.total === 0) {
-    return null;
+    return practice.total > 0 ? <PracticeStats practice={practice} /> : null;
   }
 
   const hint = "Yang direspons dan yang sampai interview";
@@ -240,6 +246,7 @@ async function ResponseBreakdown({ searchParams }: SearchParams) {
       <ResponseStats
         summary={stats.summary}
         responseTime={stats.responseTime}
+        practice={practice}
       />
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Per sumber loker" hint={hint}>

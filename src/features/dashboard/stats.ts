@@ -13,7 +13,12 @@ import {
 } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type * as schema from "@/db/schema";
-import { applications, applicationStatusEvents, documents } from "@/db/schema";
+import {
+  applications,
+  applicationStatusEvents,
+  documents,
+  practiceSessions,
+} from "@/db/schema";
 import type { ApplicationStatus } from "@/db/schema/enum-values";
 import { FOLLOW_UP_STATUSES } from "@/features/applications/follow-up";
 
@@ -255,4 +260,33 @@ export async function queryWeekly(db: Database, userId: string, today: string) {
     )
     .groupBy(sql`weeks.week_start`)
     .orderBy(sql`weeks.week_start`);
+}
+
+// Practice sessions that were completed in the range: every drill, and every
+// simulation that reached its end or was ended with at least one answer. The
+// range is in calendar days, so the moment a session ended is read in Jakarta
+// time, like "today" everywhere else on the dashboard.
+export async function queryPracticeSteps(
+  db: Database,
+  userId: string,
+  from: string | null,
+  to: string | null,
+) {
+  const endedOn = sql`(${practiceSessions.endedAt} at time zone 'Asia/Jakarta')::date`;
+  const [row] = await db
+    .select({
+      simulations: countWhere(eq(practiceSessions.mode, "simulation")),
+      drills: countWhere(eq(practiceSessions.mode, "drill")),
+    })
+    .from(practiceSessions)
+    .where(
+      and(
+        eq(practiceSessions.userId, userId),
+        eq(practiceSessions.status, "completed"),
+        from ? sql`${endedOn} >= ${from}::date` : undefined,
+        to ? sql`${endedOn} <= ${to}::date` : undefined,
+      ),
+    );
+
+  return { ...row, total: row.simulations + row.drills };
 }

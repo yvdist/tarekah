@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatDays, formatPercent } from "../format";
-import type { DashboardStats } from "../queries";
+import type { DashboardStats, PracticeSteps } from "../queries";
 
 // The four figures at the top. The first counts every application as a step.
 export function SummaryCards({ summary }: Pick<DashboardStats, "summary">) {
@@ -32,13 +32,17 @@ export function SummaryCards({ summary }: Pick<DashboardStats, "summary">) {
   );
 }
 
-// How often, and how fast, companies answer.
+// How often, and how fast, companies answer, and next to it the practice done
+// in the same period.
 export function ResponseStats({
   summary,
   responseTime,
-}: Pick<DashboardStats, "summary" | "responseTime">) {
+  practice,
+}: Pick<DashboardStats, "summary" | "responseTime"> & {
+  practice: PracticeSteps;
+}) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-3 sm:grid-cols-3">
       <Stat
         size="sm"
         value={formatPercent(summary.responseRate)}
@@ -55,7 +59,34 @@ export function ResponseStats({
             : `Dari Dilamar ke respons pertama, ${responseTime.sample} lamaran`
         }
       />
+      <PracticeStat practice={practice} />
     </div>
+  );
+}
+
+// Practice on its own, for a period with sessions and no applications.
+export function PracticeStats({ practice }: { practice: PracticeSteps }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <PracticeStat practice={practice} />
+    </div>
+  );
+}
+
+// Every completed session is a step, like every application is.
+function PracticeStat({ practice }: { practice: PracticeSteps }) {
+  return (
+    <Stat
+      size="sm"
+      value={practice.total}
+      label="léngkah latihan"
+      labelClassName="font-heading text-lg"
+      hint={
+        practice.total === 0
+          ? "Belum ada sesi latihan yang selesai"
+          : `${practice.simulations} simulasi · ${practice.drills} latihan singkat`
+      }
+    />
   );
 }
 
