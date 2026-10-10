@@ -94,6 +94,22 @@ Nilai di environment mengalahkan `.env.local`.
 
 Di kedua cara, migration harus kompatibel dengan kode yang sedang berjalan: tambah kolom dulu, hapus kolom di deploy berikutnya.
 
+### Backfill pertanyaan (sekali, setelah rilis bank pertanyaan)
+
+Migration `0002_interview_prep` membuat tabel `questions`, tapi pertanyaan yang sudah ada masih tersimpan sebagai markdown di `interviews.questions`. Aplikasi tidak lagi membaca kolom itu, jadi sampai backfill dijalankan halaman Pertanyaan tampak kosong untuk pengguna lama. Kolom lama dibiarkan terisi sebagai cadangan dan akan dihapus di migration terpisah nanti.
+
+Jalankan dari lokal dengan connection string direct milik production, setelah deploy pertama yang membawa migration itu selesai:
+
+```bash
+# 1. Lihat dulu apa yang akan ditulis; tidak mengubah apa pun.
+DATABASE_URL_UNPOOLED='postgres://…' npm run db:backfill-questions -- --dry-run
+
+# 2. Tulis.
+DATABASE_URL_UNPOOLED='postgres://…' npm run db:backfill-questions
+```
+
+Script memecah markdown per baris, membuang duplikat dalam satu interview, dan melewati pertanyaan yang sudah ada untuk interview itu. Menjalankannya dua kali aman: yang kedua melaporkan `inserted: 0`. Uji dulu di branch Neon yang dibuat dari production kalau ingin melihat hasilnya tanpa risiko.
+
 ## 6. Deploy ulang dan periksa
 
 Di tab Deployments, pilih deploy terakhir → **Redeploy** (atau push commit baru). Variabel baru hanya berlaku untuk deploy yang dibuat setelah diubah.

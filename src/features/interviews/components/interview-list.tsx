@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/features/applications/format";
+import { QUESTION_READINESS_LABELS } from "@/features/questions/labels";
 import { INTERVIEW_STAGE_LABELS } from "../labels";
 import type { InterviewListItem } from "../queries";
 import { InterviewRowActions } from "./interview-actions";
@@ -40,12 +42,29 @@ export function InterviewList({
             </div>
             <InterviewRowActions interview={interview} />
           </div>
-          {interview.questions ? (
+          {interview.questions.length > 0 ? (
             <div className="flex flex-col gap-1">
               <h3 className="text-xs font-medium text-muted-foreground">
                 Pertanyaan
               </h3>
-              <Markdown>{interview.questions}</Markdown>
+              <ol className="list-decimal space-y-1 pl-5 text-sm">
+                {interview.questions.map((question) => (
+                  <li key={question.id}>
+                    {question.text}
+                    {question.readiness !== "not_ready" ? (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {QUESTION_READINESS_LABELS[question.readiness]}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+              <Link
+                href={`/questions?application=${interview.applicationId}`}
+                className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+              >
+                Tandai kesiapan dan tautkan cerita di halaman Pertanyaan
+              </Link>
             </div>
           ) : null}
           {interview.reflection ? (

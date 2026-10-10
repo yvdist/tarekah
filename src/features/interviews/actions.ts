@@ -5,6 +5,7 @@ import { updateTag } from "next/cache";
 import { db } from "@/db";
 import { applications, interviews } from "@/db/schema";
 import { applicationIdSchema } from "@/features/applications/schemas";
+import { syncInterviewQuestions } from "@/features/questions/data";
 import { invalidResult, type ActionResult } from "@/lib/action-result";
 import { requireUser } from "@/lib/auth";
 import { interviewFormSchema, interviewIdSchema } from "./schemas";
@@ -41,13 +42,25 @@ export async function createInterview(
     return { ok: false, message: "Lamaran tidak ditemukan." };
   }
 
-  await db.insert(interviews).values({
-    ...parsed.data,
-    userId: user.id,
-    applicationId: application.id,
+  const { questions, ...values } = parsed.data;
+
+  // The interview and its questions are written together.
+  await db.transaction(async (tx) => {
+    const [interview] = await tx
+      .insert(interviews)
+      .values({ ...values, userId: user.id, applicationId: application.id })
+      .returning({ id: interviews.id });
+
+    await syncInterviewQuestions(
+      tx,
+      user.id,
+      { id: interview.id, applicationId: application.id },
+      // A new interview has no existing questions, so every row is fresh.
+      questions.map(({ text }) => ({ id: null, text })),
+    );
   });
 
-  updateTag(`interviews:${user.id}`);
+  refresh(user.id);
 
   return { ok: true, data: undefined };
 }
@@ -69,23 +82,40 @@ export async function updateInterview(
     return invalidResult(parsed.error);
   }
 
-  const updated = await db
-    .update(interviews)
-    .set(parsed.data)
-    .where(
-      and(eq(interviews.id, parsedId.data), eq(interviews.userId, user.id)),
-    )
-    .returning({ id: interviews.id });
+  const { questions, ...values } = parsed.data;
 
-  if (updated.length === 0) {
+  const found = await db.transaction(async (tx) => {
+    const [interview] = await tx
+      .update(interviews)
+      .set(values)
+      .where(
+        and(eq(interviews.id, parsedId.data), eq(interviews.userId, user.id)),
+      )
+      .returning({
+        id: interviews.id,
+        applicationId: interviews.applicationId,
+      });
+
+    if (!interview) {
+      return false;
+    }
+
+    await syncInterviewQuestions(tx, user.id, interview, questions);
+
+    return true;
+  });
+
+  if (!found) {
     return { ok: false, message: NOT_FOUND_MESSAGE };
   }
 
-  updateTag(`interviews:${user.id}`);
+  refresh(user.id);
 
   return { ok: true, data: undefined };
 }
 
+// Its questions stay in the bank; only their link to the interview is cleared
+// (ON DELETE SET NULL).
 export async function deleteInterview(id: unknown): Promise<ActionResult> {
   const user = await requireUser();
   const parsedId = interviewIdSchema.safeParse(id);
@@ -105,7 +135,13 @@ export async function deleteInterview(id: unknown): Promise<ActionResult> {
     return { ok: false, message: NOT_FOUND_MESSAGE };
   }
 
-  updateTag(`interviews:${user.id}`);
+  refresh(user.id);
 
   return { ok: true, data: undefined };
+}
+
+// Every change here touches both the interview and the question bank.
+function refresh(userId: string) {
+  updateTag(`interviews:${userId}`);
+  updateTag(`questions:${userId}`);
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { INTERVIEW_STAGES } from "@/db/schema/enum-values";
+import { interviewQuestionsSchema } from "@/features/questions/schemas";
 import { optionalText } from "@/lib/form-schemas";
 import { parseDateTimeLocal } from "./format";
 
@@ -13,7 +14,9 @@ export const interviewFormSchema = z.object({
     }),
   stage: z.enum(INTERVIEW_STAGES, "Pilih tahap interview"),
   interviewers: optionalText(500),
-  questions: optionalText(10_000),
+  // Rows of the list editor; they are written to the questions table, not to
+  // the interview itself.
+  questions: interviewQuestionsSchema,
   reflection: optionalText(10_000),
 });
 

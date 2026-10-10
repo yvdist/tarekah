@@ -90,3 +90,37 @@ export async function createApplication(
 
   return application.id;
 }
+
+export async function createInterview(
+  db: TestDb,
+  userId: string,
+  applicationId: string,
+  overrides: Partial<typeof schema.interviews.$inferInsert> = {},
+) {
+  const [interview] = await db
+    .insert(schema.interviews)
+    .values({
+      userId,
+      applicationId,
+      scheduledAt: new Date("2026-10-01T02:00:00Z"),
+      stage: "technical",
+      ...overrides,
+    })
+    .returning({ id: schema.interviews.id });
+
+  return interview.id;
+}
+
+export async function createStory(
+  db: TestDb,
+  userId: string,
+  title: string,
+  competencies: (typeof schema.stories.$inferInsert)["competencies"] = [],
+) {
+  const [story] = await db
+    .insert(schema.stories)
+    .values({ userId, title, competencies })
+    .returning({ id: schema.stories.id });
+
+  return story.id;
+}

@@ -3,18 +3,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { Markdown } from "@/components/markdown";
 import { PageHeader } from "@/components/page-header";
 import { ListSkeleton } from "@/components/skeletons";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDateTime } from "@/features/applications/format";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getApplicationOptions } from "@/features/applications/queries";
 import {
-  INTERVIEW_STAGE_LABELS,
-  INTERVIEW_STAGE_OPTIONS,
-} from "@/features/interviews/labels";
-import { getQuestions } from "@/features/interviews/queries";
+  AddQuestionButton,
+  QuestionRow,
+} from "@/features/questions/components/question-row";
+import { ReadinessSummaryLine } from "@/features/questions/components/readiness-summary";
+import {
+  QUESTION_CATEGORY_OPTIONS,
+  QUESTION_READINESS_OPTIONS,
+  QUESTION_SOURCE_OPTIONS,
+} from "@/features/questions/labels";
+import { getQuestions } from "@/features/questions/queries";
+import { getStoryOptions } from "@/features/stories/queries";
 
 export const metadata: Metadata = { title: "Pertanyaan interview" };
 
@@ -25,7 +31,12 @@ export default function QuestionsPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Pertanyaan interview"
-        description="Semua pertanyaan dari catatan interview di seluruh lamaran."
+        description="Bank pertanyaan dari catatan interview dan yang kamu tulis sendiri. Tandai mana yang sudah siap."
+        actions={
+          <Suspense fallback={<Skeleton className="h-9 w-40" />}>
+            <AddQuestion />
+          </Suspense>
+        }
       />
       <Suspense fallback={<ListSkeleton />}>
         <Questions searchParams={searchParams} />
@@ -34,24 +45,42 @@ export default function QuestionsPage({
   );
 }
 
+async function AddQuestion() {
+  const applications = await getApplicationOptions();
+
+  return <AddQuestionButton options={{ applications }} />;
+}
+
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
+
+const SELECT_CLASS =
+  "h-9 rounded-md border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 // searchParams is request-time data, so it is read behind the boundary.
 async function Questions({
   searchParams,
 }: Pick<PageProps<"/questions">, "searchParams">) {
   const params = await searchParams;
-  const q = first(params.q) ?? "";
-  const stage = first(params.stage) ?? "";
-  const { total, matches } = await getQuestions({ q, stage });
+  const [{ total, summary, matches, filter }, applications, stories] =
+    await Promise.all([
+      getQuestions({
+        q: first(params.q),
+        category: first(params.category),
+        readiness: first(params.readiness),
+        source: first(params.source),
+        application: first(params.application),
+      }),
+      getApplicationOptions(),
+      getStoryOptions(),
+    ]);
 
   if (total === 0) {
     return (
       <EmptyState
         title="Kumpulkan pertanyaan interview-mu"
-        description="Tambahkan catatan interview di halaman detail lamaran. Pertanyaan yang kamu tulis di sana terkumpul di sini."
+        description="Tulis pertanyaan yang pernah atau mungkin ditanyakan. Catatan interview di detail lamaran juga terkumpul di sini."
       >
         <Link
           href="/applications"
@@ -63,29 +92,77 @@ async function Questions({
     );
   }
 
+  const filtered =
+    filter.q !== "" ||
+    filter.category !== "" ||
+    filter.readiness !== "" ||
+    filter.source !== "" ||
+    filter.application !== "";
+
   return (
     <>
+      <ReadinessSummaryLine summary={summary} />
+
       <form className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-52 flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             name="q"
-            defaultValue={q}
+            defaultValue={filter.q}
             aria-label="Cari pertanyaan, perusahaan, atau posisi"
             placeholder="Cari pertanyaan, perusahaan, atau posisi…"
             className="pl-8"
           />
         </div>
         <select
-          name="stage"
-          defaultValue={stage}
-          aria-label="Filter tahap"
-          className="h-9 rounded-md border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+          name="category"
+          defaultValue={filter.category}
+          aria-label="Filter kategori"
+          className={SELECT_CLASS}
         >
-          <option value="">Semua tahap</option>
-          {INTERVIEW_STAGE_OPTIONS.map((option) => (
+          <option value="">Semua kategori</option>
+          {QUESTION_CATEGORY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          name="readiness"
+          defaultValue={filter.readiness}
+          aria-label="Filter kesiapan"
+          className={SELECT_CLASS}
+        >
+          <option value="">Semua kesiapan</option>
+          {QUESTION_READINESS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          name="source"
+          defaultValue={filter.source}
+          aria-label="Filter sumber"
+          className={SELECT_CLASS}
+        >
+          <option value="">Semua sumber</option>
+          {QUESTION_SOURCE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          name="application"
+          defaultValue={filter.application}
+          aria-label="Filter lamaran"
+          className={SELECT_CLASS}
+        >
+          <option value="">Semua lamaran</option>
+          {applications.map((option) => (
+            <option key={option.id} value={option.id}>
               {option.label}
             </option>
           ))}
@@ -93,7 +170,7 @@ async function Questions({
         <Button type="submit" variant="outline">
           Cari
         </Button>
-        {q !== "" || stage !== "" ? (
+        {filtered ? (
           <Link
             href="/questions"
             className={buttonVariants({ variant: "ghost" })}
@@ -110,27 +187,12 @@ async function Questions({
       ) : (
         <div className="overflow-hidden rounded-lg border bg-card">
           <ul className="divide-y">
-            {matches.map((item) => (
-              <li
-                key={item.key}
-                className="flex flex-col gap-2 px-4 py-4 sm:px-5"
-              >
-                <Markdown>{item.question}</Markdown>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <Badge variant="secondary">
-                    {INTERVIEW_STAGE_LABELS[item.stage]}
-                  </Badge>
-                  <Link
-                    href={`/applications/${item.applicationId}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {item.companyName} · {item.position}
-                  </Link>
-                  <span className="font-figure">
-                    {formatDateTime(item.scheduledAt)}
-                  </span>
-                </div>
-              </li>
+            {matches.map((question) => (
+              <QuestionRow
+                key={question.id}
+                question={question}
+                options={{ applications, stories }}
+              />
             ))}
           </ul>
           <p

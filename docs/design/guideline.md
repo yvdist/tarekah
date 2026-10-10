@@ -113,7 +113,7 @@ Jangan dipakai sebagai background penuh di halaman kerja (board, tabel, form).
 
 - **Sidebar**: latar permukaan-2, logo di atas, grup navigasi
   [Board, Lamaran, Dashboard], grup "Arsip" [Perusahaan, Kontak, Dokumen,
-  Pertanyaan], lalu Pengaturan dan avatar di bawah. Item aktif: latar
+  Pertanyaan, Cerita], lalu Pengaturan dan avatar di bawah. Item aktif: latar
   nila-muda, teks nila-tua, garis kecil nila di kiri. Di mobile menjadi sheet.
 - **Page header**: judul Fraunces, satu baris konteks di bawahnya
   ("14 lamaran aktif · 3 perlu follow-up"), aksi utama di kanan.
@@ -154,7 +154,7 @@ Bahasa Indonesia santai-sopan, seperti teman yang tenang.
 Publik: Landing (/), Login (/login).
 Butuh login: Dashboard, Board, Lamaran (tabel), Lamaran baru, Detail
 lamaran, Edit lamaran, Perusahaan, Detail perusahaan, Kontak, Dokumen,
-Pertanyaan, Pengaturan.
+Pertanyaan, Cerita, Cerita baru, Detail cerita, Edit cerita, Pengaturan.
 Lainnya: loading (skeleton), error, not-found, dialog form, dialog
 konfirmasi hapus, toggle tema.
 

@@ -64,7 +64,11 @@ export function InterviewRowActions({
           scheduledAt: toDateTimeLocalValue(interview.scheduledAt),
           stage: interview.stage,
           interviewers: interview.interviewers ?? "",
-          questions: interview.questions ?? "",
+          // The editor always shows at least one row.
+          questions:
+            interview.questions.length > 0
+              ? interview.questions.map(({ id, text }) => ({ id, text }))
+              : [{ id: "", text: "" }],
           reflection: interview.reflection ?? "",
         }}
         open={editOpen}

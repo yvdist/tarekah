@@ -43,6 +43,7 @@ const EMPTY_VALUES: ApplicationFormInput = {
   cvDocumentId: "",
   coverLetterDocumentId: "",
   notes: "",
+  jobDescription: "",
 };
 
 // The select needs a non-empty value for "not set".
@@ -453,6 +454,30 @@ export function ApplicationForm({
             {...form.register("notes")}
           />
           <FieldError id={`${id}-notes-error`} errors={[errors.notes]} />
+        </Field>
+
+        <Field data-invalid={!!errors.jobDescription}>
+          <FieldLabel htmlFor={`${id}-jobDescription`}>
+            Deskripsi pekerjaan
+          </FieldLabel>
+          <Textarea
+            id={`${id}-jobDescription`}
+            aria-describedby={describedBy(
+              `${id}-jobDescription-description`,
+              !!errors.jobDescription && `${id}-jobDescription-error`,
+            )}
+            rows={8}
+            aria-invalid={!!errors.jobDescription}
+            {...form.register("jobDescription")}
+          />
+          <FieldDescription id={`${id}-jobDescription-description`}>
+            Tempel teks lowongannya. Berguna saat menyiapkan interview, dan
+            lowongan sering hilang setelah ditutup.
+          </FieldDescription>
+          <FieldError
+            id={`${id}-jobDescription-error`}
+            errors={[errors.jobDescription]}
+          />
         </Field>
 
         <div className="flex justify-end gap-2 border-t pt-5">

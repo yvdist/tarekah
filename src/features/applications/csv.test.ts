@@ -66,6 +66,7 @@ describe("applicationsToCsv", () => {
     coverLetterLabel: null,
     jobUrl: "https://contoh.com/loker",
     notes: "Tes 3 hari",
+    jobDescription: "Syarat: Laravel, Postgres",
     createdAt: new Date("2026-09-30T03:00:00Z"),
   };
 
@@ -74,10 +75,10 @@ describe("applicationsToCsv", () => {
       .slice(1)
       .split("\r\n");
 
-    expect(header.split(",")).toHaveLength(18);
+    expect(header.split(",")).toHaveLength(19);
     expect(header.startsWith("Perusahaan,Posisi,Status,Sumber")).toBe(true);
     expect(line).toBe(
-      "Tokopedia,Frontend Engineer,Tes teknis,Referral,Rina,Remote,Jakarta,8000000,12000000,IDR,2026-10-01,2026-10-09 03:30,,CV Frontend v2,,https://contoh.com/loker,Tes 3 hari,2026-09-30 10:00",
+      'Tokopedia,Frontend Engineer,Tes teknis,Referral,Rina,Remote,Jakarta,8000000,12000000,IDR,2026-10-01,2026-10-09 03:30,,CV Frontend v2,,https://contoh.com/loker,Tes 3 hari,"Syarat: Laravel, Postgres",2026-09-30 10:00',
     );
     expect(rest).toBe("");
   });
@@ -95,11 +96,12 @@ describe("applicationsToCsv", () => {
         cvLabel: null,
         jobUrl: null,
         notes: null,
+        jobDescription: null,
       },
     ]).split("\r\n");
 
     expect(line).toBe(
-      "Tokopedia,Frontend Engineer,Tes teknis,Referral,,,,,,IDR,,2026-10-09 03:30,,,,,,2026-09-30 10:00",
+      "Tokopedia,Frontend Engineer,Tes teknis,Referral,,,,,,IDR,,2026-10-09 03:30,,,,,,,2026-09-30 10:00",
     );
   });
 });

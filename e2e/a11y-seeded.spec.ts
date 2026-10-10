@@ -14,6 +14,7 @@ const PAGES = [
   "/contacts",
   "/documents",
   "/questions",
+  "/stories",
   "/settings",
 ];
 

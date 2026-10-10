@@ -248,10 +248,12 @@ export async function deleteApplication(
     return { ok: false, message: NOT_FOUND_MESSAGE };
   }
 
-  // Interviews and contact links go with it through ON DELETE CASCADE.
+  // Interviews and contact links go with it through ON DELETE CASCADE;
+  // questions stay but lose their link to it (ON DELETE SET NULL).
   updateTag(`applications:${user.id}`);
   updateTag(`interviews:${user.id}`);
   updateTag(`contacts:${user.id}`);
+  updateTag(`questions:${user.id}`);
 
   if (parsedOptions.success && parsedOptions.data?.redirectToList) {
     redirect("/applications");

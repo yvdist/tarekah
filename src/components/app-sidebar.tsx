@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   Building2,
   ChartLine,
   CircleHelp,
@@ -29,6 +30,7 @@ const ARCHIVE_ITEMS: NavItem[] = [
   { href: "/contacts", label: "Kontak", icon: Users },
   { href: "/documents", label: "Dokumen", icon: FileText },
   { href: "/questions", label: "Pertanyaan", icon: CircleHelp },
+  { href: "/stories", label: "Cerita", icon: BookOpen },
 ];
 
 const SETTINGS_ITEM: NavItem = {

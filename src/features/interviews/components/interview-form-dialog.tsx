@@ -1,8 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useId, useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Plus, X } from "lucide-react";
+import { useId, useTransition, type ClipboardEvent } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { OptionSelect } from "@/components/option-select";
 import { Button } from "@/components/ui/button";
@@ -25,17 +26,20 @@ import { useOpenKey } from "@/hooks/use-open-key";
 import { describedBy, setFieldErrors } from "@/lib/form-errors";
 import { createInterview, updateInterview } from "../actions";
 import { INTERVIEW_STAGE_OPTIONS } from "../labels";
+import { splitQuestions } from "../questions";
 import {
   interviewFormSchema,
   type InterviewFormInput,
   type InterviewFormValues,
 } from "../schemas";
 
-const EMPTY_VALUES: InterviewFormInput = {
+const EMPTY_QUESTION = { id: "", text: "" };
+
+export const EMPTY_VALUES: InterviewFormInput = {
   scheduledAt: "",
   stage: "hr",
   interviewers: "",
-  questions: "",
+  questions: [EMPTY_QUESTION],
   reflection: "",
 };
 
@@ -101,6 +105,37 @@ function InterviewForm({
     defaultValues,
   });
   const { errors } = form.formState;
+  // keyName: the rows carry their own `id` (the question's), which the
+  // default key name would overwrite.
+  const questionRows = useFieldArray({
+    control: form.control,
+    name: "questions",
+    keyName: "key",
+  });
+
+  // Pasting several lines into one row spreads them over new rows, so a
+  // list copied from notes still lands as separate questions.
+  function pasteQuestions(index: number, event: ClipboardEvent) {
+    const lines = splitQuestions(event.clipboardData.getData("text"));
+
+    if (lines.length < 2) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const [head, ...rest] = lines;
+    const current = form.getValues(`questions.${index}.text`).trim();
+
+    form.setValue(
+      `questions.${index}.text`,
+      current ? `${current} ${head}` : head,
+    );
+    questionRows.insert(
+      index + 1,
+      rest.map((text) => ({ id: "", text })),
+    );
+  }
 
   // The server parses the same raw strings again with the same schema, so the
   // untransformed form values are what gets sent.
@@ -128,6 +163,8 @@ function InterviewForm({
       }
     });
   }
+
+  const questionsError = errors.questions?.root ?? errors.questions;
 
   return (
     <form onSubmit={form.handleSubmit(submit)} noValidate>
@@ -193,29 +230,70 @@ function InterviewForm({
           />
         </Field>
 
-        <Field data-invalid={!!errors.questions}>
-          <FieldLabel htmlFor={`${id}-questions`}>
+        <Field data-invalid={!!questionsError}>
+          <FieldLabel id={`${id}-questions`}>
             Pertanyaan yang ditanyakan
           </FieldLabel>
-          <Textarea
-            id={`${id}-questions`}
-            aria-describedby={describedBy(
-              `${id}-questions-description`,
-              !!errors.questions && `${id}-questions-error`,
-            )}
-            rows={6}
-            aria-invalid={!!errors.questions}
-            {...form.register("questions")}
-          />
+          <div
+            role="group"
+            aria-labelledby={`${id}-questions`}
+            aria-describedby={`${id}-questions-description`}
+            className="flex flex-col gap-2"
+          >
+            {questionRows.fields.map((row, index) => {
+              const rowError = errors.questions?.[index]?.text;
+
+              return (
+                <div key={row.key} className="flex flex-col gap-1">
+                  <div className="flex items-start gap-2">
+                    <Input
+                      aria-label={`Pertanyaan ${index + 1}`}
+                      aria-invalid={!!rowError}
+                      aria-describedby={describedBy(
+                        !!rowError && `${id}-questions-${index}-error`,
+                      )}
+                      onPaste={(event) => pasteQuestions(index, event)}
+                      {...form.register(`questions.${index}.text`)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Hapus pertanyaan ${index + 1}`}
+                      onClick={() =>
+                        questionRows.fields.length > 1
+                          ? questionRows.remove(index)
+                          : form.setValue(`questions.${index}.text`, "")
+                      }
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                  <FieldError
+                    id={`${id}-questions-${index}-error`}
+                    errors={[rowError]}
+                  />
+                </div>
+              );
+            })}
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => questionRows.append({ ...EMPTY_QUESTION })}
+              >
+                <Plus />
+                Tambah pertanyaan
+              </Button>
+            </div>
+          </div>
           <FieldDescription id={`${id}-questions-description`}>
-            Satu pertanyaan per baris; tiap baris muncul terpisah di halaman
-            Pertanyaan. Mendukung markdown sederhana: **tebal**, _miring_,
-            `kode`, list, dan [link](https://…).
+            Satu kotak satu pertanyaan. Tempel beberapa baris sekaligus dan tiap
+            baris jadi pertanyaan sendiri. Semuanya terkumpul di halaman
+            Pertanyaan, tempat kamu menandai kesiapan dan menautkan cerita.
           </FieldDescription>
-          <FieldError
-            id={`${id}-questions-error`}
-            errors={[errors.questions]}
-          />
+          <FieldError errors={[questionsError]} />
         </Field>
 
         <Field data-invalid={!!errors.reflection}>

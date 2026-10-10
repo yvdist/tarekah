@@ -121,12 +121,24 @@ Tanpa mockup.
 
 ### Pertanyaan
 
-Tanpa mockup.
+Tanpa mockup. Sejak bank pertanyaan (tabel `questions`), halaman ini punya aksi sendiri.
 
-- Filter tahap tetap `<select>` bawaan browser di dalam form GET, supaya pencarian jalan tanpa JavaScript; hanya tinggi, radius dan latarnya yang disamakan dengan `Input`.
-- Tombol "Cari" bergaya outline karena bukan aksi utama; halaman ini tidak punya tombol nila.
-- Empty state berjudul "Kumpulkan pertanyaan interview-mu" (sebelumnya "Belum ada pertanyaan") dan mengarah ke daftar lamaran, tempat catatan interview ditulis.
+- Filter (kategori, kesiapan, sumber, lamaran) tetap `<select>` bawaan browser di dalam form GET, supaya pencarian jalan tanpa JavaScript; hanya tinggi, radius dan latarnya yang disamakan dengan `Input`. Filter tahap interview diganti badge tahap pada baris.
+- Satu tombol nila: "Tambah pertanyaan" di page header. Tombol "Cari" tetap outline.
+- Ringkasan kesiapan di atas filter berbentuk "X siap · Y cukup · Z belum siap": angka Geist Mono, tanpa persentase dan tanpa skor, karena kesiapan dinilai sendiri.
+- Kategori dan kesiapan diubah inline lewat `OptionSelect` kecil di tiap baris; menyimpan saat berubah, tanpa tombol simpan. Tautan cerita lewat dialog dengan checkbox, dan cerita yang tertaut tampil sebagai pil link.
+- Empty state berjudul "Kumpulkan pertanyaan interview-mu" dengan tombol outline ke daftar lamaran, karena header sudah punya tombol nila.
 - Hasil pencarian yang kosong ("Tidak ada pertanyaan yang cocok") tetap kotak putus-putus tanpa awan, sama dengan Dashboard: itu bukan halaman kosong. Jumlahnya tidak ditampilkan di keadaan itu.
+
+### Cerita
+
+Tanpa mockup. Bank pengalaman STAR, di grup Arsip setelah Pertanyaan.
+
+- Daftar berupa kartu dua kolom (judul, cuplikan situasi, pil kompetensi `secondary`, jumlah pertanyaan Geist Mono). Seluruh kartu adalah link; bayangan hanya saat hover.
+- Form di halaman sendiri (`/stories/new`, `/stories/[id]/edit`), bukan dialog: empat textarea STAR terlalu panjang untuk popup. Setiap bagian punya satu kalimat petunjuk di bawahnya, misalnya Aksi: "Apa yang KAMU lakukan, bukan tim." Kompetensi berupa checkbox dua kolom.
+- Detail: satu `Panel` per bagian STAR dengan petunjuknya sebagai `hint`, isi dirender lewat `Markdown`; bagian kosong berkata "Belum diisi. Tambahkan lewat tombol Edit." Kolom kanan berisi pertanyaan yang tertaut, dengan link ke halaman Pertanyaan karena penautan dilakukan dari sana.
+- Empty state: "Tulis cerita pertamamu", tombol outline karena header sudah punya "Tambah cerita" nila.
+- Hapus dari halaman detail mengarahkan kembali ke daftar, mengikuti pola detail lamaran.
 
 ### Pengaturan
 

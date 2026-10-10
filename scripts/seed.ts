@@ -4,8 +4,8 @@
 //
 // Users only exist through OAuth, so sign in once before seeding. The script
 // refuses to touch an account that already has data unless --reset is given,
-// which deletes that user's companies, documents, applications and contacts
-// first. Other users are never touched.
+// which deletes that user's companies, documents, applications, contacts,
+// questions and stories first. Other users are never touched.
 //
 // This runs outside Next.js, so it cannot use src/db/index.ts (server-only,
 // env validation) and opens its own short-lived connection instead.
@@ -17,8 +17,11 @@ import * as schema from "../src/db/schema";
 import { FOLLOW_UP_STATUSES } from "../src/features/applications/follow-up";
 import type {
   ApplicationStatus,
+  Competency,
   InterviewStage,
   JobSource,
+  QuestionCategory,
+  QuestionReadiness,
   WorkType,
 } from "../src/db/schema/enum-values";
 
@@ -30,6 +33,9 @@ const {
   contacts,
   documents,
   interviews,
+  questions,
+  questionStories,
+  stories,
   users,
 } = schema;
 
@@ -166,31 +172,187 @@ const CV_VERSIONS = [
   },
 ] as const;
 
-const INTERVIEW_QUESTIONS: Record<InterviewStage, readonly string[]> = {
+type SeedQuestion = readonly [text: string, category: QuestionCategory];
+
+const INTERVIEW_QUESTIONS: Record<InterviewStage, readonly SeedQuestion[]> = {
   hr: [
-    "Ceritakan tentang diri kamu dan kenapa tertarik dengan posisi ini.",
-    "Berapa ekspektasi gaji kamu?",
-    "Kenapa ingin pindah dari tempat sekarang?",
-    "Kapan kamu bisa mulai bekerja?",
+    [
+      "Ceritakan tentang diri kamu dan kenapa tertarik dengan posisi ini.",
+      "hr_general",
+    ],
+    ["Berapa ekspektasi gaji kamu?", "hr_general"],
+    ["Kenapa ingin pindah dari tempat sekarang?", "hr_general"],
+    ["Kapan kamu bisa mulai bekerja?", "hr_general"],
   ],
   technical: [
-    "Jelaskan perbedaan Server Component dan Client Component di React.",
-    "Bagaimana kamu mendesain skema database untuk fitur multi-tenant?",
-    "Apa yang terjadi dari mengetik URL sampai halaman tampil?",
-    "Bagaimana cara mencegah N+1 query?",
-    "Jelaskan cara kerja event loop di Node.js.",
+    [
+      "Jelaskan perbedaan Server Component dan Client Component di React.",
+      "technical_backend",
+    ],
+    [
+      "Bagaimana kamu mendesain skema database untuk fitur multi-tenant?",
+      "system_design",
+    ],
+    [
+      "Apa yang terjadi dari mengetik URL sampai halaman tampil?",
+      "technical_backend",
+    ],
+    ["Bagaimana cara mencegah N+1 query?", "technical_backend"],
+    ["Jelaskan cara kerja event loop di Node.js.", "technical_backend"],
   ],
   user: [
-    "Ceritakan proyek paling menantang yang pernah kamu kerjakan.",
-    "Bagaimana kamu menangani perbedaan pendapat dengan rekan tim?",
-    "Bagaimana kamu memprioritaskan pekerjaan saat tenggat berdekatan?",
+    [
+      "Ceritakan proyek paling menantang yang pernah kamu kerjakan.",
+      "behavioral",
+    ],
+    [
+      "Bagaimana kamu menangani perbedaan pendapat dengan rekan tim?",
+      "behavioral",
+    ],
+    [
+      "Bagaimana kamu memprioritaskan pekerjaan saat tenggat berdekatan?",
+      "behavioral",
+    ],
   ],
   final: [
-    "Apa rencana kamu dalam tiga tahun ke depan?",
-    "Apa yang kamu harapkan dari atasan dan tim?",
+    ["Apa rencana kamu dalam tiga tahun ke depan?", "hr_general"],
+    ["Apa yang kamu harapkan dari atasan dan tim?", "hr_general"],
   ],
-  other: ["Ada pertanyaan untuk kami?"],
+  other: [["Ada pertanyaan untuk kami?", "other"]],
 };
+
+// Questions written by hand, outside any interview.
+const MANUAL_QUESTIONS: readonly SeedQuestion[] = [
+  [
+    "Ceritakan saat kamu harus mengambil keputusan teknis dengan informasi yang belum lengkap.",
+    "behavioral",
+  ],
+  [
+    "Bagaimana kamu mengevaluasi apakah sebuah fitur cocok memakai LLM?",
+    "ai_llm",
+  ],
+  [
+    "Bagaimana kamu mendesain antrean pekerjaan yang tahan terhadap duplikasi?",
+    "system_design",
+  ],
+  ["Ceritakan kegagalan yang paling banyak mengajarimu.", "behavioral"],
+];
+
+const READINESS_WEIGHTS: ReadonlyArray<readonly [QuestionReadiness, number]> = [
+  ["not_ready", 5],
+  ["somewhat", 3],
+  ["ready", 2],
+];
+
+// STAR stories, each with the questions it answers (matched by text).
+const STORIES: ReadonlyArray<{
+  title: string;
+  situation: string;
+  task: string;
+  action: string;
+  result: string;
+  competencies: Competency[];
+  answers: readonly string[];
+}> = [
+  {
+    title: "Migrasi monolith Laravel ke service tanpa downtime",
+    situation:
+      "Monolith Laravel yang melayani checkout sudah lambat di jam sibuk. Setiap deploy berarti 5 menit downtime, dan tim produk mulai menunda rilis.",
+    task: "Saya diminta memisahkan modul pembayaran jadi service sendiri tanpa mengganggu transaksi yang sedang berjalan.",
+    action:
+      "Saya petakan dulu semua jalur yang menyentuh tabel pembayaran, lalu pasang **strangler pattern**: endpoint baru hidup berdampingan dengan yang lama dan lalu lintas dipindah bertahap lewat feature flag. Saya tulis skrip rekonsiliasi harian untuk membandingkan dua sumber data selama transisi.",
+    result:
+      "Migrasi selesai dalam 6 minggu tanpa satu pun transaksi hilang. Deploy modul pembayaran turun dari 5 menit downtime jadi nol, dan tim produk bisa rilis dua kali seminggu.",
+    competencies: ["ownership", "technical_depth", "impact"],
+    answers: [
+      "Ceritakan proyek paling menantang yang pernah kamu kerjakan.",
+      "Bagaimana kamu mendesain skema database untuk fitur multi-tenant?",
+    ],
+  },
+  {
+    title: "Beda pendapat soal estimasi dengan tech lead",
+    situation:
+      "Tech lead mengestimasi fitur laporan selesai 1 minggu. Dari pengalaman di modul sebelumnya, saya yakin butuh 3 minggu karena ada agregasi data lama yang belum dinormalisasi.",
+    task: "Saya perlu menyampaikan keberatan tanpa terdengar menolak pekerjaan, dan tetap menjaga hubungan baik.",
+    action:
+      "Saya minta waktu 1 hari untuk membuat *spike*: query contoh di data produksi (anonim) dan daftar kasus tepi yang ditemukan. Lalu saya ajak bicara empat mata dulu, bukan di depan tim, dengan membawa angka, bukan opini.",
+    result:
+      "Estimasi direvisi jadi 2,5 minggu dan dua kasus tepi masuk ke backlog sebagai tiket terpisah. Fitur rilis tepat waktu sesuai estimasi baru, dan sejak itu spike singkat jadi kebiasaan tim sebelum estimasi.",
+    competencies: ["conflict", "collaboration", "ambiguity"],
+    answers: [
+      "Bagaimana kamu menangani perbedaan pendapat dengan rekan tim?",
+      "Ceritakan saat kamu harus mengambil keputusan teknis dengan informasi yang belum lengkap.",
+    ],
+  },
+  {
+    title: "Insiden antrean yang memproses pesanan dua kali",
+    situation:
+      "Worker antrean kadang memproses pesanan yang sama dua kali setelah restart, dan beberapa pelanggan ditagih ganda.",
+    task: "Saya yang menulis worker itu, jadi saya ambil tanggung jawab memperbaikinya dan menjelaskan ke tim support.",
+    action:
+      "Saya tambahkan *idempotency key* per pesanan dan tabel pencatat pekerjaan yang sudah selesai, lalu tulis postmortem tanpa menyalahkan siapa pun, termasuk diri sendiri, dengan fokus ke pengaman yang kurang.",
+    result:
+      "Tagihan ganda berhenti total. Postmortem itu dipakai sebagai templat insiden berikutnya, dan saya jadi lebih hati-hati menganggap *at-least-once delivery* sebagai *exactly-once*.",
+    competencies: ["failure", "ownership", "technical_depth"],
+    answers: [
+      "Ceritakan kegagalan yang paling banyak mengajarimu.",
+      "Bagaimana kamu mendesain antrean pekerjaan yang tahan terhadap duplikasi?",
+    ],
+  },
+  {
+    title: "Mengurutkan tiga tenggat yang bertabrakan",
+    situation:
+      "Dalam satu minggu ada rilis fitur, audit keamanan, dan permintaan data dari tim finance, semuanya ditandai mendesak.",
+    task: "Sebagai satu-satunya backend engineer di tim kecil itu, saya harus memutuskan urutan dan mengelola ekspektasi tiga pihak.",
+    action:
+      "Saya buat tabel kecil: dampak kalau terlambat, siapa yang terdampak, dan berapa lama tiap pekerjaan. Hasilnya saya bagikan ke tiga pemangku kepentingan sekaligus supaya mereka melihat trade-off yang sama.",
+    result:
+      "Audit dikerjakan dulu (tenggat hukum), permintaan finance diserahkan sebagai query siap pakai dalam 2 jam, dan rilis fitur mundur dua hari atas persetujuan produk. Tidak ada yang merasa dikesampingkan.",
+    competencies: ["ambiguity", "collaboration", "leadership"],
+    answers: [
+      "Bagaimana kamu memprioritaskan pekerjaan saat tenggat berdekatan?",
+    ],
+  },
+  {
+    title: "Mentoring engineer baru sampai lepas pendampingan",
+    situation:
+      "Engineer baru di tim kesulitan memahami arsitektur event-driven kami dan PR-nya sering bolak-balik review.",
+    task: "Saya mengajukan diri jadi mentornya selama tiga bulan pertama.",
+    action:
+      "Kami *pair programming* dua jam seminggu, dan saya minta dia menulis catatan arsitektur versinya sendiri yang kemudian jadi dokumen onboarding tim.",
+    result:
+      "Setelah dua bulan dia mengerjakan fitur sendiri dengan review satu putaran, dan dokumen onboardingnya dipakai untuk dua orang berikutnya.",
+    competencies: ["leadership", "collaboration"],
+    answers: [],
+  },
+];
+
+// Pasted postings, for a few applications.
+const JOB_DESCRIPTIONS = [
+  `Tentang peran
+Kami mencari Backend Engineer untuk tim pembayaran. Kamu akan merancang API, menjaga keandalan sistem antrean, dan bekerja dekat dengan tim produk.
+
+Tanggung jawab
+- Merancang dan memelihara layanan backend (Laravel, PostgreSQL, Redis)
+- Menulis test otomatis dan menjaga pipeline CI tetap hijau
+- Ikut rotasi on-call ringan (satu minggu per dua bulan)
+
+Kualifikasi
+- 3+ tahun pengalaman backend
+- Paham desain skema relasional dan indexing
+- Nilai tambah: pengalaman dengan sistem pembayaran atau event-driven`,
+  `Senior Software Engineer (Remote, Indonesia)
+
+Yang akan kamu kerjakan:
+Memimpin pengembangan fitur dari diskusi kebutuhan sampai rilis, membimbing engineer yang lebih junior, dan menjaga kualitas kode lewat review.
+
+Yang kami cari:
+- Pengalaman 5+ tahun, minimal 2 tahun di tim produk
+- Terbiasa dengan Node.js atau PHP, dan PostgreSQL
+- Nyaman bekerja asinkron dan menulis dokumen keputusan teknis
+
+Proses: screening HR, tes teknis take-home (maks. 4 jam), interview dengan tim, lalu final dengan CTO.`,
+] as const;
 
 const CONTACTS = [
   {
@@ -430,7 +592,7 @@ function interviewsFor(events: SeedEvent[]) {
       reached.at.getTime() + (2 + index * 3) * DAY + between(2, 8) * HOUR,
     ),
     interviewers: stage === "hr" ? "Tim Talent Acquisition" : null,
-    questions: INTERVIEW_QUESTIONS[stage].filter(() => chance(0.75)).join("\n"),
+    questions: INTERVIEW_QUESTIONS[stage].filter(() => chance(0.75)),
     reflection:
       stage === "technical"
         ? "Jawaban soal desain sistem masih kurang terstruktur. Latihan lagi."
@@ -482,14 +644,16 @@ async function main() {
     }
 
     const existing = await Promise.all(
-      [applications, companies, documents, contacts].map(async (table) => {
-        const [row] = await db
-          .select({ value: count() })
-          .from(table)
-          .where(eq(table.userId, user.id));
+      [applications, companies, documents, contacts, questions, stories].map(
+        async (table) => {
+          const [row] = await db
+            .select({ value: count() })
+            .from(table)
+            .where(eq(table.userId, user.id));
 
-        return row.value;
-      }),
+          return row.value;
+        },
+      ),
     );
 
     if (existing.some((value) => value > 0) && !reset) {
@@ -502,8 +666,11 @@ async function main() {
     const seeded = buildApplications(now);
 
     await db.transaction(async (tx) => {
-      // Applications first: they hold the restricting reference to companies,
+      // Questions and stories only point at applications, so they go first.
+      // Then applications: they hold the restricting reference to companies,
       // and their events, interviews and contact links go with them.
+      await tx.delete(questions).where(eq(questions.userId, user.id));
+      await tx.delete(stories).where(eq(stories.userId, user.id));
       await tx.delete(applications).where(eq(applications.userId, user.id));
       await tx.delete(contacts).where(eq(contacts.userId, user.id));
       await tx.delete(documents).where(eq(documents.userId, user.id));
@@ -550,6 +717,8 @@ async function main() {
         .returning({ id: documents.id });
 
       const applicationIdsByCompany = new Map<string, string[]>();
+      // Stories are linked to questions by their text, see STORIES.answers.
+      const questionIdsByText = new Map<string, string>();
 
       for (const item of seeded) {
         const companyId = companyIds.get(item.company);
@@ -582,6 +751,7 @@ async function main() {
                 : null,
             cvDocumentId: item.cv === null ? null : cvIds[item.cv],
             coverLetterDocumentId: chance(0.3) ? coverLetter.id : null,
+            jobDescription: chance(0.4) ? pick(JOB_DESCRIPTIONS) : null,
             createdAt: item.events[0].at,
             updatedAt: last.at,
           })
@@ -598,16 +768,35 @@ async function main() {
           })),
         );
 
-        const interviewRows = interviewsFor(item.events);
+        for (const { questions: asked, ...row } of interviewsFor(item.events)) {
+          const [interview] = await tx
+            .insert(interviews)
+            .values({ ...row, userId: user.id, applicationId: application.id })
+            .returning({ id: interviews.id });
 
-        if (interviewRows.length > 0) {
-          await tx.insert(interviews).values(
-            interviewRows.map((row) => ({
-              ...row,
-              userId: user.id,
-              applicationId: application.id,
-            })),
-          );
+          if (asked.length === 0) {
+            continue;
+          }
+
+          const questionRows = await tx
+            .insert(questions)
+            .values(
+              asked.map(([text, category], index) => ({
+                userId: user.id,
+                interviewId: interview.id,
+                applicationId: application.id,
+                source: "interview" as const,
+                text,
+                category,
+                readiness: weighted(READINESS_WEIGHTS),
+                createdAt: new Date(row.scheduledAt.getTime() + index),
+              })),
+            )
+            .returning({ id: questions.id, text: questions.text });
+
+          for (const question of questionRows) {
+            questionIdsByText.set(question.text, question.id);
+          }
         }
 
         applicationIdsByCompany.set(item.company, [
@@ -644,9 +833,61 @@ async function main() {
           );
         }
       }
+
+      const manualRows = await tx
+        .insert(questions)
+        .values(
+          MANUAL_QUESTIONS.map(([text, category], index) => ({
+            userId: user.id,
+            source: "manual" as const,
+            text,
+            category,
+            readiness: weighted(READINESS_WEIGHTS),
+            notes:
+              index === 0
+                ? "Pakai cerita estimasi; tekankan spike 1 hari sebelum memutuskan."
+                : null,
+            createdAt: new Date(now - between(1, 20) * DAY),
+          })),
+        )
+        .returning({ id: questions.id, text: questions.text });
+
+      for (const question of manualRows) {
+        questionIdsByText.set(question.text, question.id);
+      }
+
+      for (const [index, story] of STORIES.entries()) {
+        const { answers, ...values } = story;
+        const [row] = await tx
+          .insert(stories)
+          .values({
+            ...values,
+            userId: user.id,
+            createdAt: new Date(now - (30 - index * 5) * DAY),
+            updatedAt: new Date(now - (10 - index * 2) * DAY),
+          })
+          .returning({ id: stories.id });
+        const linked = answers.flatMap((text) => {
+          const questionId = questionIdsByText.get(text);
+
+          return questionId ? [questionId] : [];
+        });
+
+        if (linked.length > 0) {
+          await tx.insert(questionStories).values(
+            linked.map((questionId) => ({
+              userId: user.id,
+              questionId,
+              storyId: row.id,
+            })),
+          );
+        }
+      }
     });
 
-    console.log(`Seeded ${seeded.length} applications.`);
+    console.log(
+      `Seeded ${seeded.length} applications, ${STORIES.length} stories and ${MANUAL_QUESTIONS.length} manual questions.`,
+    );
   } finally {
     await pool.end();
   }

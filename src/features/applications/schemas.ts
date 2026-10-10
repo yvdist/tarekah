@@ -52,6 +52,8 @@ export const applicationFormSchema = z
     cvDocumentId: optionalId,
     coverLetterDocumentId: optionalId,
     notes: optionalText(10_000),
+    // Pasted from the posting; the practice features of later phases read it.
+    jobDescription: optionalText(20_000),
   })
   // Mirrors applications_salary_range_check in the database.
   .refine(
