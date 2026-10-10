@@ -3,6 +3,8 @@
 Status: disetujui · Oktober 2026
 Dokumen ini adalah rancangan besar. Detail implementasi per fase ada di prompt masing-masing fase. Kalau kode yang ada berbeda dari dokumen ini, kode yang benar dan dokumen ini diperbarui.
 
+Penomoran fase di dokumen ini berbeda dari `PLAN.md`: Fase 1 di sini adalah Fase 8 di sana, Fase 2 adalah Fase 9 (keduanya sudah selesai).
+
 ## Latar belakang
 
 Pengguna (pada awalnya pembuatnya sendiri) adalah engineer yang sudah lama tidak interview dan merasa cemas menghadapinya. Kecemasan ini terdiri dari tiga lapisan, dan masing-masing dijawab oleh bagian fitur yang berbeda:
@@ -36,9 +38,9 @@ Pertanyaan dinormalisasi dari field markdown `interviews.questions` menjadi tabe
 
 ### 3. Latihan (menu utama, setelah Dashboard)
 
-- **Latihan singkat.** Satu pertanyaan (default acak dari yang belum siap), jawab, lalu dapat masukan.
+- **Latihan singkat.** Satu pertanyaan (default acak dari yang belum siap, atau dipilih dari bank dengan filter kategori), jawab, lalu dapat masukan. Jawaban disimpan lebih dulu sebagai sesi `drill` yang langsung `completed`, baru masukan diminta; tanpa key jawaban tetap tersimpan dan tempat masukan berisi ajakan mengatur key. Pertanyaan lanjutan dari masukan bisa disimpan ke bank (sumber `ai`, ditolak bila teks yang sama sudah ada), dan dari layar yang sama kesiapan bisa diubah serta cerita ditautkan atau ditulis.
 - **Simulasi interview.** AI berperan sebagai interviewer, satu pertanyaan per giliran, maksimal 2 pertanyaan lanjutan per topik. Masukan baru diberikan di akhir sesi. Pengaturannya:
-  - jenis: HR, behavioral, teknis backend/Laravel, system design ringan, AI builder;
+  - jenis: HR, behavioral, teknis backend/Laravel, system design ringan, AI builder (`hr_screening`, `behavioral`, `technical_backend`, `system_design_light`, `ai_builder`; daftar ini terpisah dari kategori pertanyaan);
   - level: mid atau senior;
   - bahasa: Indonesia atau Inggris;
   - durasi: 15 atau 30 menit;
@@ -48,7 +50,11 @@ Pertanyaan dinormalisasi dari field markdown `interviews.questions` menjadi tabe
   - yang bisa dipertajam (struktur, konkret atau tidak, relevansi, kejelasan teknis, keringkasan);
   - versi lebih rapi yang tetap memakai gaya bicara dan fakta pengguna;
   - pertanyaan lanjutan yang mungkin muncul.
-- Setelah sesi selesai, pertanyaan bisa disimpan ke bank dan saran cerita bisa diterapkan dengan satu klik.
+
+  Di kode: `strengths`, `improvements` (`aspect` salah satu dari `structure`, `specificity`, `relevance`, `technical_clarity`, `conciseness`, ditambah `note`), `improvedAnswer`, `followUpQuestion`. Semua wajib, tanpa field angka.
+
+- Bahasa masukan latihan singkat ditebak dari bahasa pertanyaan dan bisa diganti sebelum jawaban disimpan; yang tersimpan di sesi selalu `id` atau `en`.
+- Setelah sesi simulasi selesai, pertanyaan bisa disimpan ke bank dan saran cerita bisa diterapkan dengan satu klik.
 
 ### 4. Persiapan dari lamaran
 
@@ -76,15 +82,17 @@ questions           id, user_id, text, category, source, readiness, notes,
                     interview_id?, application_id?
 question_stories    question_id, story_id, user_id
 practice_sessions   id, user_id, application_id?, mode (drill|simulation),
-                    interview_type, level, language, tone, status
-                    (in_progress|completed|abandoned), max_turns,
-                    started_at, ended_at, summary (jsonb)
+                    interview_type?, level?, tone?, max_turns?, language,
+                    status (in_progress|completed|abandoned),
+                    started_at, ended_at?, summary? (jsonb)
 practice_turns      id, session_id, user_id, position,
                     role (interviewer|candidate|system_event),
-                    content, question_id?, feedback (jsonb)
+                    content, question_id?, feedback? (jsonb), created_at
 ```
 
-Masukan dan ringkasan AI dihasilkan sebagai structured output dengan skema Zod. Test memakai mock model dari AI SDK, tanpa panggilan API sungguhan.
+`interview_type`, `level`, `tone` dan `max_turns` hanya milik simulasi: kolomnya nullable, dan CHECK di database mewajibkannya saat `mode = 'simulation'`. Satu latihan singkat adalah satu sesi dengan dua giliran, `interviewer` (teks pertanyaan) lalu `candidate` (jawaban). `feedback` di giliran kandidat menyimpan masukan bersama versi prompt, provider dan model yang menghasilkannya.
+
+Masukan dan ringkasan AI dihasilkan sebagai structured output dengan skema Zod (`generateText` dengan `Output.object` di AI SDK 7; `generateObject` sudah deprecated). Isi dari pengguna (pertanyaan, jawaban, cerita) masuk ke prompt di dalam tag pembatas dan diperlakukan sebagai data. Test memakai mock model dari AI SDK, tanpa panggilan API sungguhan.
 
 ## Fase
 

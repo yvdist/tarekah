@@ -100,6 +100,7 @@ src/
     actions.ts                Server Actions ("use server")
     schemas.ts                Zod schemas shared by forms and actions
     data.ts                   SQL that takes the database as an argument, tested against PGlite
+    prompts/                  prompt builders for AI calls, versioned and tested (practice)
     components/               components specific to the domain
   components/ui/              shadcn/ui components
   test/                       Vitest helpers (PGlite database, server-only stub)
@@ -129,7 +130,7 @@ These three are not negotiable.
 
 - A component that reads the session must sit inside a `<Suspense>` boundary. Do not `await` the session at the top level of a layout; push it into a child component.
 - To cache per-user data, the exported query resolves the user and passes `user.id` into an unexported `"use cache"` function. Never export a cached function that takes a `userId` argument.
-- Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`, `documents:<userId>`, `interviews:<userId>`, `contacts:<userId>`, `questions:<userId>`, `stories:<userId>`, `ai:<userId>`). A cached query that joins another domain carries that domain's tag too, and an action that changes what another domain displays updates that tag as well. Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
+- Cache tags are `<domain>:<userId>` (`applications:<userId>`, `companies:<userId>`, `settings:<userId>`, `documents:<userId>`, `interviews:<userId>`, `contacts:<userId>`, `questions:<userId>`, `stories:<userId>`, `ai:<userId>`). Practice sessions have no tag yet: nothing cached reads them. A cached query that joins another domain carries that domain's tag too, and an action that changes what another domain displays updates that tag as well. Actions call `updateTag` with the same tag. Keep emails and other personal data out of cache keys and tags.
 - Anything that depends on the clock (days in status, follow-up and ghosted flags) is computed in the exported query, after the cached read, never inside a `"use cache"` function. The rules live in `src/features/applications/follow-up.ts`.
 - Reading the clock outside a cached function still needs `await connection()` first when the value feeds a render (see `resolveCurrentRange` in `src/features/dashboard/range.ts`); otherwise Next.js rejects `Date.now()` while prerendering.
 - `src/proxy.ts` only does an optimistic cookie check for redirects. Authorization happens in `queries.ts` / `actions.ts`.
@@ -146,7 +147,10 @@ Every AI call runs on the server with a key the user saved in Pengaturan. Withou
 - `getModelForUser(db, userId)` in `src/features/ai/model.ts` is the only place a key is decrypted. Get a model from it and nowhere else; it returns null when the user has no key, and the caller answers with `AI_ERROR_MESSAGES.not_configured` rather than an error.
 - A key never goes back to the client. `findAiSummary` returns provider, model and the last four characters; keep it that way when adding fields.
 - Failures go through `reportAiError` (`src/features/ai/errors.ts`), which returns a friendly Indonesian message and logs only a code, the provider and the HTTP status. Never log or return an error from the SDK: it carries the request body (the user's text) and a provider message that can quote the key.
-- `maxDuration` cannot be exported from `actions.ts`. A page whose Server Actions call a provider exports it itself (`/settings` does), and the call gets a shorter SDK `timeout` so the user sees a message before the platform cuts the request.
+- `maxDuration` cannot be exported from `actions.ts`. A page whose Server Actions call a provider exports it itself (`/settings` and `/practice/drill/[questionId]` do), and the call gets a shorter SDK `timeout` so the user sees a message before the platform cuts the request.
+- Practice (`src/features/practice`) saves the answer first and asks for feedback second: `saveDrillAnswer` writes a completed drill session with two turns, then `requestDrillFeedback` reads the question and answer back from the database and returns stored feedback when there is some, so asking twice never bills twice. Having no key is a result (`status: "not_configured"`, shown as an invitation), not an error.
+- Prompts live in `src/features/practice/prompts/`, each with a version constant that is stored with what it produced. Text the user wrote goes into `prompt` inside delimiter tags, through `escapeTags`, and never into `instructions`.
+- A schema given to `Output.object` has no `.optional()` and no length bounds, which the providers' strict mode rejects; bounds are applied afterwards (`tidyFeedback`). No field holds a score. `FAKE_FEEDBACK` in `fake-model.ts` must keep passing `feedbackSchema`.
 - The suggested model ids in `src/features/ai/providers.ts` are checked against the providers' docs, with the date in a comment. Do not add one from memory.
 
 ## Code conventions
@@ -193,6 +197,8 @@ Next.js 16 differs from older versions in ways that matter here. The bundled doc
 - The logo is `Logomark`, `Wordmark` and `Logo` in `src/components/brand/logo.tsx`: a stem and one rising kunyit stroke, nila on light and kertas on dark. The numbers live in `brand/mark-paths.ts`, shared with `src/app/apple-icon.tsx` and `opengraph-image.tsx`; `src/app/icon.svg` is a static file and repeats them, so change both together. `AccentE` is the wordmark's "e" under that stroke; it renders a plain "e", so the caller supplies the real word in an `sr-only` span.
 - Error boundaries (`error.tsx`) take `retry`, not `reset`, and render the shared `ErrorState`.
 - Accessibility: every control has a visible label or an `aria-label`; in forms the hint and error get ids and the control points at them with `describedBy()` from `src/lib/form-errors.ts`, and required fields set `aria-required`. `NavLink` calls `usePathname`, so it sits inside `<Suspense>`: on routes with a dynamic segment the pathname is unknown while prerendering.
+- A render must not depend on chance: the next practice question is picked in a click handler (`pickQuestionId` takes `random` as an argument) and its id goes into the URL.
+- `StoryForm` navigates to the story after saving; inside a dialog it takes `onSaved`, `onCancel` and `bare` instead.
 - Forms inside a `Dialog` put `key={useOpenKey(open)}` (`src/hooks/use-open-key.ts`) on the form component, because the dialog popup keeps its state across closes.
 - Shared Zod field helpers (`optionalText`, `requiredText`, `optionalHttpUrl`, `optionalId`) are in `src/lib/form-schemas.ts`; `invalidResult` in `src/lib/action-result.ts` turns a Zod error into an `ActionResult`; `setFieldErrors` in `src/lib/form-errors.ts` maps it back onto the form.
 - Forms are Client Components using `react-hook-form` with `zodResolver` and the schema from `schemas.ts`; the action re-parses the same raw values with the same schema. The form calls the action in a transition, maps `fieldErrors` onto fields, shows a `sonner` toast, then navigates. See `src/features/applications/components/application-form.tsx`.
