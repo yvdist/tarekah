@@ -7,7 +7,7 @@ const input = (
   scheduledAt: "2026-10-09T09:30",
   stage: "hr",
   interviewers: "",
-  questions: "",
+  questions: [{ id: "", text: "" }],
   reflection: "",
   ...overrides,
 });
@@ -28,9 +28,22 @@ describe("interviewFormSchema", () => {
     expect(parsed).toMatchObject({
       stage: "hr",
       interviewers: null,
-      questions: null,
+      questions: [],
       reflection: null,
     });
+  });
+
+  it("keeps the question rows that have text", () => {
+    expect(
+      interviewFormSchema.parse(
+        input({
+          questions: [
+            { id: "", text: " Kenapa pindah? " },
+            { id: "", text: "" },
+          ],
+        }),
+      ).questions,
+    ).toEqual([{ id: null, text: "Kenapa pindah?" }]);
   });
 
   it("requires the datetime-local format", () => {
@@ -57,7 +70,7 @@ describe("interviewFormSchema", () => {
     expect(
       errorsOf({
         interviewers: "a".repeat(501),
-        questions: "a".repeat(10_001),
+        questions: [{ id: "", text: "a".repeat(1001) }],
         reflection: "a".repeat(10_001),
       }),
     ).toEqual(["interviewers", "questions", "reflection"]);
