@@ -156,7 +156,7 @@ Publik: Landing (/), Login (/login).
 Butuh login: Dashboard, Board, Lamaran (tabel), Lamaran baru, Detail
 lamaran, Edit lamaran, Perusahaan, Detail perusahaan, Kontak, Dokumen,
 Pertanyaan, Cerita, Cerita baru, Detail cerita, Edit cerita, Latihan,
-Latihan singkat, Pengaturan.
+Latihan singkat, Pengaturan simulasi, Simulasi interview, Pengaturan.
 Lainnya: loading (skeleton), error, not-found, dialog form, dialog
 konfirmasi hapus, toggle tema.
 
