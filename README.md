@@ -22,11 +22,13 @@ Masuk dengan akun GitHub atau Google. Setiap akun mulai dari kosong dan hanya me
 
 ## Fitur
 
-- **Lamaran.** Posisi, perusahaan, sumber lowongan, rentang gaji, tipe kerja, lokasi, link loker, catatan. Tabel dengan pencarian, filter dan sort.
+- **Lamaran.** Posisi, perusahaan, sumber lowongan, rentang gaji, tipe kerja, lokasi, link loker, catatan, dan deskripsi pekerjaan yang ditempel dari lowongannya. Tabel dengan pencarian, filter dan sort.
 - **Board kanban.** Satu kolom per status. Kartu dipindah dengan drag-and-drop, sentuhan, atau keyboard (Spasi, panah, Spasi). Setiap perpindahan tercatat di riwayat status.
 - **Follow-up.** Lamaran yang terlalu lama tanpa kabar ditandai, dengan batas hari yang bisa diatur. Setelah lebih lama lagi, aplikasi menyarankan memindahkannya ke "Tanpa kabar"; pemindahan selalu lewat klik, tidak otomatis.
 - **Versi CV dan cover letter.** Catat versi mana yang dipakai di tiap lamaran, lalu bandingkan response rate antarversi.
-- **Catatan interview.** Jadwal, tahap, pewawancara, pertanyaan dan refleksi dalam markdown. Halaman Pertanyaan mengumpulkan semua pertanyaan dari seluruh lamaran dan bisa dicari.
+- **Catatan interview.** Jadwal, tahap, pewawancara, daftar pertanyaan yang ditanyakan, dan refleksi dalam markdown.
+- **Bank pertanyaan.** Semua pertanyaan dari seluruh interview plus yang ditulis sendiri, dengan kategori, sumber, dan kesiapan yang dinilai sendiri (siap, cukup, belum siap) tanpa skor. Bisa dicari, difilter, dan ditautkan ke cerita.
+- **Cerita.** Bank pengalaman dalam format STAR (situasi, tugas, aksi, hasil) dengan tag kompetensi. Satu cerita bisa menjawab banyak pertanyaan.
 - **Kontak.** Recruiter, pemberi referral dan hiring manager, terhubung ke perusahaan dan lamaran.
 - **Dashboard.** Funnel per tahap, response rate dan conversion ke interview per sumber dan per versi CV, rata-rata waktu respons, jumlah lamaran per minggu, dengan filter rentang tanggal.
 - **Export CSV.** Semua lamaran dengan kolom lengkap, aman dibuka di spreadsheet.
@@ -87,6 +89,12 @@ erDiagram
     applications ||--o{ interviews : "interview"
     applications ||--o{ application_contacts : ""
     contacts ||--o{ application_contacts : ""
+    users ||--o{ questions : "memiliki"
+    users ||--o{ stories : "memiliki"
+    interviews |o--o{ questions : "ditanyakan di"
+    applications |o--o{ questions : "terkait"
+    questions ||--o{ question_stories : ""
+    stories ||--o{ question_stories : ""
 
     users {
         text id PK
@@ -127,6 +135,7 @@ erDiagram
         int salary_max
         uuid cv_document_id FK
         uuid cover_letter_document_id FK
+        text job_description
     }
     application_status_events {
         uuid id PK
@@ -153,6 +162,31 @@ erDiagram
     application_contacts {
         uuid application_id PK
         uuid contact_id PK
+        text user_id FK
+    }
+    questions {
+        uuid id PK
+        text user_id FK
+        text text
+        question_category category
+        question_source source
+        question_readiness readiness
+        uuid interview_id FK
+        uuid application_id FK
+    }
+    stories {
+        uuid id PK
+        text user_id FK
+        text title
+        text situation
+        text task
+        text action
+        text result
+        competency competencies
+    }
+    question_stories {
+        uuid question_id PK
+        uuid story_id PK
         text user_id FK
     }
 ```
@@ -212,9 +246,9 @@ npm test            # unit test (Vitest), tanpa database eksternal
 npm run test:e2e    # end-to-end (Playwright)
 ```
 
-**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV dan semua skema Zod. Agregasi statistik diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
+**Unit test** mencakup perhitungan follow-up, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan dan semua skema Zod. Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, dan backfill pertanyaan (idempoten) diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
 
-**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
+**End-to-end** mencakup penjagaan login, menambah lamaran, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
 
 Test end-to-end membuat dan menghapus pengguna, jadi wajib memakai database terpisah, misalnya Postgres sekali-pakai di Docker:
 
@@ -231,23 +265,24 @@ GitHub Actions menjalankan lint, typecheck, format, unit test dan build di setia
 
 ## Script
 
-| Perintah                               | Fungsi                                                  |
-| -------------------------------------- | ------------------------------------------------------- |
-| `npm run dev`                          | Server pengembangan                                     |
-| `npm run build`                        | Build produksi                                          |
-| `npm run start`                        | Menjalankan build produksi                              |
-| `npm run lint`                         | ESLint                                                  |
-| `npm run typecheck`                    | `next typegen` lalu `tsc --noEmit`                      |
-| `npm run format`                       | Prettier, menulis perubahan                             |
-| `npm run format:check`                 | Prettier, hanya memeriksa                               |
-| `npm test`                             | Unit test                                               |
-| `npm run test:watch`                   | Unit test, mode watch                                   |
-| `npm run test:e2e`                     | Test end-to-end                                         |
-| `npm run screenshots`                  | Membuat ulang screenshot README dari data contoh        |
-| `npm run db:generate`                  | Membuat migration SQL dari perubahan di `src/db/schema` |
-| `npm run db:migrate`                   | Menerapkan migration yang belum jalan                   |
-| `npm run db:studio`                    | Drizzle Studio                                          |
-| `npm run db:seed -- <email> [--reset]` | Data contoh untuk satu akun yang sudah ada              |
+| Perintah                               | Fungsi                                                   |
+| -------------------------------------- | -------------------------------------------------------- |
+| `npm run dev`                          | Server pengembangan                                      |
+| `npm run build`                        | Build produksi                                           |
+| `npm run start`                        | Menjalankan build produksi                               |
+| `npm run lint`                         | ESLint                                                   |
+| `npm run typecheck`                    | `next typegen` lalu `tsc --noEmit`                       |
+| `npm run format`                       | Prettier, menulis perubahan                              |
+| `npm run format:check`                 | Prettier, hanya memeriksa                                |
+| `npm test`                             | Unit test                                                |
+| `npm run test:watch`                   | Unit test, mode watch                                    |
+| `npm run test:e2e`                     | Test end-to-end                                          |
+| `npm run screenshots`                  | Membuat ulang screenshot README dari data contoh         |
+| `npm run db:generate`                  | Membuat migration SQL dari perubahan di `src/db/schema`  |
+| `npm run db:migrate`                   | Menerapkan migration yang belum jalan                    |
+| `npm run db:studio`                    | Drizzle Studio                                           |
+| `npm run db:seed -- <email> [--reset]` | Data contoh untuk satu akun yang sudah ada               |
+| `npm run db:backfill-questions`        | Memindahkan pertanyaan markdown lama ke tabel pertanyaan |
 
 ## Mengubah skema
 
