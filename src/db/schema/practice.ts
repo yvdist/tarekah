@@ -71,6 +71,10 @@ export const practiceTurns = pgTable(
     questionId: uuid().references(() => questions.id, {
       onDelete: "set null",
     }),
+    // What the model produced about or for this turn, validated with Zod when
+    // read: on a candidate's turn of a drill, the feedback on the answer; on
+    // an interviewer's turn of a simulation, what wrote it (prompt version,
+    // provider, model).
     feedback: jsonb(),
     createdAt: createdAt(),
   },
