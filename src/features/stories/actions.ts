@@ -2,6 +2,8 @@
 
 import { and, eq } from "drizzle-orm";
 import { updateTag } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 import { db } from "@/db";
 import { stories } from "@/db/schema";
 import { invalidResult, type ActionResult } from "@/lib/action-result";
@@ -33,7 +35,7 @@ export async function createStory(
 export async function updateStory(
   id: unknown,
   input: unknown,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ id: string }>> {
   const user = await requireUser();
   const parsedId = storyIdSchema.safeParse(id);
 
@@ -59,13 +61,20 @@ export async function updateStory(
 
   refresh(user.id);
 
-  return { ok: true, data: undefined };
+  return { ok: true, data: { id: updated[0].id } };
 }
 
 // Its question links go with it through ON DELETE CASCADE.
-export async function deleteStory(id: unknown): Promise<ActionResult> {
+export async function deleteStory(
+  id: unknown,
+  options?: unknown,
+): Promise<ActionResult> {
   const user = await requireUser();
   const parsedId = storyIdSchema.safeParse(id);
+  const parsedOptions = z
+    .object({ redirectToList: z.boolean() })
+    .optional()
+    .safeParse(options);
 
   if (!parsedId.success) {
     return { ok: false, message: NOT_FOUND_MESSAGE };
@@ -81,6 +90,11 @@ export async function deleteStory(id: unknown): Promise<ActionResult> {
   }
 
   refresh(user.id);
+
+  // Set on the detail page, which no longer exists once the row is gone.
+  if (parsedOptions.success && parsedOptions.data?.redirectToList) {
+    redirect("/stories");
+  }
 
   return { ok: true, data: undefined };
 }
