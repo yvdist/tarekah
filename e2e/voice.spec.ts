@@ -8,6 +8,9 @@ import {
   uniqueName,
 } from "./helpers";
 
+// What the fake transcription model hears (src/features/ai/fake-model.ts).
+const TRANSCRIPT = "Saya memimpin migrasi basis data tanpa downtime.";
+
 // No test here uses a microphone or a speech service: the browser's speech
 // APIs are replaced before the page loads, and the test says what is "heard".
 declare global {
@@ -15,6 +18,7 @@ declare global {
     __speech: { lang: string; say: (text: string, final: boolean) => void };
     __spoken: string[];
     __mic: { sawStreaming: boolean; offeredWhileStreaming: boolean };
+    __recorder: { type: string; bitrate: number; released: boolean };
   }
 }
 
@@ -129,6 +133,68 @@ function fakeSpeechSynthesis() {
   });
 }
 
+// A microphone and a recorder that produce the first bytes of a WebM file.
+function fakeRecorder() {
+  type Handler<T> = ((event: T) => void) | null;
+
+  window.__recorder = { type: "", bitrate: 0, released: false };
+
+  class FakeRecorder {
+    static isTypeSupported = (type: string) => type.startsWith("audio/webm");
+
+    state = "inactive";
+    mimeType: string;
+    ondataavailable: Handler<{ data: Blob }> = null;
+    onstop: Handler<void> = null;
+    onerror: Handler<void> = null;
+
+    constructor(
+      _stream: unknown,
+      options: { mimeType: string; audioBitsPerSecond: number },
+    ) {
+      this.mimeType = options.mimeType;
+      window.__recorder.type = options.mimeType;
+      window.__recorder.bitrate = options.audioBitsPerSecond;
+    }
+
+    start() {
+      this.state = "recording";
+    }
+
+    stop() {
+      this.state = "inactive";
+      setTimeout(() => {
+        this.ondataavailable?.({
+          data: new Blob(
+            [new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81])],
+            { type: this.mimeType },
+          ),
+        });
+        this.onstop?.();
+      });
+    }
+  }
+
+  Object.defineProperty(window, "MediaRecorder", {
+    value: FakeRecorder,
+    configurable: true,
+  });
+  Object.defineProperty(navigator, "mediaDevices", {
+    value: {
+      getUserMedia: async () => ({
+        getTracks: () => [
+          {
+            stop: () => {
+              window.__recorder.released = true;
+            },
+          },
+        ],
+      }),
+    },
+    configurable: true,
+  });
+}
+
 const say = (page: Page, text: string, final: boolean) =>
   page.evaluate(([heard, settled]) => window.__speech.say(heard, settled), [
     text,
@@ -145,9 +211,14 @@ test("keeps typing where the browser cannot listen", async ({ page }) => {
   await addQuestion(page, question);
   await openDrill(page, question);
 
-  await expect(
-    page.getByText("Input suara belum didukung di browser ini."),
-  ).toBeVisible();
+  // What to do about it: another browser, or a key that can transcribe.
+  const hint = page.getByText("Browser ini belum bisa mengenali ucapan.");
+
+  await expect(hint).toContainText("Chrome atau Safari");
+  await expect(hint.getByRole("link", { name: "Pengaturan" })).toHaveAttribute(
+    "href",
+    "/settings#ai",
+  );
   await expect(
     page.getByRole("button", { name: "Jawab dengan suara" }),
   ).toHaveCount(0);
@@ -375,4 +446,69 @@ test("speaks an answer in a simulation and has the reply read aloud", async ({
     page.getByText("Jawabanmu tadi kurang dari satu menit."),
   ).toBeVisible();
   await expectNoSeriousViolations(page);
+});
+
+// Where the browser cannot listen, the answer is recorded and transcribed with
+// a saved key that can: here Google's, while DeepSeek is the active provider
+// and writes the feedback.
+test("records an answer and transcribes it with a saved key that can", async ({
+  page,
+}) => {
+  const question = uniqueName("Ceritakan migrasi yang kamu pimpin");
+
+  await page.addInitScript(removeSpeechRecognition);
+  await page.addInitScript(fakeRecorder);
+  await saveAiKey(page, "Google (Gemini)");
+  await saveAiKey(page, "DeepSeek");
+  await addQuestion(page, question);
+  await openDrill(page, question);
+
+  const answer = page.getByLabel("Jawaban", { exact: true });
+  const mic = page.getByRole("button", { name: "Jawab dengan suara" });
+  const save = page.getByRole("button", { name: "Simpan dan minta masukan" });
+  const notice = page.getByRole("group", { name: "Sebelum merekam" });
+
+  // Before the first recording, who it is sent to.
+  await answer.fill("Waktu itu,");
+  await mic.click();
+  await expect(notice).toContainText("dikirim ke Google (Gemini)");
+  await expectNoSeriousViolations(page);
+  await notice.getByRole("button", { name: "Mulai merekam" }).click();
+
+  const stop = page.getByRole("button", { name: "Berhenti" });
+
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Merekam, paling lama 3 menit" }),
+  ).toBeVisible();
+  await expect(answer).toHaveAttribute("readonly");
+  await expect(save).toBeDisabled();
+  await expectNoSeriousViolations(page);
+  expect(await page.evaluate(() => window.__recorder)).toEqual({
+    type: "audio/webm;codecs=opus",
+    bitrate: 32_000,
+    released: false,
+  });
+
+  await stop.click();
+
+  // The transcript follows what was typed, and the microphone is let go.
+  await expect(answer).toHaveValue(`Waktu itu, ${TRANSCRIPT}`);
+  await expect(
+    page.getByRole("status").filter({ hasText: "Transkrip sudah masuk." }),
+  ).toBeVisible();
+  await expect(answer).not.toHaveAttribute("readonly");
+  expect(await page.evaluate(() => window.__recorder.released)).toBe(true);
+  await expectNoSeriousViolations(page);
+
+  await answer.fill("Waktu itu saya memimpin migrasi basis data.");
+  await save.click();
+
+  await expect(page.getByText("Jawaban tersimpan.")).toBeVisible();
+  await expect(
+    page.getByText("Jawabanmu kurang dari satu menit."),
+  ).toBeVisible();
+  // The feedback still comes from the active provider.
+  await expect(page.getByText(/^Masukan dari DeepSeek/)).toBeVisible();
 });

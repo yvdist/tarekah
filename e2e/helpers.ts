@@ -111,17 +111,23 @@ export async function clearAiKeys(page: Page) {
 }
 
 // Saves the fake key through the settings form, which makes it the active one.
-export async function saveAiKey(page: Page) {
+// `provider` is the label of the provider it is saved for.
+export async function saveAiKey(page: Page, provider = ANTHROPIC) {
   await page.goto("/settings");
 
   const panel = page.locator("section#ai");
+
+  if (provider !== ANTHROPIC) {
+    await panel.getByRole("combobox", { name: "Provider" }).click();
+    await page.getByRole("option", { name: provider }).click();
+  }
 
   await panel.getByLabel("API key").fill(FAKE_API_KEY);
   await panel.getByRole("button", { name: "Simpan key" }).click();
   await expect(
     panel
       .getByRole("listitem")
-      .filter({ hasText: ANTHROPIC })
+      .filter({ hasText: provider })
       .getByText("Aktif"),
   ).toBeVisible();
 }
