@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 10 selesai, kecuali 3b.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql` dan `0004_deepseek_provider.sql`. Berikutnya: input suara (`docs/specs/latihan-interview.md`) dan Fase 3b.
+Status: **Fase 0 sampai 11 selesai, kecuali 3b.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql` dan `0004_deepseek_provider.sql`. Berikutnya: cadangan transkripsi lewat key (bagian B di `docs/specs/phase-4-voice-input.md`) dan Fase 3b.
 
 ## Keputusan
 
@@ -384,7 +384,11 @@ Interview dan perubahan status dikelola di halaman detail lamaran, tanpa route s
 | 9 | BYOK dan latihan singkat: Node 22 dan AI SDK 7; tabel `ai_credentials`, `practice_sessions`, `practice_turns`; modul `src/features/ai` (enkripsi, resolver model, pemetaan error) dan bagian AI di Pengaturan; `src/features/practice` (prompt berversi, masukan terstruktur tanpa skor, sesi drill) dan halaman Latihan (`/practice`, `/practice/drill/[questionId]`) dengan simpan pertanyaan lanjutan ke bank. Spec: `docs/specs/phase-2-byok-and-short-practice.md` | Key bisa disimpan, dites dan dihapus; satu pertanyaan bisa dilatih dan mendapat masukan; tanpa key semuanya tetap jalan |
 | 10 | Simulasi interview dan persiapan dari lamaran: aturan giliran di server (`simulation.ts`), prompt interviewer dan ringkasan, balasan yang di-stream lewat Server Action, ringkasan tanpa skor dengan simpan pertanyaan dan saran cerita, riwayat sesi di Latihan, tombol "Latihan untuk interview ini" di detail lamaran, léngkah latihan di dashboard. Tanpa migration. Spec: `docs/specs/phase-3-interview-simulation.md` | Simulasi bisa dijalankan dari sebuah lamaran sampai ringkasan, dilanjutkan setelah muat ulang, dan pertanyaannya masuk bank sekali |
 
-Fase berikutnya mengikuti `docs/specs/latihan-interview.md`: input suara. Pekerjaan susulan dari Fase 8: hapus kolom `interviews.questions` lewat migration terpisah setelah backfill produksi (`docs/deploy.md`) dijalankan.
+| 11 | Menjawab dengan suara: mikrofon di kotak jawaban latihan singkat dan simulasi lewat pengenal ucapan browser (`SpeechRecognition`), dengan pemberitahuan ke mana audio pergi sebelum pemakaian pertama; transkrip masuk ke field yang sama dan disunting sebelum dikirim; durasi jawaban sebagai informasi; suara interviewer lewat `speechSynthesis`, mati secara bawaan. Tanpa migration dan tanpa perubahan server. Spec: `docs/specs/phase-4-voice-input.md` ("Fase 4" di sana) | Satu pertanyaan bisa dijawab dengan suara, disunting, lalu mendapat masukan; di browser tanpa dukungan jalur ketik tidak berubah |
+
+Ditunda dari Fase 11: cadangan transkripsi lewat key pengguna (bagian B di spec). Hanya OpenAI dan Google yang punya model transkripsi di AI SDK; Anthropic dan DeepSeek tidak. Dibangun saat ada key yang bisa membuktikannya. Rancangannya: `Blob` dalam `FormData` ke Server Action, rekaman `audio/webm;codecs=opus` 32 kbps, batas 180 detik dan 1,5 MB yang diperiksa di client lalu di server, `experimental.serverActions.bodySizeLimit: "2mb"`, `abortSignal: AbortSignal.timeout(30_000)` karena `transcribe` tidak punya `timeout`, dan saudara `getModelForUser` di `model.ts` untuk model transkripsi.
+
+Pekerjaan susulan dari Fase 8: hapus kolom `interviews.questions` lewat migration terpisah setelah backfill produksi (`docs/deploy.md`) dijalankan.
 
 Penerapan identitas brand (guideline di `docs/design/guideline.md`) berjalan di luar tabel ini, halaman demi halaman; daftar dan statusnya ada di `docs/design/rollout.md`.
 

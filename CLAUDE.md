@@ -103,6 +103,7 @@ src/
     prompts/                  prompt builders for AI calls, versioned and tested (practice)
     components/               components specific to the domain
   components/ui/              shadcn/ui components
+  hooks/                      hooks that wrap a browser API or a small piece of state
   test/                       Vitest helpers (PGlite database, server-only stub)
   lib/
     auth.ts                   getCurrentUser() / requireUser()
@@ -161,6 +162,20 @@ Every AI call runs on the server with a key the user saved in Pengaturan. Withou
 - A provider is a value in `AI_PROVIDERS` (adding one is a migration, `ALTER TYPE … ADD VALUE`), a label and suggested models in `providers.ts`, and a factory in `model.ts`. Settings that only one provider understands live in `AI_PROVIDER_OPTIONS` (`src/features/ai/provider-options.ts`) and go into every call as `providerOptions`; each provider reads only its own entry.
 - DeepSeek has no schema-constrained output: its SDK provider puts the JSON schema into a system message and asks for JSON mode, and the answer is still validated by the same Zod schema. Its thinking is turned off in `AI_PROVIDER_OPTIONS`, because the calls here are short and bounded.
 - The suggested model ids in `src/features/ai/providers.ts` are checked against the providers' docs, with the date in a comment. Do not add one from memory.
+
+## Voice
+
+Both answer boxes (`drill.tsx`, `simulation.tsx`) have a microphone, `VoiceInput`. It needs no key and changes nothing on the server: what is heard is written into the same form field typing fills, and the answer is saved by the same actions.
+
+- Recognition is the browser's own (`SpeechRecognition`, prefixed in Chrome and Safari; absent in Firefox). In Chrome the audio goes to Google, never to this app, so the first click shows a note saying so and only "Nyalakan mikrofon" turns the microphone on. That it was read is kept in `localStorage`. Never start listening without that note having been accepted, and never send or store audio.
+- The rules are pure and tested without a browser: `src/lib/speech.ts` (finding the recognizer, joining results, `afterRun`, splitting text for speech, picking a voice) and `src/features/practice/voice.ts` (locales, `appendSpoken`, the messages, the duration). The hooks in `src/hooks` (`use-speech-recognition`, `use-speech-synthesis`, `use-local-flag`) only call the browser. TypeScript's DOM types have no `SpeechRecognition`; the part used is declared in the hook.
+- Whatever depends on the browser reads it through `useSyncExternalStore` with a server snapshot (`null`, `false`, `""`), so the server's render and hydration agree and the control appears after mount. Do not test `window` during render.
+- Browsers end a run after a few seconds of silence, and a pause to think is part of an answer: `afterRun` starts the recognizer again until the user stops it, and gives up after `MAX_SILENT_RUNS` silent runs in a row.
+- While listening the textarea is `readOnly` and the answer cannot be sent, so a transcript is always seen, and can be edited, before it goes anywhere. In a simulation the form is not rendered while a reply streams, which is what turns the microphone off; the hook aborts on unmount.
+- The duration of a spoken answer is shown and never stored: it comes from the client and nothing reads it back. It counts only when something was heard.
+- "Bacakan pertanyaan" reads the interviewer aloud through `speechSynthesis`, off by default and kept per device in `localStorage` (`INTERVIEWER_VOICE_KEY`). It is offered only when a voice for the session's language exists, speaks a finished turn (never the stream), a sentence at a time, and is cut off when the microphone turns on.
+- A transcription fallback through the user's key is not built (see PLAN.md). `next.config.ts` sets no headers; a `Permissions-Policy` added later must keep `microphone=(self)`.
+- `e2e/voice.spec.ts` replaces the speech APIs with `page.addInitScript` and says what is "heard". No test uses a real microphone or speech service.
 
 ## Code conventions
 
