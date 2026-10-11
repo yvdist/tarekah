@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -26,6 +27,8 @@ import {
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import type { PracticeSessionStatus } from "@/db/schema/enum-values";
+import { readLocalFlag, useLocalFlag } from "@/hooks/use-local-flag";
+import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
 import { describedBy } from "@/lib/form-errors";
 import {
   endSimulationSession,
@@ -50,9 +53,12 @@ import {
   mergeTurns,
   nextStep,
 } from "../simulation";
+import { INTERVIEWER_VOICE_KEY, SPEECH_LOCALES } from "../voice";
 import { AiInvite } from "./ai-invite";
+import { SpokenDuration } from "./spoken-duration";
 import { SummaryView } from "./summary-view";
 import { Transcript, type TranscriptTurn } from "./transcript";
+import { VoiceInput } from "./voice-input";
 
 type Turn = TranscriptTurn & { id: string };
 
@@ -94,6 +100,13 @@ export function Simulation({ session }: { session: SimulationDetail }) {
       : { status: "none" },
   );
   const [spoken, setSpoken] = useState("");
+  const [listening, setListening] = useState(false);
+  // How long the microphone was on: for the answer being given, and for the
+  // one last sent.
+  const [spokenSeconds, setSpokenSeconds] = useState(0);
+  const [lastSpokenSeconds, setLastSpokenSeconds] = useState(0);
+  const [readAloud, setReadAloud] = useLocalFlag(INTERVIEWER_VOICE_KEY);
+  const synthesis = useSpeechSynthesis(SPEECH_LOCALES[session.language]);
   const answerNext = useRef(false);
   const summaryPanel = useRef<HTMLDivElement>(null);
   const form = useForm<SimulationAnswerInput>({
@@ -195,6 +208,12 @@ export function Simulation({ session }: { session: SimulationDetail }) {
           setSpoken(event.turn.content);
           setReply({ kind: "idle" });
 
+          // Read from storage, not from the render that started the reply:
+          // the switch may have been flipped while it streamed.
+          if (readLocalFlag(INTERVIEWER_VOICE_KEY)) {
+            synthesis.speak(event.turn.content);
+          }
+
           if (event.closed) {
             setEndedAs("completed");
             await loadSummary();
@@ -249,6 +268,8 @@ export function Simulation({ session }: { session: SimulationDetail }) {
 
       if (turn.kind === "answer") {
         form.reset();
+        setLastSpokenSeconds(spokenSeconds);
+        setSpokenSeconds(0);
       }
     } catch {
       toast.error("Jawaban gagal dikirim. Coba lagi.");
@@ -345,6 +366,26 @@ export function Simulation({ session }: { session: SimulationDetail }) {
               ? "Giliranmu"
               : "Interviewer"
         }
+        action={
+          synthesis.available && !stale ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={readAloud}
+              onClick={() => {
+                if (readAloud) {
+                  synthesis.cancel();
+                }
+
+                setReadAloud(!readAloud);
+              }}
+            >
+              {readAloud ? <VolumeX /> : <Volume2 />}
+              {readAloud ? "Matikan suara interviewer" : "Bacakan pertanyaan"}
+            </Button>
+          ) : undefined
+        }
       >
         {stale ? (
           <div className="flex flex-col items-start gap-3 text-sm">
@@ -428,6 +469,8 @@ export function Simulation({ session }: { session: SimulationDetail }) {
                   placeholder="Jawab seperti kamu mengucapkannya."
                   aria-invalid={!!errors.text}
                   disabled={busy}
+                  // What is heard rewrites the field as it is worked out.
+                  readOnly={listening}
                   {...form.register("text")}
                 />
                 <FieldDescription
@@ -442,6 +485,24 @@ export function Simulation({ session }: { session: SimulationDetail }) {
                 <FieldError id={`${id}-text-error`} errors={[errors.text]} />
               </Field>
 
+              <VoiceInput
+                language={session.language}
+                disabled={busy}
+                read={() => form.getValues("text")}
+                write={(text) =>
+                  form.setValue("text", text, {
+                    shouldDirty: true,
+                    shouldValidate: form.formState.isSubmitted,
+                  })
+                }
+                onListening={setListening}
+                onSpoken={(seconds) =>
+                  setSpokenSeconds((total) => total + seconds)
+                }
+                // The interviewer's voice would be heard as part of the answer.
+                onStart={synthesis.cancel}
+              />
+
               <div className="flex flex-wrap items-center gap-2 border-t pt-5">
                 {step.controlsLeft > 0
                   ? CONTROL_KINDS.map((kind) => (
@@ -450,7 +511,7 @@ export function Simulation({ session }: { session: SimulationDetail }) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={busy}
+                        disabled={busy || listening}
                         onClick={() => send({ kind })}
                       >
                         {CONTROL_PHRASES[session.language][kind]}
@@ -466,12 +527,19 @@ export function Simulation({ session }: { session: SimulationDetail }) {
                 >
                   Akhiri sesi
                 </Button>
-                <Button type="submit" disabled={busy} className="ml-auto">
+                <Button
+                  type="submit"
+                  disabled={busy || listening}
+                  className="ml-auto"
+                >
                   {sending ? "Mengirim…" : "Kirim jawaban"}
                 </Button>
               </div>
             </FieldGroup>
           </form>
+        ) : null}
+        {lastSpokenSeconds > 0 && !stale ? (
+          <SpokenDuration seconds={lastSpokenSeconds} earlier />
         ) : null}
       </Panel>
 
