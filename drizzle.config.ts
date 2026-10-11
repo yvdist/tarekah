@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { defineConfig } from "drizzle-kit";
+import { withVerifiedSsl } from "./src/db/connection-string";
 
 // drizzle-kit runs outside Next.js, so .env.local is not loaded for it.
 if (existsSync(".env.local")) {
@@ -13,6 +14,6 @@ export default defineConfig({
   casing: "snake_case",
   dbCredentials: {
     // Migrations need a direct connection, not the pooled one.
-    url: process.env.DATABASE_URL_UNPOOLED ?? "",
+    url: withVerifiedSsl(process.env.DATABASE_URL_UNPOOLED ?? ""),
   },
 });
