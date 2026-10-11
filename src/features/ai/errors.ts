@@ -2,6 +2,7 @@ import {
   APICallError,
   NoObjectGeneratedError,
   NoOutputGeneratedError,
+  NoTranscriptGeneratedError,
   RetryError,
   StreamProviderError,
 } from "ai";
@@ -168,7 +169,8 @@ export function classifyAiError(error: unknown): AiErrorCode {
 
   if (
     NoObjectGeneratedError.isInstance(error) ||
-    NoOutputGeneratedError.isInstance(error)
+    NoOutputGeneratedError.isInstance(error) ||
+    NoTranscriptGeneratedError.isInstance(error)
   ) {
     return "bad_output";
   }

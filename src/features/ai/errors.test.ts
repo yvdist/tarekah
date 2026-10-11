@@ -1,6 +1,7 @@
 import {
   APICallError,
   NoObjectGeneratedError,
+  NoTranscriptGeneratedError,
   RetryError,
   StreamProviderError,
 } from "ai";
@@ -169,6 +170,12 @@ describe("classifyAiError", () => {
     });
 
     expect(classifyAiError(error)).toBe("bad_output");
+  });
+
+  it("reads a recording that came back without a transcript as bad output", () => {
+    expect(
+      classifyAiError(new NoTranscriptGeneratedError({ responses: [] })),
+    ).toBe("bad_output");
   });
 
   it("tells a missing server secret from a key that will not open", () => {
