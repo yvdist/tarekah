@@ -34,6 +34,7 @@ import {
 import { QUESTION_READINESS_OPTIONS } from "@/features/questions/labels";
 import { StoryForm } from "@/features/stories/components/story-form";
 import { useOpenKey } from "@/hooks/use-open-key";
+import { useSpeechRecognitionSupport } from "@/hooks/use-speech-recognition";
 import { describedBy } from "@/lib/form-errors";
 import {
   type DrillFeedbackOutcome,
@@ -55,14 +56,22 @@ import {
   type PickableQuestion,
   RandomQuestionButton,
 } from "./random-question-button";
+import { SpokenDuration } from "./spoken-duration";
+import { VoiceInput } from "./voice-input";
 
 type FeedbackState =
   | DrillFeedbackOutcome
   | { status: "loading" }
   | { status: "error"; message: string };
 
-// A saved answer and where its feedback stands.
-type Attempt = { sessionId: string; answer: string; feedback: FeedbackState };
+// A saved answer and where its feedback stands. `spokenSeconds` is how long
+// the microphone was on for it: zero for an answer that was typed.
+type Attempt = {
+  sessionId: string;
+  answer: string;
+  spokenSeconds: number;
+  feedback: FeedbackState;
+};
 
 // One question, one answer. The answer is saved first and feedback asked for
 // second, so an answer is never lost to a provider that fails, and a user
@@ -85,6 +94,10 @@ export function Drill({
   const [pending, startTransition] = useTransition();
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
+  const [listening, setListening] = useState(false);
+  // How long the microphone has been on for the answer being written.
+  const [spokenSeconds, setSpokenSeconds] = useState(0);
+  const canSpeak = useSpeechRecognitionSupport();
   const savedNote = useRef<HTMLParagraphElement>(null);
   const form = useForm<DrillAnswerInput>({
     resolver: zodResolver(drillAnswerSchema),
@@ -96,6 +109,7 @@ export function Drill({
   });
   const { errors } = form.formState;
   const length = useWatch({ control: form.control, name: "answer" }).length;
+  const language = useWatch({ control: form.control, name: "language" });
   const sessionId = attempt?.sessionId;
 
   // The form is gone once the answer is saved, and focus with it.
@@ -148,6 +162,7 @@ export function Drill({
         setAttempt({
           sessionId: saved.data.sessionId,
           answer: input.answer.trim(),
+          spokenSeconds,
           feedback: aiReady
             ? { status: "loading" }
             : { status: "not_configured" },
@@ -173,6 +188,7 @@ export function Drill({
   }
 
   function answerAgain() {
+    setSpokenSeconds(0);
     setAttempt(null);
     setAttemptCount((count) => count + 1);
   }
@@ -195,6 +211,9 @@ export function Drill({
             >
               Jawaban tersimpan.
             </p>
+            {attempt.spokenSeconds > 0 ? (
+              <SpokenDuration seconds={attempt.spokenSeconds} />
+            ) : null}
           </div>
         ) : (
           <form onSubmit={form.handleSubmit(submit)} noValidate>
@@ -214,6 +233,8 @@ export function Drill({
                   className="min-h-48"
                   placeholder="Tulis seperti kamu mengucapkannya di interview."
                   aria-invalid={!!errors.answer}
+                  // What is heard rewrites the field as it is worked out.
+                  readOnly={listening}
                   {...form.register("answer")}
                 />
                 <FieldDescription
@@ -231,10 +252,28 @@ export function Drill({
                 />
               </Field>
 
+              <VoiceInput
+                language={language}
+                disabled={pending}
+                read={() => form.getValues("answer")}
+                write={(text) =>
+                  form.setValue("answer", text, {
+                    shouldDirty: true,
+                    shouldValidate: form.formState.isSubmitted,
+                  })
+                }
+                onListening={setListening}
+                onSpoken={(seconds) =>
+                  setSpokenSeconds((total) => total + seconds)
+                }
+              />
+
               <div className="flex flex-wrap items-center gap-3 border-t pt-5">
-                {aiReady ? (
+                {/* The language feedback is written in, and the one the
+                    microphone listens for. */}
+                {aiReady || canSpeak ? (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <label htmlFor={`${id}-language`}>Bahasa masukan</label>
+                    <label htmlFor={`${id}-language`}>Bahasa jawaban</label>
                     <Controller
                       control={form.control}
                       name="language"
@@ -244,12 +283,17 @@ export function Drill({
                           value={field.value}
                           onValueChange={field.onChange}
                           options={PRACTICE_LANGUAGE_OPTIONS}
+                          disabled={listening}
                         />
                       )}
                     />
                   </div>
                 ) : null}
-                <Button type="submit" disabled={pending} className="ml-auto">
+                <Button
+                  type="submit"
+                  disabled={pending || listening}
+                  className="ml-auto"
+                >
                   {pending
                     ? "Menyimpan…"
                     : aiReady
