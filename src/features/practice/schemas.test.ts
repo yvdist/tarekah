@@ -6,6 +6,9 @@ import {
   drillAnswerSchema,
   FEEDBACK_ASPECTS,
   feedbackSchema,
+  RECORDING_MAX_BYTES,
+  RECORDING_MAX_SECONDS,
+  recordingSchema,
   simulationSettingsSchema,
   simulationSummarySchema,
   simulationTurnSchema,
@@ -294,5 +297,49 @@ describe("summaryIndexesSchema", () => {
     expect(summaryIndexesSchema.safeParse([-1]).success).toBe(false);
     expect(summaryIndexesSchema.safeParse([1.5]).success).toBe(false);
     expect(summaryIndexesSchema.safeParse(["0"]).success).toBe(false);
+  });
+});
+
+describe("recordingSchema", () => {
+  const recording = {
+    language: "id",
+    // As a form sends it.
+    seconds: "42.5",
+    audio: new Blob([new Uint8Array(1000)], { type: "audio/webm" }),
+  };
+
+  it("accepts a recording as a form sends it", () => {
+    const parsed = recordingSchema.parse(recording);
+
+    expect(parsed.seconds).toBe(42.5);
+    expect(parsed.audio.size).toBe(1000);
+  });
+
+  it("accepts a recording at both limits", () => {
+    expect(
+      recordingSchema.safeParse({
+        ...recording,
+        seconds: String(RECORDING_MAX_SECONDS),
+        audio: new Blob([new Uint8Array(RECORDING_MAX_BYTES)]),
+      }).success,
+    ).toBe(true);
+  });
+
+  it.each([
+    ["an empty recording", { audio: new Blob([]) }],
+    [
+      "a recording over the size limit",
+      { audio: new Blob([new Uint8Array(RECORDING_MAX_BYTES + 1)]) },
+    ],
+    ["something that is not a file", { audio: "audio" }],
+    ["a missing recording", { audio: null }],
+    ["a recording far over three minutes", { seconds: "600" }],
+    ["no duration", { seconds: "0" }],
+    ["a duration that is not a number", { seconds: "lama" }],
+    ["a language practice does not have", { language: "fr" }],
+  ])("refuses %s", (_name, change) => {
+    expect(recordingSchema.safeParse({ ...recording, ...change }).success).toBe(
+      false,
+    );
   });
 });

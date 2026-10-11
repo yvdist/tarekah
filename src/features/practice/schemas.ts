@@ -21,6 +21,25 @@ const answerText = z
   .min(1, "Tulis jawabanmu dulu")
   .max(ANSWER_MAX_LENGTH, `Maksimal ${ANSWER_MAX_LENGTH} karakter`);
 
+// A recorded answer, on its way to being transcribed. Three minutes is longer
+// than a good answer runs; the size is what the server can actually check, and
+// leaves room for a browser that records above the bitrate it was asked for.
+export const RECORDING_MAX_SECONDS = 180;
+export const RECORDING_MAX_BYTES = 1_500_000;
+
+export const recordingSchema = z.object({
+  language: practiceLanguageSchema,
+  // The client's own count, with slack for a timer that fires late.
+  seconds: z.coerce
+    .number()
+    .positive()
+    .max(RECORDING_MAX_SECONDS + 5),
+  audio: z
+    .instanceof(Blob)
+    .refine((audio) => audio.size > 0)
+    .refine((audio) => audio.size <= RECORDING_MAX_BYTES),
+});
+
 // One attempt at one question.
 export const drillAnswerSchema = z.object({
   questionId: z.uuid(),
