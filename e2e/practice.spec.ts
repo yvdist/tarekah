@@ -1,51 +1,20 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import {
+  addQuestion,
   ANTHROPIC,
   clearAiKeys,
+  DRILL_URL,
   expectNoSeriousViolations,
   FAKE_API_KEY,
+  openDrill,
   uniqueName,
 } from "./helpers";
 
 const API_KEY = FAKE_API_KEY;
 const FOLLOW_UP = "Apa yang akan kamu lakukan berbeda kalau mengulanginya?";
-const DRILL_URL = /\/practice\/drill\/[0-9a-f-]{36}$/;
 
 // Both tests depend on which keys are saved.
 test.beforeEach(({ page }) => clearAiKeys(page));
-
-// `rows` is how many rows of the bank read like `text` afterwards.
-async function addQuestion(page: Page, text: string, rows = 1) {
-  await page.goto("/questions");
-  await page.getByRole("button", { name: "Tambah pertanyaan" }).click();
-  await page.getByLabel("Pertanyaan", { exact: true }).fill(text);
-  await page.getByRole("button", { name: "Simpan" }).click();
-
-  await expect(
-    page.getByRole("listitem").filter({ hasText: text }),
-  ).toHaveCount(rows);
-}
-
-// Opens the drill of one question from the list on the Latihan page.
-async function openDrill(page: Page, text: string) {
-  await page.goto("/practice");
-  await page
-    .getByRole("listitem")
-    .filter({ hasText: text })
-    .getByRole("link", { name: /^Latih pertanyaan:/ })
-    .click();
-
-  await expect(page).toHaveURL(DRILL_URL);
-  // Scoped to the panel: the list row is still there while the page changes.
-  await expect(
-    page
-      .locator("section")
-      .filter({
-        has: page.getByRole("heading", { name: "Pertanyaan", exact: true }),
-      })
-      .getByText(text),
-  ).toBeVisible();
-}
 
 // Without a key practice still works: the answer is saved and the place of the
 // feedback holds an invitation, not an error.
@@ -167,7 +136,7 @@ test("gives feedback, saves the follow-up question and links a new story", async
 
   await openDrill(page, question);
   await expect(
-    page.getByRole("combobox", { name: "Bahasa masukan" }),
+    page.getByRole("combobox", { name: "Bahasa jawaban" }),
   ).toContainText("Indonesia");
 
   const answer = page.getByLabel("Jawaban", { exact: true });
