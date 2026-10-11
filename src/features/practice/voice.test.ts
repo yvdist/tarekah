@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appendSpoken,
+  describeRecorderError,
   describeSpeechError,
   describeSpokenDuration,
   pickVoicePath,
@@ -14,12 +15,29 @@ describe("SPEECH_LOCALES", () => {
 });
 
 describe("pickVoicePath", () => {
+  const all = { speechRecognition: true, recorder: true, transcription: true };
+
   it("uses the browser's speech recognition where there is one", () => {
-    expect(pickVoicePath({ speechRecognition: true })).toBe("speech");
+    expect(pickVoicePath(all)).toBe("speech");
+    expect(
+      pickVoicePath({ ...all, recorder: false, transcription: false }),
+    ).toBe("speech");
   });
 
-  it("has no path without it", () => {
-    expect(pickVoicePath({ speechRecognition: false })).toBe("none");
+  it("records and transcribes where the browser cannot listen", () => {
+    expect(pickVoicePath({ ...all, speechRecognition: false })).toBe("record");
+  });
+
+  it("has no path without a key that can transcribe", () => {
+    expect(
+      pickVoicePath({ ...all, speechRecognition: false, transcription: false }),
+    ).toBe("none");
+  });
+
+  it("has no path without a recorder", () => {
+    expect(
+      pickVoicePath({ ...all, speechRecognition: false, recorder: false }),
+    ).toBe("none");
   });
 });
 
@@ -66,6 +84,27 @@ describe("describeSpeechError", () => {
 
   it("says nothing about a recognition that was cut off", () => {
     expect(describeSpeechError("aborted")).toBeNull();
+  });
+});
+
+describe("describeRecorderError", () => {
+  it.each(["NotAllowedError", "SecurityError"])(
+    "explains a refused microphone for %s",
+    (name) => {
+      expect(describeRecorderError(name)).toMatch(/^Izin mikrofon/);
+    },
+  );
+
+  it.each(["NotFoundError", "NotReadableError"])(
+    "says the microphone is missing for %s",
+    (name) => {
+      expect(describeRecorderError(name)).toMatch(/^Mikrofon tidak ditemukan/);
+    },
+  );
+
+  it("always has something to say", () => {
+    expect(describeRecorderError("AbortError")).toMatch(/mengetik\.$/);
+    expect(describeRecorderError("")).toMatch(/mengetik\.$/);
   });
 });
 

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import type { PracticeSessionStatus } from "@/db/schema/enum-values";
+import type { TranscriptionProvider } from "@/features/ai/transcription";
 import { readLocalFlag, useLocalFlag } from "@/hooks/use-local-flag";
 import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
 import { describedBy } from "@/lib/form-errors";
@@ -84,7 +85,14 @@ const REPLY_FAILED_MESSAGE = "Balasan interviewer gagal dimuat. Coba lagi.";
 // session ends; this reads that off the turns with the same rules and shows
 // it. Every turn is saved before the next is asked for, so a reload, a closed
 // tab or a provider that fails loses nothing.
-export function Simulation({ session }: { session: SimulationDetail }) {
+export function Simulation({
+  session,
+  transcriptionProvider,
+}: {
+  session: SimulationDetail;
+  // Whose key turns a recording into text where the browser cannot listen.
+  transcriptionProvider: TranscriptionProvider | null;
+}) {
   const id = useId();
   const router = useRouter();
   // Turns learned since the page was rendered: an answer just saved, a reply
@@ -486,6 +494,7 @@ export function Simulation({ session }: { session: SimulationDetail }) {
               </Field>
 
               <VoiceInput
+                transcriptionProvider={transcriptionProvider}
                 language={session.language}
                 disabled={busy}
                 read={() => form.getValues("text")}

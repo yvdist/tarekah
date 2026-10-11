@@ -74,6 +74,7 @@ async function DrillContent({
         key={question.id}
         question={question}
         aiReady={ai.ready}
+        transcriptionProvider={ai.transcriptionProvider}
         storyOptions={storyOptions}
         questions={others.map(({ id, readiness }) => ({ id, readiness }))}
       />

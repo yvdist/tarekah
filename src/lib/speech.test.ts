@@ -4,6 +4,7 @@ import {
   findSpeechRecognition,
   joinSpoken,
   MAX_SILENT_RUNS,
+  pickRecordingType,
   pickVoice,
   readParts,
   splitForSpeech,
@@ -27,6 +28,22 @@ describe("findSpeechRecognition", () => {
 
   it("is null where the browser has neither", () => {
     expect(findSpeechRecognition({})).toBeNull();
+  });
+});
+
+describe("pickRecordingType", () => {
+  it("prefers WebM", () => {
+    expect(pickRecordingType(() => true)).toBe("audio/webm;codecs=opus");
+  });
+
+  it("falls back to Ogg", () => {
+    expect(pickRecordingType((type) => type.startsWith("audio/ogg"))).toBe(
+      "audio/ogg;codecs=opus",
+    );
+  });
+
+  it("is null where the browser records neither", () => {
+    expect(pickRecordingType((type) => type === "audio/mp4")).toBeNull();
   });
 });
 

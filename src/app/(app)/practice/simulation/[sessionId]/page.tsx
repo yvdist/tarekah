@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
 import { DetailSkeleton } from "@/components/skeletons";
+import { getAiStatus } from "@/features/ai/queries";
 import { Simulation } from "@/features/practice/components/simulation";
 import {
   INTERVIEW_TYPE_LABELS,
@@ -45,7 +46,10 @@ async function Session({
   params,
 }: Pick<PageProps<"/practice/simulation/[sessionId]">, "params">) {
   const { sessionId } = await params;
-  const session = await getSimulation(sessionId);
+  const [session, ai] = await Promise.all([
+    getSimulation(sessionId),
+    getAiStatus(),
+  ]);
   const settings = [
     INTERVIEW_TYPE_LABELS[session.interviewType],
     PRACTICE_LEVEL_LABELS[session.level],
@@ -79,7 +83,11 @@ async function Session({
           </>
         }
       />
-      <Simulation key={session.id} session={session} />
+      <Simulation
+        key={session.id}
+        session={session}
+        transcriptionProvider={ai.transcriptionProvider}
+      />
     </>
   );
 }

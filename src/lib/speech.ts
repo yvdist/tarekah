@@ -9,6 +9,16 @@ export function findSpeechRecognition<T>(scope: {
   return scope.SpeechRecognition ?? scope.webkitSpeechRecognition ?? null;
 }
 
+// The containers a recording may be made in, best first: both are Opus, and
+// both are read by the providers that transcribe. Safari's MP4 is left out.
+const RECORDING_TYPES = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus"];
+
+export function pickRecordingType(
+  isSupported: (type: string) => boolean,
+): string | null {
+  return RECORDING_TYPES.find((type) => isSupported(type)) ?? null;
+}
+
 export type SpokenPart = { text: string; final: boolean };
 
 const tidy = (text: string) => text.replace(/\s+/g, " ").trim();

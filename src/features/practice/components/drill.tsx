@@ -33,8 +33,8 @@ import {
 } from "@/features/questions/components/question-stories-dialog";
 import { QUESTION_READINESS_OPTIONS } from "@/features/questions/labels";
 import { StoryForm } from "@/features/stories/components/story-form";
+import type { TranscriptionProvider } from "@/features/ai/transcription";
 import { useOpenKey } from "@/hooks/use-open-key";
-import { useSpeechRecognitionSupport } from "@/hooks/use-speech-recognition";
 import { describedBy } from "@/lib/form-errors";
 import {
   type DrillFeedbackOutcome,
@@ -57,7 +57,7 @@ import {
   RandomQuestionButton,
 } from "./random-question-button";
 import { SpokenDuration } from "./spoken-duration";
-import { VoiceInput } from "./voice-input";
+import { useVoicePath, VoiceInput } from "./voice-input";
 
 type FeedbackState =
   | DrillFeedbackOutcome
@@ -79,6 +79,7 @@ type Attempt = {
 export function Drill({
   question,
   aiReady,
+  transcriptionProvider,
   storyOptions,
   questions,
 }: {
@@ -86,6 +87,8 @@ export function Drill({
   // Whether a key is active. Without one the answer is saved and nothing is
   // asked of a provider.
   aiReady: boolean;
+  // Whose key turns a recording into text where the browser cannot listen.
+  transcriptionProvider: TranscriptionProvider | null;
   storyOptions: ReadonlyArray<StoryOption>;
   // The other questions of the user, to pick the next one from.
   questions: ReadonlyArray<PickableQuestion>;
@@ -97,7 +100,8 @@ export function Drill({
   const [listening, setListening] = useState(false);
   // How long the microphone has been on for the answer being written.
   const [spokenSeconds, setSpokenSeconds] = useState(0);
-  const canSpeak = useSpeechRecognitionSupport();
+  const voicePath = useVoicePath(transcriptionProvider);
+  const canSpeak = voicePath === "speech" || voicePath === "record";
   const savedNote = useRef<HTMLParagraphElement>(null);
   const form = useForm<DrillAnswerInput>({
     resolver: zodResolver(drillAnswerSchema),
@@ -253,6 +257,7 @@ export function Drill({
               </Field>
 
               <VoiceInput
+                transcriptionProvider={transcriptionProvider}
                 language={language}
                 disabled={pending}
                 read={() => form.getValues("answer")}

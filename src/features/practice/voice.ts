@@ -6,12 +6,23 @@ export const SPEECH_LOCALES: Record<PracticeLanguage, string> = {
   en: "en-US",
 };
 
-export type VoicePath = "speech" | "none";
+export type VoicePath = "speech" | "record" | "none";
 
 // How an answer can be spoken in this browser. Typing is always there; this
-// only decides whether a microphone is offered next to it.
-export function pickVoicePath(has: { speechRecognition: boolean }): VoicePath {
-  return has.speechRecognition ? "speech" : "none";
+// only decides whether a microphone is offered next to it. The browser's own
+// recognition comes first: it needs no key and shows the words as they come.
+// Without it the answer is recorded and transcribed, which takes a recorder
+// and a saved key that can transcribe.
+export function pickVoicePath(has: {
+  speechRecognition: boolean;
+  recorder: boolean;
+  transcription: boolean;
+}): VoicePath {
+  if (has.speechRecognition) {
+    return "speech";
+  }
+
+  return has.recorder && has.transcription ? "record" : "none";
 }
 
 // The answer as it stood when the microphone was turned on, followed by what
@@ -48,6 +59,22 @@ export function describeSpeechError(code: string): string | null {
   }
 }
 
+// The recorder fails with the name of a DOMException where the recognizer has
+// its own codes. The causes are the same, and so is what the user reads.
+const RECORDER_ERROR_CODES: Record<string, string> = {
+  NotAllowedError: "not-allowed",
+  SecurityError: "not-allowed",
+  NotFoundError: "audio-capture",
+  NotReadableError: "audio-capture",
+};
+
+export function describeRecorderError(name: string): string {
+  return (
+    describeSpeechError(RECORDER_ERROR_CODES[name] ?? "unknown") ??
+    `Mikrofon berhenti karena ada yang tidak beres. Coba lagi, atau ${TYPE_INSTEAD}`
+  );
+}
+
 // How long an answer was spoken for, to the half minute. Information, not a
 // verdict: no length is called short or long.
 export function describeSpokenDuration(seconds: number): string {
@@ -61,7 +88,9 @@ export function describeSpokenDuration(seconds: number): string {
 }
 
 // Where this browser remembers that the note about its speech service was
-// read, and whether the interviewer is read aloud. Kept on the device: both
-// depend on the browser in use, not on the account.
+// read, that the one about recordings going to a provider was, and whether
+// the interviewer is read aloud. Kept on the device: all three depend on the
+// browser in use, not on the account.
 export const VOICE_NOTICE_KEY = "tarekah:voice-notice";
+export const RECORDING_NOTICE_KEY = "tarekah:recording-notice";
 export const INTERVIEWER_VOICE_KEY = "tarekah:interviewer-voice";

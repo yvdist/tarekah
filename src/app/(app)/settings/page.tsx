@@ -122,6 +122,12 @@ async function AiSettings() {
         dikirim ke provider yang aktif dengan key-mu sendiri. Key disimpan
         terenkripsi dan tidak pernah ditampilkan lagi.
       </p>
+      <p className="text-xs text-muted-foreground">
+        Key Google atau OpenAI juga dipakai untuk mengubah rekaman jawabanmu
+        jadi teks di browser yang belum bisa mengenali ucapan, walau bukan
+        provider yang aktif. Key yang baru disimpan langsung menjadi yang aktif;
+        pilih &quot;Jadikan aktif&quot; di provider lain untuk mengembalikannya.
+      </p>
     </div>
   );
 }
