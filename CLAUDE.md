@@ -74,7 +74,7 @@ Next.js 16.4 (App Router, `src/` layout) · React 19.3 · TypeScript strict · T
 
 `next-auth@latest` is still v4 and does not support this Next.js version; stay on the `beta` tag.
 
-The database driver is `pg` with `attachDatabasePool` from `@vercel/functions`, which is what Neon recommends on Vercel Fluid compute. The pool lives in `src/db/index.ts`; do not create another one. The exceptions run outside Next.js and open their own short-lived connection: `scripts/seed.ts` and the test setup in `e2e/db.ts`.
+The database driver is `pg` with `attachDatabasePool` from `@vercel/functions`, which is what Neon recommends on Vercel Fluid compute. The pool lives in `src/db/index.ts`; do not create another one. Every connection string goes through `withVerifiedSsl` (`src/db/connection-string.ts`), which turns Neon's `sslmode=require` into `verify-full`: what the driver does today, said explicitly, because its next major version will read `require` as encryption without verification. The exceptions run outside Next.js and open their own short-lived connection: `scripts/seed.ts` and the test setup in `e2e/db.ts`.
 
 ## Folder structure
 
@@ -138,7 +138,7 @@ These three are not negotiable.
 - The `(app)` layout redirects signed-out visitors, but it does not protect page content: Next.js renders page segments independently of their layouts. A page is only protected because its queries call `requireUser()`.
 - When adding a route under `(app)`, add its path to the `matcher` in `src/proxy.ts` and its link to one of the item lists in `src/components/app-sidebar.tsx`.
 - `session.user.id` exists only because of the `session` callback in `src/auth.ts`; Auth.js drops it by default.
-- `auth()` is random when the visitor brings no valid CSRF cookie: Auth.js mints a token on every such call, and a signed-in browser often has none (the session cookie lasts thirty days, the CSRF cookie until the browser closes). Next.js rejects a random value after `cookies()` alone, so `getCurrentUser` calls `await connection()` first in exactly that case, and returns early for a visitor without a session cookie. Read the session through `getCurrentUser` / `requireUser`, never by calling `auth()` in a component.
+- Looking a session up is request-time work that a cookie read does not cover: the first query opens a database connection (its handshake draws a random nonce), Auth.js compares the session's expiry with the clock, and it mints a random CSRF token for a visitor without a valid one. Next.js rejects all of these while it prerenders or prefetches, after `cookies()` alone. So `getCurrentUser` returns early for a visitor without a session cookie and otherwise always calls `await connection()` before `auth()`. Read the session through `getCurrentUser` / `requireUser`, never by calling `auth()` in a component. In dev the failure shows only on a cold start (first render after the server starts, signed in), so reproduce it that way before changing this.
 - The public pages are static, so they only know about a session where they ask: `SessionLink` (`src/features/auth/components/session-link.tsx`) turns the landing page's calls to action into dashboard links for a signed-in user, and `/login` redirects one to `/dashboard`. Sessions are database sessions with the Auth.js defaults: 30 days idle, extended on use.
 
 ## AI (bring your own key)
