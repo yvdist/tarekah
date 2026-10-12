@@ -45,6 +45,57 @@ test("adds an application and lists it", async ({ page }) => {
   await expect(row).toContainText("Wishlist");
 });
 
+// The search, the filters and the sort live in the address, so a reload or a
+// bookmark returns to the same list.
+test("keeps the search, a filter and the sort in the address", async ({
+  page,
+}) => {
+  const company = uniqueName("PT Alamat");
+  const param = (name: string) => new URL(page.url()).searchParams.get(name);
+
+  await addApplication(page, { company, position: "Data Engineer" });
+  await page.goto("/applications");
+
+  const search = page.getByLabel("Cari perusahaan atau posisi");
+  const status = page.getByRole("combobox", { name: "Filter status" });
+  const row = page.getByRole("row", { name: new RegExp(company) });
+  const companyHeader = page.getByRole("columnheader", { name: "Perusahaan" });
+
+  await search.fill(company);
+  await expect(row).toHaveCount(1);
+  await expect.poll(() => param("q")).toBe(company);
+
+  await status.click();
+  await page.getByRole("option", { name: "Wishlist" }).click();
+  await expect.poll(() => param("status")).toBe("wishlist");
+
+  await companyHeader.getByRole("button").click();
+  await expect.poll(() => param("sort")).toBe("company");
+  await companyHeader.getByRole("button").click();
+  await expect.poll(() => param("sort")).toBe("-company");
+
+  await page.reload();
+
+  await expect(search).toHaveValue(company);
+  await expect(status).toContainText("Wishlist");
+  await expect(companyHeader).toHaveAttribute("aria-sort", "descending");
+  await expect(row).toHaveCount(1);
+  await expect(
+    page.getByText(/^Menampilkan 1 dari \d+ lamaran$/),
+  ).toBeVisible();
+
+  // Reset clears what narrows the list and leaves its order alone.
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(search).toHaveValue("");
+  await expect.poll(() => new URL(page.url()).search).toBe("?sort=-company");
+
+  // An address typed by hand with values that do not exist is the plain list.
+  await page.goto("/applications?status=hired&sort=-salary&q=");
+  await expect(status).toContainText("Semua status");
+  await expect(row).toHaveCount(1);
+  await expect(companyHeader).not.toHaveAttribute("aria-sort");
+});
+
 test("exports the applications as CSV", async ({ page }) => {
   const company = uniqueName("PT Ekspor, Tbk");
 
