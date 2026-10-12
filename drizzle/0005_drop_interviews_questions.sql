@@ -1,0 +1,1 @@
+ALTER TABLE "interviews" DROP COLUMN "questions";
