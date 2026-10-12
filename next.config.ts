@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  // In development Next.js prints every Server Action call with its
+  // arguments. Here those are API keys being saved and the user's answers,
+  // none of which belong in a terminal or a log file.
+  logging: { serverFunctions: false },
   experimental: {
     serverActions: {
       // A recorded answer is sent to a Server Action to be transcribed: up to
