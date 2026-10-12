@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 11 selesai.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql` dan `0004_deepseek_provider.sql`. Pekerjaan susulan ada di bawah tabel fase.
+Status: **Fase 0 sampai 11 selesai.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql`, `0004_deepseek_provider.sql` dan `0005_drop_interviews_questions.sql`. Pekerjaan susulan ada di bawah tabel fase.
 
 ## Keputusan
 
@@ -163,14 +163,13 @@ Index: (`application_id`, `changed_at`), (`user_id`, `to_status`).
 
 **`interviews`**
 
-| Kolom            | Tipe                                  | Keterangan                                                                                                                                                 |
-| ---------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `application_id` | uuid not null → applications, cascade |                                                                                                                                                            |
-| `scheduled_at`   | timestamptz not null                  |                                                                                                                                                            |
-| `stage`          | `interview_stage` not null            |                                                                                                                                                            |
-| `interviewers`   | text                                  | nama dan jabatan, teks bebas                                                                                                                               |
-| `questions`      | text                                  | lama: markdown, satu pertanyaan per baris. Tidak lagi dibaca atau ditulis sejak tabel `questions`; dihapus di migration terpisah setelah backfill produksi |
-| `reflection`     | text                                  | markdown                                                                                                                                                   |
+| Kolom            | Tipe                                  | Keterangan                   |
+| ---------------- | ------------------------------------- | ---------------------------- |
+| `application_id` | uuid not null → applications, cascade |                              |
+| `scheduled_at`   | timestamptz not null                  |                              |
+| `stage`          | `interview_stage` not null            |                              |
+| `interviewers`   | text                                  | nama dan jabatan, teks bebas |
+| `reflection`     | text                                  | markdown                     |
 
 Index: (`application_id`, `scheduled_at`), (`user_id`, `scheduled_at`).
 
@@ -390,7 +389,7 @@ Cadangan transkripsi (bagian B di spec) ikut Fase 11: di browser tanpa pengenal 
 
 Susulan dari Fase 11: panggilan transkripsi ke OpenAI belum pernah dijalankan dengan key asli.
 
-Pekerjaan susulan dari Fase 8: hapus kolom `interviews.questions` lewat migration terpisah setelah backfill produksi (`docs/deploy.md`) dijalankan.
+Susulan Fase 8 selesai: setelah backfill produksi dijalankan, kolom `interviews.questions` dihapus lewat `drizzle/0005_drop_interviews_questions.sql`, dan script backfill-nya ikut dihapus.
 
 Penerapan identitas brand (guideline di `docs/design/guideline.md`) berjalan di luar tabel ini, halaman demi halaman; daftar dan statusnya ada di `docs/design/rollout.md`.
 

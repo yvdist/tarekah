@@ -162,7 +162,6 @@ erDiagram
         uuid application_id FK
         timestamptz scheduled_at
         interview_stage stage
-        text questions
         text reflection
     }
     contacts {
@@ -289,7 +288,7 @@ npm test            # unit test (Vitest), tanpa database eksternal
 npm run test:e2e    # end-to-end (Playwright)
 ```
 
-**Unit test** mencakup perhitungan follow-up, parameter URL daftar lamaran, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan, semua skema Zod, enkripsi key AI (termasuk ciphertext yang diubah), pemetaan error provider ke pesan yang ramah, prompt masukan, interviewer dan ringkasan (isi pengguna tidak bisa keluar dari tag pembatasnya), aturan giliran simulasi (batas jawaban, penutupan paksa, sesi yang ditinggal), alur masukan serta ringkasan dengan model tiruan dari AI SDK, dan aturan input suara (penyambungan transkrip, kapan mikrofon menyala ulang atau berhenti, pesan saat izin ditolak, durasi jawaban, pemilihan suara, pemilihan jalur dan format rekaman), dan transkripsi rekaman (key mana yang dipakai, batas ukuran dan durasi, jenis file, serta isi permintaan ke Google dan OpenAI dengan jaringan yang diganti). Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, backfill pertanyaan (idempoten), penyimpanan key AI (query pengaturan tidak pernah mengembalikan key atau ciphertext-nya), sesi latihan dan pertanyaan lanjutan (kepemilikan, duplikat), giliran simulasi (batas ditegakkan di server, balasan yang gagal di tengah stream tidak tersimpan dan bisa diminta lagi), pertanyaan dan cerita hasil sesi, serta hitungan léngkah latihan diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
+**Unit test** mencakup perhitungan follow-up, parameter URL daftar lamaran, rentang tanggal dashboard, formatter, pembuat CSV, filter pertanyaan, semua skema Zod, enkripsi key AI (termasuk ciphertext yang diubah), pemetaan error provider ke pesan yang ramah, prompt masukan, interviewer dan ringkasan (isi pengguna tidak bisa keluar dari tag pembatasnya), aturan giliran simulasi (batas jawaban, penutupan paksa, sesi yang ditinggal), alur masukan serta ringkasan dengan model tiruan dari AI SDK, dan aturan input suara (penyambungan transkrip, kapan mikrofon menyala ulang atau berhenti, pesan saat izin ditolak, durasi jawaban, pemilihan suara, pemilihan jalur dan format rekaman), dan transkripsi rekaman (key mana yang dipakai, batas ukuran dan durasi, jenis file, serta isi permintaan ke Google dan OpenAI dengan jaringan yang diganti). Agregasi statistik, query bank pertanyaan dan cerita (termasuk isolasi antar pengguna), sinkronisasi pertanyaan dari form interview, penyimpanan key AI (query pengaturan tidak pernah mengembalikan key atau ciphertext-nya), sesi latihan dan pertanyaan lanjutan (kepemilikan, duplikat), giliran simulasi (batas ditegakkan di server, balasan yang gagal di tengah stream tidak tersimpan dan bisa diminta lagi), pertanyaan dan cerita hasil sesi, serta hitungan léngkah latihan diuji terhadap PGlite, Postgres yang berjalan di dalam proses test dengan migration asli.
 
 **End-to-end** mencakup penjagaan login, menambah lamaran, pencarian, filter dan sort daftar lamaran yang bertahan di alamat halaman, export CSV, memindah kartu di board dengan mouse dan keyboard, menulis cerita lalu menautkannya ke pertanyaan dan menandai kesiapan, menyimpan key AI lalu mengetes, mengganti model dan menghapusnya, latihan singkat tanpa key (jawaban tersimpan, ajakan muncul) dan dengan key (masukan, simpan pertanyaan lanjutan, tulis cerita), simulasi dari detail lamaran (beberapa giliran yang di-stream, muat ulang, akhiri sesi, ringkasan, simpan pertanyaan ke bank) memakai provider tiruan tanpa panggilan API sungguhan, menjawab dengan suara lewat pengenal ucapan tiruan (pemberitahuan, transkrip yang disunting, izin ditolak, browser tanpa dukungan, suara interviewer, rekaman yang ditranskripsi dengan key Google saat DeepSeek aktif) tanpa mikrofon sungguhan, mengisi website dan catatan perusahaan, serta pemeriksaan aksesibilitas (axe) di tema terang dan gelap.
 
@@ -308,24 +307,23 @@ GitHub Actions menjalankan lint, typecheck, format, unit test dan build di setia
 
 ## Script
 
-| Perintah                               | Fungsi                                                   |
-| -------------------------------------- | -------------------------------------------------------- |
-| `npm run dev`                          | Server pengembangan                                      |
-| `npm run build`                        | Build produksi                                           |
-| `npm run start`                        | Menjalankan build produksi                               |
-| `npm run lint`                         | ESLint                                                   |
-| `npm run typecheck`                    | `next typegen` lalu `tsc --noEmit`                       |
-| `npm run format`                       | Prettier, menulis perubahan                              |
-| `npm run format:check`                 | Prettier, hanya memeriksa                                |
-| `npm test`                             | Unit test                                                |
-| `npm run test:watch`                   | Unit test, mode watch                                    |
-| `npm run test:e2e`                     | Test end-to-end                                          |
-| `npm run screenshots`                  | Membuat ulang screenshot README dari data contoh         |
-| `npm run db:generate`                  | Membuat migration SQL dari perubahan di `src/db/schema`  |
-| `npm run db:migrate`                   | Menerapkan migration yang belum jalan                    |
-| `npm run db:studio`                    | Drizzle Studio                                           |
-| `npm run db:seed -- <email> [--reset]` | Data contoh untuk satu akun yang sudah ada               |
-| `npm run db:backfill-questions`        | Memindahkan pertanyaan markdown lama ke tabel pertanyaan |
+| Perintah                               | Fungsi                                                  |
+| -------------------------------------- | ------------------------------------------------------- |
+| `npm run dev`                          | Server pengembangan                                     |
+| `npm run build`                        | Build produksi                                          |
+| `npm run start`                        | Menjalankan build produksi                              |
+| `npm run lint`                         | ESLint                                                  |
+| `npm run typecheck`                    | `next typegen` lalu `tsc --noEmit`                      |
+| `npm run format`                       | Prettier, menulis perubahan                             |
+| `npm run format:check`                 | Prettier, hanya memeriksa                               |
+| `npm test`                             | Unit test                                               |
+| `npm run test:watch`                   | Unit test, mode watch                                   |
+| `npm run test:e2e`                     | Test end-to-end                                         |
+| `npm run screenshots`                  | Membuat ulang screenshot README dari data contoh        |
+| `npm run db:generate`                  | Membuat migration SQL dari perubahan di `src/db/schema` |
+| `npm run db:migrate`                   | Menerapkan migration yang belum jalan                   |
+| `npm run db:studio`                    | Drizzle Studio                                          |
+| `npm run db:seed -- <email> [--reset]` | Data contoh untuk satu akun yang sudah ada              |
 
 ## Mengubah skema
 
