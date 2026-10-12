@@ -9,6 +9,7 @@ import {
   filterFn_includesString,
   globalFilteringFeature,
   rowSortingFeature,
+  type SortingState,
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
@@ -21,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { OptionSelect } from "@/components/option-select";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -40,7 +41,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ApplicationStatus } from "@/db/schema/enum-values";
+import type {
+  ApplicationStatus,
+  JobSource,
+  WorkType,
+} from "@/db/schema/enum-values";
 import { cn } from "@/lib/utils";
 import { followUpLabel, type FollowUpState } from "../follow-up";
 import { formatDate } from "../format";
@@ -52,6 +57,12 @@ import {
   WORK_TYPE_LABELS,
   WORK_TYPE_OPTIONS,
 } from "../labels";
+import {
+  type ListView,
+  serializeListView,
+  SORT_KEYS,
+  type SortKey,
+} from "../list-view";
 import type { ApplicationListItem } from "../queries";
 import { DeleteApplicationDialog } from "./delete-application-dialog";
 import { StatusBadge } from "./status-badge";
@@ -176,23 +187,95 @@ const ALL = "all";
 const withAll = <T extends string>(
   label: string,
   options: ReadonlyArray<{ value: T; label: string }>,
-) => [{ value: ALL, label }, ...options];
+): ReadonlyArray<{ value: T | typeof ALL; label: string }> => [
+  { value: ALL, label },
+  ...options,
+];
 
 const STATUS_FILTER_OPTIONS = withAll("Semua status", STATUS_OPTIONS);
 const SOURCE_FILTER_OPTIONS = withAll("Semua sumber", SOURCE_OPTIONS);
 const WORK_TYPE_FILTER_OPTIONS = withAll("Semua tipe kerja", WORK_TYPE_OPTIONS);
 
-export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
+// The URL's name for a sortable column, and the column's id.
+const SORT_COLUMNS: Record<SortKey, string> = {
+  company: "companyName",
+  status: "status",
+  applied: "appliedAt",
+};
+
+const toSorting = (sort: ListView["sort"]): SortingState =>
+  sort ? [{ id: SORT_COLUMNS[sort.by], desc: sort.desc }] : [];
+
+function fromSorting(sorting: SortingState): ListView["sort"] {
+  const [first] = sorting;
+  const by = SORT_KEYS.find((key) => SORT_COLUMNS[key] === first?.id);
+
+  return first && by ? { by, desc: first.desc } : null;
+}
+
+// Long enough that typing in the search does not rewrite the address on every
+// key, which browsers limit.
+const URL_DELAY_MS = 250;
+
+// The search, the filters and the sort start from the URL and are written
+// back to it, so the view survives a reload and can be bookmarked. Filtering
+// itself stays in the browser: the whole list is already here.
+export function ApplicationsTable({
+  data,
+  initialView,
+}: {
+  data: ApplicationListItem[];
+  initialView: ListView;
+}) {
+  const [view, setView] = useState(initialView);
+  const sorting = useMemo(() => toSorting(view.sort), [view.sort]);
+  const columnFilters = useMemo(
+    () =>
+      [
+        { id: "status", value: view.status },
+        { id: "source", value: view.source },
+        { id: "workType", value: view.workType },
+      ].filter((filter) => filter.value !== null),
+    [view.status, view.source, view.workType],
+  );
   const table = useTable({
     features,
     columns,
     data,
     getRowId: (row) => row.id,
+    state: { sorting, columnFilters, globalFilter: view.q },
+    onSortingChange: (updater) =>
+      setView((current) => ({
+        ...current,
+        sort: fromSorting(
+          typeof updater === "function"
+            ? updater(toSorting(current.sort))
+            : updater,
+        ),
+      })),
     globalFilterFn: "includesString",
     // Search covers the company name and the position only.
     getColumnCanGlobalFilter: (column) =>
       column.id === "companyName" || column.id === "position",
   });
+
+  // replaceState, not a navigation: nothing is fetched and the back button
+  // still leaves the list.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const query = serializeListView(view);
+
+      if (query !== window.location.search) {
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}${query}`,
+        );
+      }
+    }, URL_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [view]);
 
   if (data.length === 0) {
     return (
@@ -210,24 +293,12 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
     );
   }
 
-  const search = String(table.state.globalFilter ?? "");
-  const filterValue = (columnId: string) => {
-    const value = table.state.columnFilters.find(
-      (filter) => filter.id === columnId,
-    )?.value;
-
-    return typeof value === "string" ? value : ALL;
-  };
-  const setFilter = (columnId: string, value: string) =>
-    table
-      .getColumn(columnId)
-      ?.setFilterValue(value === ALL ? undefined : value);
-  const isFiltered = search !== "" || table.state.columnFilters.length > 0;
+  const isFiltered = view.q !== "" || columnFilters.length > 0;
   const rows = table.getRowModel().rows;
 
+  // The sort is not a filter: it stays.
   function resetFilters() {
-    table.setGlobalFilter("");
-    table.setColumnFilters([]);
+    setView({ ...view, q: "", status: null, source: null, workType: null });
   }
 
   return (
@@ -242,29 +313,35 @@ export function ApplicationsTable({ data }: { data: ApplicationListItem[] }) {
             type="search"
             aria-label="Cari perusahaan atau posisi"
             placeholder="Cari perusahaan atau posisi…"
-            value={search}
-            onChange={(event) => table.setGlobalFilter(event.target.value)}
+            value={view.q}
+            onChange={(event) => setView({ ...view, q: event.target.value })}
             className="h-10 pl-9"
           />
         </div>
         <OptionSelect
           aria-label="Filter status"
-          value={filterValue("status")}
-          onValueChange={(value) => setFilter("status", value)}
+          value={view.status ?? ALL}
+          onValueChange={(value: ApplicationStatus | typeof ALL) =>
+            setView({ ...view, status: value === ALL ? null : value })
+          }
           options={STATUS_FILTER_OPTIONS}
           className="h-10! flex-1 sm:flex-none"
         />
         <OptionSelect
           aria-label="Filter sumber"
-          value={filterValue("source")}
-          onValueChange={(value) => setFilter("source", value)}
+          value={view.source ?? ALL}
+          onValueChange={(value: JobSource | typeof ALL) =>
+            setView({ ...view, source: value === ALL ? null : value })
+          }
           options={SOURCE_FILTER_OPTIONS}
           className="h-10! flex-1 sm:flex-none"
         />
         <OptionSelect
           aria-label="Filter tipe kerja"
-          value={filterValue("workType")}
-          onValueChange={(value) => setFilter("workType", value)}
+          value={view.workType ?? ALL}
+          onValueChange={(value: WorkType | typeof ALL) =>
+            setView({ ...view, workType: value === ALL ? null : value })
+          }
           options={WORK_TYPE_FILTER_OPTIONS}
           className="h-10! flex-1 sm:flex-none"
         />
