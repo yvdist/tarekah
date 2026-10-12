@@ -655,13 +655,14 @@ export async function transcribeRecording(
       provider,
     });
 
-    return {
-      ok: false,
-      // The model is the app's choice here, so there is no id to go and fix.
-      message:
-        code === "model_not_found"
-          ? "Key ini belum bisa dipakai untuk transkripsi di provider-mu. Lanjutkan dengan mengetik."
-          : message,
+    // The model is the app's choice here, so there is no id to go and fix.
+    const refused: Partial<Record<typeof code, string>> = {
+      model_not_found:
+        "Key ini belum bisa dipakai untuk transkripsi di provider-mu. Lanjutkan dengan mengetik.",
+      rejected:
+        "Provider menolak rekaman ini. Coba rekam lagi, atau lanjutkan dengan mengetik.",
     };
+
+    return { ok: false, message: refused[code] ?? message };
   }
 }
