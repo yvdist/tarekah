@@ -36,6 +36,13 @@
       "when": 1791641214974,
       "tag": "0004_deepseek_provider",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791826112275,
+      "tag": "0005_drop_interviews_questions",
+      "breakpoints": true
     }
   ]
 }

@@ -14,7 +14,6 @@ export const interviews = pgTable(
     scheduledAt: timestamp({ withTimezone: true }).notNull(),
     stage: interviewStage().notNull(),
     interviewers: text(),
-    questions: text(),
     reflection: text(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
