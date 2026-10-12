@@ -14,6 +14,7 @@ import { existsSync } from "node:fs";
 import { count, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { withVerifiedSsl } from "../src/db/connection-string";
 import * as schema from "../src/db/schema";
 import { FOLLOW_UP_STATUSES } from "../src/features/applications/follow-up";
 import type {
@@ -730,7 +731,9 @@ async function main() {
     throw new Error("DATABASE_URL_UNPOOLED is not set. See .env.example.");
   }
 
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({
+    connectionString: withVerifiedSsl(connectionString),
+  });
   const db = drizzle({ client: pool, schema, casing: "snake_case" });
 
   try {

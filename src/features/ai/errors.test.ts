@@ -1,6 +1,7 @@
 import {
   APICallError,
   NoObjectGeneratedError,
+  NoTranscriptGeneratedError,
   RetryError,
   StreamProviderError,
 } from "ai";
@@ -171,6 +172,12 @@ describe("classifyAiError", () => {
     expect(classifyAiError(error)).toBe("bad_output");
   });
 
+  it("reads a recording that came back without a transcript as bad output", () => {
+    expect(
+      classifyAiError(new NoTranscriptGeneratedError({ responses: [] })),
+    ).toBe("bad_output");
+  });
+
   it("tells a missing server secret from a key that will not open", () => {
     expect(classifyAiError(new AiConfigError("secret", "x"))).toBe(
       "server_not_ready",
@@ -180,10 +187,22 @@ describe("classifyAiError", () => {
     );
   });
 
+  it.each([
+    ["DeepSeek 400", apiError(400, deepseek("invalid_request_error"))],
+    ["Anthropic 400", apiError(400, anthropic("invalid_request_error"))],
+    ["OpenAI 400", apiError(400, openai("unsupported_parameter"))],
+    ["a 422", apiError(422)],
+  ])("reads %s as a request the provider refused", (_, error) => {
+    expect(classifyAiError(error)).toBe("rejected");
+  });
+
+  it("does not ask to try a refused request again", () => {
+    expect(AI_ERROR_MESSAGES.rejected).toContain("ID model");
+    expect(AI_ERROR_MESSAGES.rejected).not.toMatch(/coba lagi/i);
+  });
+
   it("falls back to unknown", () => {
-    expect(
-      classifyAiError(apiError(400, anthropic("invalid_request_error"))),
-    ).toBe("unknown");
+    expect(classifyAiError(apiError(418))).toBe("unknown");
     expect(classifyAiError(new Error("boom"))).toBe("unknown");
     expect(classifyAiError("boom")).toBe("unknown");
   });

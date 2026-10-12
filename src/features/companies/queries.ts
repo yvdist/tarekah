@@ -2,12 +2,10 @@ import "server-only";
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
-import { z } from "zod";
 import { db } from "@/db";
 import { applications, companies, contacts } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-
-const companyIdSchema = z.uuid();
+import { companyIdSchema } from "./schemas";
 
 export type CompanyOption = Awaited<
   ReturnType<typeof listCompanyOptionsByUserId>

@@ -7,11 +7,17 @@ import { ListSkeleton } from "@/components/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApplicationsTable } from "@/features/applications/components/applications-table";
+import {
+  parseListView,
+  serializeListView,
+} from "@/features/applications/list-view";
 import { getApplications } from "@/features/applications/queries";
 
 export const metadata: Metadata = { title: "Lamaran" };
 
-export default function ApplicationsPage() {
+export default function ApplicationsPage({
+  searchParams,
+}: PageProps<"/applications">) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -43,7 +49,7 @@ export default function ApplicationsPage() {
         }
       />
       <Suspense fallback={<ListSkeleton />}>
-        <Applications />
+        <Applications searchParams={searchParams} />
       </Suspense>
     </div>
   );
@@ -68,8 +74,23 @@ async function ApplicationsSummary() {
   );
 }
 
-async function Applications() {
-  const applications = await getApplications();
+// searchParams is request-time data, so it is read behind the boundary.
+async function Applications({
+  searchParams,
+}: Pick<PageProps<"/applications">, "searchParams">) {
+  const [applications, params] = await Promise.all([
+    getApplications(),
+    searchParams,
+  ]);
+  const view = parseListView(params);
 
-  return <ApplicationsTable data={applications} />;
+  // The table writes its view to the address without navigating, so this only
+  // renders again, and the key only changes, when a link leads here.
+  return (
+    <ApplicationsTable
+      key={serializeListView(view)}
+      data={applications}
+      initialView={view}
+    />
+  );
 }

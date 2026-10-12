@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { generateText } from "ai";
+import { generateText, transcribe } from "ai";
 import {
   afterAll,
   beforeAll,
@@ -15,7 +15,8 @@ import type { AiProvider } from "@/db/schema/enum-values";
 import { createTestDb, createUser, type TestDb } from "@/test/db";
 import { AiConfigError, encryptKey } from "./crypto";
 import { saveCredential } from "./data";
-import { getModelForUser } from "./model";
+import { FAKE_TRANSCRIPT } from "./fake-model";
+import { getModelForUser, getTranscriptionModelForUser } from "./model";
 
 const secret = randomBytes(32);
 const env = vi.hoisted(
@@ -153,5 +154,91 @@ describe("getModelForUser", () => {
     });
 
     expect(text).toBe("ok");
+  });
+});
+
+describe("getTranscriptionModelForUser", () => {
+  it("is null without a key that can transcribe", async () => {
+    const userId = await newUser();
+
+    expect(await getTranscriptionModelForUser(db, userId)).toBeNull();
+
+    await save(userId, "anthropic", "claude-sonnet-5-5");
+    await save(userId, "deepseek", "deepseek-flash");
+
+    expect(await getTranscriptionModelForUser(db, userId)).toBeNull();
+  });
+
+  it("uses a saved key that can, whichever provider is active", async () => {
+    const userId = await newUser();
+
+    await save(userId, "google", "gemini-3.6-flash");
+    await save(userId, "deepseek", "deepseek-flash");
+
+    expect((await getModelForUser(db, userId))?.provider).toBe("deepseek");
+
+    const resolved = await getTranscriptionModelForUser(db, userId);
+
+    // The app's transcription model, not the one saved for answers.
+    expect(resolved).toMatchObject({
+      provider: "google",
+      modelId: "gemini-3.5-transcribe",
+    });
+    expect(JSON.stringify(resolved)).not.toContain("not-a-real-key");
+  });
+
+  it("uses the active provider when it can transcribe", async () => {
+    const userId = await newUser();
+
+    await save(userId, "google", "gemini-3.6-flash");
+    await save(userId, "openai", "gpt-6.1-sol");
+
+    expect(await getTranscriptionModelForUser(db, userId)).toMatchObject({
+      provider: "openai",
+      modelId: "gpt-transcribe",
+    });
+  });
+
+  it("is null for another user's key", async () => {
+    const owner = await newUser();
+    const other = await newUser();
+
+    await save(owner, "google", "gemini-3.6-flash");
+
+    expect(await getTranscriptionModelForUser(db, other)).toBeNull();
+  });
+
+  it("fails clearly when the server secret is missing", async () => {
+    const userId = await newUser();
+
+    await save(userId, "google", "gemini-3.6-flash");
+    env.AI_KEY_ENCRYPTION_KEY = undefined;
+
+    await expect(
+      getTranscriptionModelForUser(db, userId),
+    ).rejects.toMatchObject({ name: "AiConfigError", reason: "secret" });
+  });
+
+  it("returns the canned model when AI_FAKE_PROVIDER is set, still requiring a key", async () => {
+    const userId = await newUser();
+
+    env.AI_FAKE_PROVIDER = "1";
+
+    expect(await getTranscriptionModelForUser(db, userId)).toBeNull();
+
+    await save(userId, "openai", "gpt-6.1-sol");
+
+    const resolved = await getTranscriptionModelForUser(db, userId);
+
+    if (!resolved) {
+      expect.unreachable();
+    }
+
+    const { text } = await transcribe({
+      model: resolved.model,
+      audio: new Uint8Array([0x4f, 0x67, 0x67, 0x53]),
+    });
+
+    expect(text).toBe(FAKE_TRANSCRIPT);
   });
 });

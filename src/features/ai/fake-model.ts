@@ -1,10 +1,10 @@
 import { simulateReadableStream } from "ai";
-import { MockLanguageModelV4 } from "ai/test";
+import { MockLanguageModelV4, MockTranscriptionModelV4 } from "ai/test";
 
 // Stands in for a provider when AI_FAKE_PROVIDER=1, which only the end-to-end
 // tests set: they cannot call a real API. It answers a structured-output call
 // with the feedback below, a streamed call with the interviewer's next line,
-// and anything else with "ok".
+// and anything else with "ok". A recording is always heard as FAKE_TRANSCRIPT.
 export const FAKE_FEEDBACK = {
   strengths: [
     "Jawabanmu langsung menyebut situasi dan peranmu di dalamnya.",
@@ -137,6 +137,25 @@ export function createFakeModel(modelId: string) {
       finishReason: { unified: "stop", raw: undefined },
       usage: FAKE_USAGE,
       warnings: [],
+    }),
+  });
+}
+
+// What every recording says, whatever is in it.
+export const FAKE_TRANSCRIPT =
+  "Saya memimpin migrasi basis data tanpa downtime.";
+
+export function createFakeTranscriptionModel(modelId: string) {
+  return new MockTranscriptionModelV4({
+    provider: "fake",
+    modelId,
+    doGenerate: async () => ({
+      text: FAKE_TRANSCRIPT,
+      segments: [],
+      language: undefined,
+      durationInSeconds: undefined,
+      warnings: [],
+      response: { timestamp: new Date(), modelId },
     }),
   });
 }

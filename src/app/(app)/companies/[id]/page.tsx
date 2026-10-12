@@ -8,6 +8,7 @@ import { DetailSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/features/applications/components/status-badge";
 import { formatDate } from "@/features/applications/format";
+import { CompanyEditButton } from "@/features/companies/components/company-edit-button";
 import { getCompany } from "@/features/companies/queries";
 import { CONTACT_ROLE_LABELS } from "@/features/contacts/labels";
 
@@ -54,13 +55,30 @@ async function CompanyDetails({
             </a>
           ) : null
         }
+        actions={
+          <CompanyEditButton
+            company={{
+              id: company.id,
+              name: company.name,
+              website: company.website,
+              notes: company.notes,
+            }}
+          />
+        }
       />
 
-      {company.notes ? (
-        <Panel title="Catatan">
-          <p className="text-sm whitespace-pre-wrap">{company.notes}</p>
-        </Panel>
-      ) : null}
+      <Panel title="Catatan">
+        {company.notes ? (
+          <p className="text-sm break-words whitespace-pre-wrap">
+            {company.notes}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Belum ada catatan. Tulis yang kamu tahu tentang perusahaan ini lewat
+            tombol Edit: interviewer di simulasi ikut membacanya.
+          </p>
+        )}
+      </Panel>
 
       <Panel title="Lamaran">
         {company.applications.length === 0 ? (

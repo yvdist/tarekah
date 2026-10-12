@@ -111,17 +111,58 @@ export async function clearAiKeys(page: Page) {
 }
 
 // Saves the fake key through the settings form, which makes it the active one.
-export async function saveAiKey(page: Page) {
+// `provider` is the label of the provider it is saved for.
+export async function saveAiKey(page: Page, provider = ANTHROPIC) {
   await page.goto("/settings");
 
   const panel = page.locator("section#ai");
+
+  if (provider !== ANTHROPIC) {
+    await panel.getByRole("combobox", { name: "Provider" }).click();
+    await page.getByRole("option", { name: provider }).click();
+  }
 
   await panel.getByLabel("API key").fill(FAKE_API_KEY);
   await panel.getByRole("button", { name: "Simpan key" }).click();
   await expect(
     panel
       .getByRole("listitem")
-      .filter({ hasText: ANTHROPIC })
+      .filter({ hasText: provider })
       .getByText("Aktif"),
+  ).toBeVisible();
+}
+
+export const DRILL_URL = /\/practice\/drill\/[0-9a-f-]{36}$/;
+
+// `rows` is how many rows of the bank read like `text` afterwards.
+export async function addQuestion(page: Page, text: string, rows = 1) {
+  await page.goto("/questions");
+  await page.getByRole("button", { name: "Tambah pertanyaan" }).click();
+  await page.getByLabel("Pertanyaan", { exact: true }).fill(text);
+  await page.getByRole("button", { name: "Simpan" }).click();
+
+  await expect(
+    page.getByRole("listitem").filter({ hasText: text }),
+  ).toHaveCount(rows);
+}
+
+// Opens the drill of one question from the list on the Latihan page.
+export async function openDrill(page: Page, text: string) {
+  await page.goto("/practice");
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: text })
+    .getByRole("link", { name: /^Latih pertanyaan:/ })
+    .click();
+
+  await expect(page).toHaveURL(DRILL_URL);
+  // Scoped to the panel: the list row is still there while the page changes.
+  await expect(
+    page
+      .locator("section")
+      .filter({
+        has: page.getByRole("heading", { name: "Pertanyaan", exact: true }),
+      })
+      .getByText(text),
   ).toBeVisible();
 }

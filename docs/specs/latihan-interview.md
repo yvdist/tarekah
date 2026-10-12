@@ -97,12 +97,12 @@ Masukan dan ringkasan AI dihasilkan sebagai structured output dengan skema Zod (
 
 ## Fase
 
-| Fase | Isi                                                          | Alasan urutan                                           |
-| ---- | ------------------------------------------------------------ | ------------------------------------------------------- |
-| 1    | Cerita, Pertanyaan v2 + migrasi data, field JD               | Tanpa AI, langsung berguna, dan jadi fondasi data       |
-| 2    | BYOK + Latihan singkat (tabel latihan dibuat lengkap)        | Lingkaran AI terkecil yang sudah bernilai               |
-| 3    | Simulasi + tombol dari detail lamaran + léngkah latihan      | Fitur utama, dibangun di atas fondasi yang sudah teruji |
-| 4    | Input suara (Web Speech API, cadangan transkripsi lewat key) | Dukungan browser tidak merata, jadi dibuat terpisah     |
+| Fase | Isi                                                        | Alasan urutan                                           |
+| ---- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| 1    | Cerita, Pertanyaan v2 + migrasi data, field JD             | Tanpa AI, langsung berguna, dan jadi fondasi data       |
+| 2    | BYOK + Latihan singkat (tabel latihan dibuat lengkap)      | Lingkaran AI terkecil yang sudah bernilai               |
+| 3    | Simulasi + tombol dari detail lamaran + léngkah latihan    | Fitur utama, dibangun di atas fondasi yang sudah teruji |
+| 4    | Input suara (Web Speech API; cadangan transkripsi ditunda) | Dukungan browser tidak merata, jadi dibuat terpisah     |
 
 Setiap fase bisa dirilis sendiri.
 

@@ -9,7 +9,10 @@ import type {
 } from "@/db/schema/enum-values";
 import { findActiveProvider } from "@/features/ai/data";
 import { AI_ERROR_MESSAGES, reportAiError } from "@/features/ai/errors";
-import { getModelForUser } from "@/features/ai/model";
+import {
+  getModelForUser,
+  getTranscriptionModelForUser,
+} from "@/features/ai/model";
 import { storyIdSchema } from "@/features/stories/schemas";
 import { type ActionResult, invalidResult } from "@/lib/action-result";
 import { requireUser } from "@/lib/auth";
@@ -42,6 +45,7 @@ import { DRILL_FEEDBACK_PROMPT_VERSION } from "./prompts/drill-feedback";
 import { SIMULATION_SUMMARY_PROMPT_VERSION } from "./prompts/simulation-summary";
 import {
   drillAnswerSchema,
+  recordingSchema,
   sessionIdSchema,
   simulationSettingsSchema,
   simulationTurnSchema,
@@ -58,6 +62,7 @@ import {
   INTERVIEW_TYPE_CATEGORIES,
 } from "./simulation";
 import { generateSimulationSummary } from "./summary";
+import { audioContainerOf, transcribeAnswer } from "./transcription";
 
 const SESSION_NOT_FOUND_MESSAGE = "Sesi latihan tidak ditemukan.";
 
@@ -590,4 +595,74 @@ export async function applyStorySuggestion(
     ok: true,
     data: { view: await describeSummary(db, user.id, found.summary) },
   };
+}
+
+const RECORDING_UNREADABLE_MESSAGE =
+  "Rekamannya tidak bisa dibaca. Coba rekam lagi, atau lanjutkan dengan mengetik.";
+
+export type TranscriptionOutcome =
+  { status: "ready"; text: string } | { status: "not_configured" };
+
+// Turns a recorded answer into text with whichever saved key can, for the
+// browsers that cannot listen themselves. Nothing is saved here and nothing of
+// the recording is logged: the text goes back into the answer box, to be
+// edited and sent like a typed one.
+export async function transcribeRecording(
+  input: unknown,
+): Promise<ActionResult<TranscriptionOutcome>> {
+  const user = await requireUser();
+  const parsed = recordingSchema.safeParse(
+    input instanceof FormData
+      ? {
+          language: input.get("language"),
+          seconds: input.get("seconds"),
+          audio: input.get("audio"),
+        }
+      : null,
+  );
+
+  if (!parsed.success) {
+    return { ok: false, message: RECORDING_UNREADABLE_MESSAGE };
+  }
+
+  const audio = new Uint8Array(await parsed.data.audio.arrayBuffer());
+
+  if (!audioContainerOf(audio)) {
+    return { ok: false, message: RECORDING_UNREADABLE_MESSAGE };
+  }
+
+  let provider: AiProvider | undefined;
+
+  try {
+    const resolved = await getTranscriptionModelForUser(db, user.id);
+
+    if (!resolved) {
+      return { ok: true, data: { status: "not_configured" } };
+    }
+
+    provider = resolved.provider;
+
+    const text = await transcribeAnswer({
+      model: resolved.model,
+      audio,
+      language: parsed.data.language,
+    });
+
+    return { ok: true, data: { status: "ready", text } };
+  } catch (error) {
+    const { code, message } = reportAiError(error, {
+      where: "transcription",
+      provider,
+    });
+
+    // The model is the app's choice here, so there is no id to go and fix.
+    const refused: Partial<Record<typeof code, string>> = {
+      model_not_found:
+        "Key ini belum bisa dipakai untuk transkripsi di provider-mu. Lanjutkan dengan mengetik.",
+      rejected:
+        "Provider menolak rekaman ini. Coba rekam lagi, atau lanjutkan dengan mengetik.",
+    };
+
+    return { ok: false, message: refused[code] ?? message };
+  }
 }

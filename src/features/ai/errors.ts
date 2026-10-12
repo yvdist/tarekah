@@ -2,6 +2,7 @@ import {
   APICallError,
   NoObjectGeneratedError,
   NoOutputGeneratedError,
+  NoTranscriptGeneratedError,
   RetryError,
   StreamProviderError,
 } from "ai";
@@ -18,6 +19,7 @@ export const AI_ERROR_CODES = [
   "timeout",
   "unavailable",
   "model_not_found",
+  "rejected",
   "bad_output",
   "unknown",
 ] as const;
@@ -41,6 +43,8 @@ export const AI_ERROR_MESSAGES: Record<AiErrorCode, string> = {
   unavailable: "Provider sedang gangguan. Coba lagi beberapa saat lagi.",
   model_not_found:
     "Model itu tidak dikenali provider. Periksa ID model di Pengaturan.",
+  rejected:
+    "Provider menolak permintaan ini. Biasanya karena ID model tidak dikenali: periksa di Pengaturan.",
   bad_output: "Jawaban dari model tidak terbaca kali ini. Coba lagi.",
   unknown: "Ada yang tidak beres saat menghubungi provider. Coba lagi.",
 };
@@ -137,6 +141,14 @@ function classifyResponse(
     return "unavailable";
   }
 
+  // The request itself was refused, so sending it again will not help. The
+  // requests here have a fixed shape, which leaves the model id as the usual
+  // cause: DeepSeek answers an id it does not know with a 400 and no word that
+  // tells it from any other bad request (seen on 2026-10-12).
+  if (status === 400 || status === 422) {
+    return "rejected";
+  }
+
   return "unknown";
 }
 
@@ -168,7 +180,8 @@ export function classifyAiError(error: unknown): AiErrorCode {
 
   if (
     NoObjectGeneratedError.isInstance(error) ||
-    NoOutputGeneratedError.isInstance(error)
+    NoOutputGeneratedError.isInstance(error) ||
+    NoTranscriptGeneratedError.isInstance(error)
   ) {
     return "bad_output";
   }

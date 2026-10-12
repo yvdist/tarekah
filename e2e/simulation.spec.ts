@@ -294,6 +294,9 @@ test("closes a session that was left alone and still summarizes it", async ({
   await page.getByLabel("Jawabanmu", { exact: true }).fill("Jawaban pertama.");
   await page.getByRole("button", { name: "Kirim jawaban" }).click();
   await expect(conversation.getByText(SECOND)).toBeVisible();
+  // The reply is on screen before its turn is saved. The answer box comes back
+  // once it is, and only then is every turn old enough to be aged.
+  await expect(page.getByLabel("Jawabanmu", { exact: true })).toBeFocused();
 
   await agePracticeSessions(E2E_USER.email, 7);
   await page.reload();
