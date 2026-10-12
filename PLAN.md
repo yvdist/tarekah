@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 11 selesai.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql`, `0004_deepseek_provider.sql` dan `0005_drop_interviews_questions.sql`. Pekerjaan susulan ada di bawah tabel fase.
+Status: **Fase 0 sampai 11 selesai.** Aplikasi live di <https://tarekah.vercel.app> (v0.2.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql`, `0004_deepseek_provider.sql` dan `0005_drop_interviews_questions.sql`. Pekerjaan susulan ada di bawah tabel fase.
 
 ## Keputusan
 
