@@ -2,7 +2,7 @@
 
 Job Application Tracker. Dokumen ini memuat rancangan skema database, daftar route, dan rencana fase. Konvensi kode ada di `CLAUDE.md`.
 
-Status: **Fase 0 sampai 11 selesai, kecuali 3b.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql` dan `0004_deepseek_provider.sql`. Berikutnya: Fase 3b.
+Status: **Fase 0 sampai 11 selesai.** Aplikasi live di <https://tarekah.vercel.app> (v0.1.0). Skema di bawah sudah diterapkan lewat `drizzle/0000_init.sql`, `0001_follow_up.sql`, `0002_interview_prep.sql`, `0003_byok_practice.sql` dan `0004_deepseek_provider.sql`. Pekerjaan susulan ada di bawah tabel fase.
 
 ## Keputusan
 
@@ -344,7 +344,7 @@ Transisi status bebas (mundur, lompat tahap, lamaran dicatat langsung di tahap l
 | `/api/auth/[...nextauth]`          | publik | Handler Auth.js                                                                                                                                                                                                                                                                      |
 | `/dashboard`                       | login  | Panel "Perlu Follow-up"; statistik dengan filter rentang tanggal di URL: kartu ringkasan, funnel, rate per sumber dan per versi CV, waktu respons, lamaran per minggu                                                                                                                |
 | `/board`                           | login  | Kanban: kolom per status, drag-and-drop antar kolom mengubah status dan menulis riwayat; kolom Ditolak dan Tanpa kabar bisa diciutkan                                                                                                                                                |
-| `/applications`                    | login  | Tabel dengan filter status/sumber/tipe kerja, pencarian, sort                                                                                                                                                                                                                        |
+| `/applications`                    | login  | Tabel dengan pencarian (`?q=`), filter (`?status=`, `?source=`, `?work=`) dan sort (`?sort=applied`, `-applied` untuk menurun)                                                                                                                                                       |
 | `/applications/new`                | login  | Form lamaran baru                                                                                                                                                                                                                                                                    |
 | `/applications/[id]`               | login  | Detail: data lamaran, ubah status, riwayat status, versi dokumen yang dipakai, catatan interview, kontak terhubung                                                                                                                                                                   |
 | `/applications/[id]/edit`          | login  | Form edit                                                                                                                                                                                                                                                                            |
