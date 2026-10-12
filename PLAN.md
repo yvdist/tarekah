@@ -388,7 +388,7 @@ Interview dan perubahan status dikelola di halaman detail lamaran, tanpa route s
 
 Cadangan transkripsi (bagian B di spec) ikut Fase 11: di browser tanpa pengenal ucapan, jawaban direkam (`MediaRecorder`, Opus 32 kbps, paling lama 180 detik dan 1,5 MB) lalu diubah jadi teks lewat Server Action dengan key tersimpan mana pun yang bisa, tidak harus provider yang aktif. Hanya Google (`gemini-3.5-transcribe`) dan OpenAI (`gpt-transcribe`) yang punya model transkripsi; Anthropic dan DeepSeek tidak. Tanpa key seperti itu, pengguna diarahkan ke Chrome atau Safari. Di fase yang sama perusahaan mendapat form edit untuk website dan catatan, yang dibaca interviewer saat simulasi.
 
-Susulan dari Fase 11: panggilan transkripsi ke OpenAI belum pernah dijalankan dengan key asli; pesan khusus saat ID model DeepSeek salah menunggu baris log `[ai]` dari percobaan nyata.
+Susulan dari Fase 11: panggilan transkripsi ke OpenAI belum pernah dijalankan dengan key asli.
 
 Pekerjaan susulan dari Fase 8: hapus kolom `interviews.questions` lewat migration terpisah setelah backfill produksi (`docs/deploy.md`) dijalankan.
 
