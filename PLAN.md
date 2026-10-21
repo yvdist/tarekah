@@ -389,6 +389,8 @@ Cadangan transkripsi (bagian B di spec) ikut Fase 11: di browser tanpa pengenal 
 
 Susulan dari Fase 11: panggilan transkripsi ke OpenAI belum pernah dijalankan dengan key asli.
 
+Susulan dari Fase 10: ringkasan yang ditolak provider (termasuk plan gratis yang kehabisan token) tidak lagi menyembunyikan halaman sesi. Halaman riwayat membawa `?summary=ready` untuk sesi yang ringkasannya sudah ada, sehingga sesi terbuka dengan ringkasan itu, dan kegagalan meminta ringkasan tampil di panelnya sendiri dengan pesan provider, "Coba lagi", dan "Mulai simulasi baru"; percakapan tetap terbaca di bawahnya. Balasan dan masukan yang terpotong di batas token (`finishReason` `length`, kode `token_limit`) tidak disimpan sebagai giliran atau ringkasan setengah jadi.
+
 Susulan Fase 8 selesai: setelah backfill produksi dijalankan, kolom `interviews.questions` dihapus lewat `drizzle/0005_drop_interviews_questions.sql`, dan script backfill-nya ikut dihapus.
 
 Penerapan identitas brand (guideline di `docs/design/guideline.md`) berjalan di luar tabel ini, halaman demi halaman; daftar dan statusnya ada di `docs/design/rollout.md`.
