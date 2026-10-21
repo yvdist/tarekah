@@ -18,6 +18,7 @@ import {
   findPracticeQuestion,
   findSimulation,
   listSimulations,
+  listSummarizedSimulationIds,
   type PracticeQuestion,
 } from "./data";
 import { groupSameQuestions } from "./same-question";
@@ -88,9 +89,18 @@ export type PracticeHistoryItem = Awaited<
 // The user's latest simulations. Whether one still in progress has been left
 // alone depends on the clock, so that is worked out here, at request time and
 // outside the cached list.
+//
+// The list is also what decides how a session opens from the history, so it
+// carries whether each one has its summary yet. That is read on every request,
+// beside the cached list, rather than from a cache the history does not
+// invalidate: a summary written a moment ago must not open the session on
+// "Minta ringkasan" and bill the user for a second one.
 export async function getPracticeHistory() {
   const user = await requireUser();
-  const rows = await listSimulationsByUserId(user.id);
+  const [rows, summarized] = await Promise.all([
+    listSimulationsByUserId(user.id),
+    findSummarizedSessionsByUserId(user.id),
+  ]);
 
   await connection();
 
@@ -99,7 +109,17 @@ export async function getPracticeHistory() {
   return rows.map(({ lastActivityAt, ...row }) => ({
     ...row,
     status: effectiveStatus({ status: row.status, lastActivityAt }, now),
+    summarized: summarized.includes(row.id),
   }));
+}
+
+// The ids of the user's simulations that already have their closing summary.
+async function findSummarizedSessionsByUserId(userId: string) {
+  "use cache";
+  cacheTag(`practice:${userId}`);
+  cacheLife("hours");
+
+  return listSummarizedSimulationIds(db, userId);
 }
 
 // Unexported, for the same reason as above. A session shows the job it was

@@ -33,6 +33,7 @@ import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
 import { describedBy } from "@/lib/form-errors";
 import {
   endSimulationSession,
+  findStoredSummary,
   requestSimulationSummary,
   sendSimulationTurn,
   streamInterviewerReply,
@@ -80,6 +81,8 @@ type SummaryState =
 
 const REPLY_FAILED_MESSAGE = "Balasan interviewer gagal dimuat. Coba lagi.";
 
+const SUMMARY_FAILED_MESSAGE = "Ringkasan gagal diminta. Coba lagi.";
+
 // One simulation: the conversation so far, whoever's turn it is, and the
 // summary once it is over. The server decides whose turn it is and when the
 // session ends; this reads that off the turns with the same rules and shows
@@ -88,10 +91,16 @@ const REPLY_FAILED_MESSAGE = "Balasan interviewer gagal dimuat. Coba lagi.";
 export function Simulation({
   session,
   transcriptionProvider,
+  summaryReady = false,
 }: {
   session: SimulationDetail;
   // Whose key turns a recording into text where the browser cannot listen.
   transcriptionProvider: TranscriptionProvider | null;
+  // The history says the session has its summary, which this page could not
+  // read yet. Nothing is generated on the server while the page renders; this
+  // asks for it instead, and the server returns the stored one when it is
+  // there.
+  summaryReady?: boolean;
 }) {
   const id = useId();
   const router = useRouter();
@@ -105,7 +114,9 @@ export function Simulation({
   const [summary, setSummary] = useState<SummaryState>(
     session.summary
       ? { status: "ready", view: session.summary }
-      : { status: "none" },
+      : summaryReady
+        ? { status: "loading" }
+        : { status: "none" },
   );
   const [spoken, setSpoken] = useState("");
   const [listening, setListening] = useState(false);
@@ -150,6 +161,27 @@ export function Simulation({
     }
   }, [turnCount, form]);
 
+  // Opened from the history of a session that has its summary, with the page
+  // not showing it. In an effect: the state set here has to paint, which it
+  // would not inside a transition. Once, on opening: asking again is the
+  // button's job.
+  const askedOnOpen = useRef(false);
+
+  useEffect(() => {
+    if (askedOnOpen.current) {
+      return;
+    }
+
+    askedOnOpen.current = true;
+
+    if (!session.summary && summaryReady) {
+      void loadSummary();
+    }
+    // Opening only: a summary asked for by hand has its own button, and this
+    // effect would otherwise outlast every render that changes loadSummary.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function loadSummary() {
     setSummary({ status: "loading" });
     summaryPanel.current?.focus();
@@ -157,14 +189,22 @@ export function Simulation({
     try {
       const result = await requestSimulationSummary(session.id);
 
+      if (result.ok) {
+        setSummary(result.data);
+        return;
+      }
+
+      // A summary saved by another tab is the answer, not a reason to
+      // generate a second one.
+      const stored = await findStoredSummary(session.id);
+
       setSummary(
-        result.ok ? result.data : { status: "error", message: result.message },
+        stored
+          ? { status: "ready", view: stored }
+          : { status: "error", message: result.message },
       );
     } catch {
-      setSummary({
-        status: "error",
-        message: "Ringkasan gagal diminta. Coba lagi.",
-      });
+      setSummary({ status: "error", message: SUMMARY_FAILED_MESSAGE });
     }
   }
 
@@ -625,9 +665,19 @@ function SummaryArea({
           {summary.message} Percakapanmu sudah tersimpan, jadi ringkasannya bisa
           diminta lagi kapan saja.
         </p>
-        <Button type="button" variant="outline" size="sm" onClick={onRequest}>
-          Coba lagi
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onRequest}>
+            Coba lagi
+          </Button>
+          {/* The provider may keep refusing until something changes at its
+              end, and the notes of the session are not lost meanwhile. */}
+          <Link
+            href="/practice/simulation/new"
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
+            Mulai simulasi baru
+          </Link>
+        </div>
       </div>
     );
   }
@@ -648,7 +698,8 @@ function SummaryArea({
   return (
     <div className="flex flex-col items-start gap-3 text-sm">
       <p className="text-muted-foreground">
-        Sesi ini sudah selesai, tapi ringkasannya belum disusun.
+        Sesi ini sudah selesai, tapi ringkasannya belum disusun. Percakapanmu
+        tetap ada di bawah, dan bisa diminta lagi kapan saja.
       </p>
       <Button type="button" variant="outline" size="sm" onClick={onRequest}>
         Minta ringkasan
