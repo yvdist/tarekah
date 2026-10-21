@@ -11,6 +11,7 @@ import {
   AI_ERROR_CODES,
   AI_ERROR_MESSAGES,
   classifyAiError,
+  isLengthFinish,
   reportAiError,
 } from "./errors";
 
@@ -239,5 +240,38 @@ describe("reportAiError", () => {
     expect(logged).not.toContain(SECRET_KEY);
     expect(logged).not.toContain(ANSWER);
     expect(result.message).not.toContain(SECRET_KEY);
+  });
+
+  // What a free plan running out of tokens looks like: the reply stops at the
+  // provider's limit. Nothing else known about it, and nothing to retry.
+  it("reads a call cut off at the token limit as that, not as an unknown failure", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = reportAiError(undefined, {
+      where: "test",
+      provider: "google",
+      finishReason: "length",
+    });
+
+    expect(result).toEqual({
+      code: "token_limit",
+      message: AI_ERROR_MESSAGES.token_limit,
+    });
+  });
+
+  it("takes the finish reason a caller threw along with a partial answer", () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(
+      reportAiError({ finishReason: "length" }, { where: "test" }).code,
+    ).toBe("token_limit");
+    expect(reportAiError({}, { where: "test" }).code).toBe("unknown");
+    expect(log).toHaveBeenCalledTimes(2);
+  });
+
+  it("tells a token limit from the other reasons a call can stop", () => {
+    expect(isLengthFinish("length")).toBe(true);
+    expect(isLengthFinish("stop")).toBe(false);
+    expect(isLengthFinish(undefined)).toBe(false);
   });
 });

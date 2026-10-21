@@ -1,5 +1,5 @@
 import { NoOutputGeneratedError, streamText } from "ai";
-import { reportAiError } from "@/features/ai/errors";
+import { isLengthFinish, reportAiError } from "@/features/ai/errors";
 import type { ResolvedModel } from "@/features/ai/model";
 import { AI_PROVIDER_OPTIONS } from "@/features/ai/provider-options";
 import type { Database } from "@/features/questions/data";
@@ -105,7 +105,8 @@ const aborted = () =>
 
 // Streams one turn of the interviewer and saves it once it is whole. A reply
 // that fails partway is not saved: the session stays where it was and the
-// same turn can be asked for again. The SDK's error never leaves this
+// same turn can be asked for again. One cut off at the token limit is not
+// saved either, whatever came out of it. The SDK's error never leaves this
 // function; reportAiError turns it into a message and a line of log.
 export async function* streamInterviewerTurn(
   db: Database,
@@ -114,6 +115,7 @@ export async function* streamInterviewerTurn(
   { model, provider, modelId }: ResolvedModel,
 ): AsyncGenerator<ReplyEvent> {
   let failure: unknown;
+  let finishReason: string | undefined;
   let text = "";
 
   try {
@@ -135,6 +137,8 @@ export async function* streamInterviewerTurn(
       if (part.type === "text-delta") {
         text += part.text;
         yield { type: "delta", text: part.text };
+      } else if (part.type === "finish") {
+        finishReason = part.finishReason;
       } else if (part.type === "error") {
         failure ??= part.error;
       } else if (part.type === "abort") {
@@ -146,6 +150,19 @@ export async function* streamInterviewerTurn(
   }
 
   const content = text.trim();
+
+  if (!failure && isLengthFinish(finishReason)) {
+    yield {
+      type: "error",
+      message: reportAiError(undefined, {
+        where: "simulation_reply",
+        provider,
+        finishReason,
+      }).message,
+    };
+
+    return;
+  }
 
   if (!failure && content === "") {
     failure = new NoOutputGeneratedError();
