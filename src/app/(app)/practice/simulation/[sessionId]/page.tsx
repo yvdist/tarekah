@@ -24,6 +24,7 @@ export const maxDuration = 120;
 
 export default function SimulationPage({
   params,
+  searchParams,
 }: PageProps<"/practice/simulation/[sessionId]">) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -35,17 +36,25 @@ export default function SimulationPage({
         Semua latihan
       </Link>
       <Suspense fallback={<DetailSkeleton />}>
-        <Session params={params} />
+        <Session params={params} searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-// params is request-time data, so it is read behind the boundary.
+// params and searchParams are request-time data, so they are read behind the
+// boundary.
 async function Session({
   params,
-}: Pick<PageProps<"/practice/simulation/[sessionId]">, "params">) {
-  const { sessionId } = await params;
+  searchParams,
+}: Pick<
+  PageProps<"/practice/simulation/[sessionId]">,
+  "params" | "searchParams"
+>) {
+  const [{ sessionId }, { summary: summaryParam }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const [session, ai] = await Promise.all([
     getSimulation(sessionId),
     getAiStatus(),
@@ -57,6 +66,11 @@ async function Session({
     `Nada ${PRACTICE_TONE_LABELS[session.tone].toLowerCase()}`,
     ...(session.duration ? [`${session.duration} menit`] : []),
   ];
+  // The history says whether this session has its summary. This page reads
+  // the database itself, and a summary written a moment ago can still be in a
+  // short-lived cache, so the link's word is taken as a floor: it can make the
+  // page ask for the summary, never claim one that is not there.
+  const summaryReady = first(summaryParam) === "ready";
 
   return (
     <>
@@ -87,7 +101,12 @@ async function Session({
         key={session.id}
         session={session}
         transcriptionProvider={ai.transcriptionProvider}
+        summaryReady={summaryReady}
       />
     </>
   );
+}
+
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }

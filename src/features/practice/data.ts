@@ -1,4 +1,13 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import {
   applications,
   companies,
@@ -28,6 +37,7 @@ import type {
   StoredSummary,
   TurnOrigin,
 } from "./schemas";
+import { storedSummarySchema } from "./schemas";
 import {
   type ControlKind,
   CONTROL_PHRASES,
@@ -726,8 +736,30 @@ export async function listSimulations(
   );
 }
 
-const SUMMARY_STORY_LIMIT = 30;
+// The user's simulations that already have their closing summary. A row whose
+// summary would not be read back as one counts as without it, since asking for
+// it again is what the page offers.
+export async function listSummarizedSimulationIds(
+  db: Database,
+  userId: string,
+) {
+  const rows = await db
+    .select({ id: practiceSessions.id, summary: practiceSessions.summary })
+    .from(practiceSessions)
+    .where(
+      and(
+        eq(practiceSessions.userId, userId),
+        eq(practiceSessions.mode, "simulation"),
+        isNotNull(practiceSessions.summary),
+      ),
+    );
 
+  return rows.flatMap(({ id, summary }) =>
+    storedSummarySchema.safeParse(summary).success ? [id] : [],
+  );
+}
+
+const SUMMARY_STORY_LIMIT = 30;
 // The stories a summary may point at: the ones touched most recently, with
 // their four parts. Bounded, so a long archive does not swell the request.
 export async function listStoriesForSummary(db: Database, userId: string) {

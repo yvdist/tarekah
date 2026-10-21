@@ -399,6 +399,25 @@ export type SummaryOutcome =
   // Nothing was answered, so there is nothing to summarize.
   | { status: "empty" };
 
+const NO_SUMMARY_TO_READ = "Belum ada ringkasan untuk sesi ini.";
+
+// The summary of a finished simulation, if it already exists, without asking
+// a provider for anything. It answers a page that was told by the history that
+// the summary is there but could not read it yet, and checks that a summary
+// another tab wrote a moment ago is not asked for twice.
+export async function findStoredSummary(
+  sessionId: unknown,
+): Promise<SummaryView | null> {
+  const user = await requireUser();
+  const found = await findSummarizedSession(user.id, sessionId);
+
+  if (!found) {
+    return null;
+  }
+
+  return describeSummary(db, user.id, found.summary);
+}
+
 // The summary of a finished simulation. One that was already written is
 // returned as it is: asking twice does not bill the user twice. The session,
 // the job and the stories are read from the database.
@@ -501,7 +520,7 @@ async function findSummarizedSession(userId: string, sessionId: unknown) {
     : null;
 }
 
-const NO_SUMMARY_MESSAGE = "Belum ada ringkasan untuk sesi ini.";
+const NO_SUMMARY_MESSAGE = NO_SUMMARY_TO_READ;
 
 // Saves the chosen questions of a summary to the question bank, linked to the
 // application the session was for. Questions the bank already has are skipped.
