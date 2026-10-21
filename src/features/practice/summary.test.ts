@@ -1,6 +1,6 @@
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
-import { classifyAiError } from "@/features/ai/errors";
+import { classifyAiError, reportAiError } from "@/features/ai/errors";
 import { createFakeModel, FAKE_SUMMARY } from "@/features/ai/fake-model";
 import { QUESTION_MAX_LENGTH } from "@/features/questions/schemas";
 import type { SimulationSummary } from "./schemas";
@@ -59,13 +59,17 @@ type Generate = NonNullable<
 >["doGenerate"];
 
 // A model that answers every call with the given text.
-function modelAnswering(text: string, calls: unknown[] = []) {
+function modelAnswering(
+  text: string,
+  calls: unknown[] = [],
+  finish: "stop" | "length" = "stop",
+) {
   const doGenerate: Generate = async (options) => {
     calls.push(options);
 
     return {
       content: [{ type: "text", text }],
-      finishReason: { unified: "stop", raw: undefined },
+      finishReason: { unified: finish, raw: undefined },
       usage: {
         inputTokens: {
           total: 1,
@@ -139,6 +143,17 @@ describe("generateSimulationSummary", () => {
     }).catch((caught: unknown) => caught);
 
     expect(classifyAiError(error)).toBe("bad_output");
+  });
+
+  // A free plan that runs out of tokens leaves a summary that parses but is
+  // not the whole one. Stored, it would be the summary for good.
+  it("refuses a summary cut off at the token limit, however short", async () => {
+    const error = await generateSimulationSummary({
+      model: modelAnswering(JSON.stringify(summary), [], "length"),
+      ...context,
+    }).catch((caught: unknown) => caught);
+
+    expect(reportAiError(error, { where: "test" }).code).toBe("token_limit");
   });
 });
 

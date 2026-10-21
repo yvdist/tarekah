@@ -79,6 +79,13 @@ const FINISH = {
   },
 } as const;
 
+// The provider's own limit, a free plan's daily tokens among them, ends the
+// reply early.
+const CUT_OFF = {
+  ...FINISH,
+  finishReason: { unified: "length", raw: "MAX_TOKENS" },
+} as const;
+
 const saying = (...deltas: string[]): Chunks => [
   { type: "stream-start", warnings: [] },
   { type: "text-start", id: "t" },
@@ -350,6 +357,62 @@ describe("a reply that fails", () => {
       { type: "error", message: AI_ERROR_MESSAGES.bad_output },
     ]);
     expect(await turnsOf(userId, sessionId)).toEqual([]);
+  });
+
+  // A free plan that runs out of tokens mid-reply says why, and the session
+  // stays where it was: half a question is not a turn.
+  it("does not save a reply cut off at the token limit", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const userId = await newUser();
+    const sessionId = await newSimulation(userId);
+    const { model } = modelStreaming(
+      saying("Halo. Ceritakan tentang dirimu."),
+      [
+        { type: "stream-start", warnings: [] },
+        { type: "text-start", id: "t" },
+        { type: "text-delta", id: "t", delta: "Menarik. Bagian" },
+        { type: "text-end", id: "t" },
+        CUT_OFF,
+      ],
+      saying("Apa yang paling kamu banggakan?"),
+    );
+
+    await reply(userId, sessionId, model);
+    await answer(userId, sessionId, "Saya backend engineer.");
+
+    expect(await reply(userId, sessionId, model)).toEqual([
+      { type: "delta", text: "Menarik. Bagian" },
+      { type: "error", message: AI_ERROR_MESSAGES.token_limit },
+    ]);
+    expect(log.mock.calls[0][1]).toMatchObject({ code: "token_limit" });
+    expect(await turnsOf(userId, sessionId)).toHaveLength(2);
+
+    // The same turn can be asked for again once the limit allows it.
+    expect(await reply(userId, sessionId, model)).toEqual([
+      { type: "delta", text: "Apa yang paling kamu banggakan?" },
+      { type: "done", turn: expect.anything(), closed: false },
+    ]);
+  });
+
+  it("reads a reply cut off before a word as the same thing", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const userId = await newUser();
+    const sessionId = await newSimulation(userId);
+    const events = await reply(
+      userId,
+      sessionId,
+      modelStreaming([
+        { type: "stream-start", warnings: [] },
+        { type: "text-start", id: "t" },
+        { type: "text-end", id: "t" },
+        CUT_OFF,
+      ]).model,
+    );
+
+    expect(events).toEqual([
+      { type: "error", message: AI_ERROR_MESSAGES.token_limit },
+    ]);
   });
 
   it("drops a reply another request already saved", async () => {

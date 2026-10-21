@@ -1,4 +1,5 @@
 import { generateText, type LanguageModel, Output } from "ai";
+import { isLengthFinish } from "@/features/ai/errors";
 import { AI_PROVIDER_OPTIONS } from "@/features/ai/provider-options";
 import { QUESTION_MAX_LENGTH } from "@/features/questions/schemas";
 import {
@@ -20,12 +21,14 @@ const MAX_IMPROVEMENTS = 5;
 
 // Asks the model for feedback on one answer. It throws what the SDK throws;
 // the caller turns that into a message with reportAiError and never logs it.
+// Feedback cut off at the token limit throws as { error, finishReason }, for
+// the same reason as the summary in summary.ts.
 export async function generateDrillFeedback({
   model,
   ...context
 }: DrillFeedbackContext & { model: LanguageModel }): Promise<Feedback> {
   const { instructions, prompt } = buildDrillFeedbackPrompt(context);
-  const { output } = await generateText({
+  const { output, finishReason } = await generateText({
     model,
     instructions,
     prompt,
@@ -35,6 +38,10 @@ export async function generateDrillFeedback({
     maxRetries: 1,
     timeout: FEEDBACK_TIMEOUT_MS,
   });
+
+  if (isLengthFinish(finishReason)) {
+    throw { finishReason };
+  }
 
   return tidyFeedback(output);
 }

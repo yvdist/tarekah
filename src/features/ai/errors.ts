@@ -15,6 +15,7 @@ export const AI_ERROR_CODES = [
   "unreadable_key",
   "invalid_key",
   "quota",
+  "token_limit",
   "rate_limit",
   "timeout",
   "unavailable",
@@ -37,6 +38,8 @@ export const AI_ERROR_MESSAGES: Record<AiErrorCode, string> = {
     "Key-nya belum bisa dipakai. Coba periksa lagi di pengaturan provider-mu.",
   quota:
     "Kuota atau saldo di provider-mu sepertinya habis. Cek tagihannya di sana, lalu coba lagi.",
+  token_limit:
+    "Batas token di provider-mu sudah terpakai. Cek batas pemakaian di sana, atau pakai key provider lain, lalu coba lagi.",
   rate_limit:
     "Provider sedang membatasi permintaan. Tunggu sebentar, lalu coba lagi.",
   timeout: "Provider terlalu lama menjawab. Coba lagi sebentar lagi.",
@@ -152,6 +155,22 @@ function classifyResponse(
   return "unknown";
 }
 
+// The AI SDK's reason for a reply that was cut off, not finished.
+export const isLengthFinish = (finishReason: string | undefined) =>
+  finishReason === "length";
+
+// The finish reason a caller attached to what it threw, when it threw a partial
+// answer instead of an error.
+function failureFinishReason(error: unknown): string | undefined {
+  if (!isRecord(error) || !("finishReason" in error)) {
+    return undefined;
+  }
+
+  const { finishReason } = error;
+
+  return typeof finishReason === "string" ? finishReason : undefined;
+}
+
 export function classifyAiError(error: unknown): AiErrorCode {
   // Retries exhausted: the last attempt says why.
   if (RetryError.isInstance(error)) {
@@ -204,11 +223,25 @@ export function classifyAiError(error: unknown): AiErrorCode {
 // Turns a failed AI call into what the user reads, and leaves one line in the
 // server log. The error itself is never logged: it carries the request body
 // (the user's answer) and a provider message that can quote the key.
+//
+// A call that came back with `finishReason` "length" was cut off by the
+// provider's own limit (a free plan's daily tokens, say) or by
+// maxOutputTokens. The SDK raises that only when nothing came out, so a caller
+// that refuses a partial answer passes { finishReason } here, with or without
+// an error beside it.
 export function reportAiError(
   error: unknown,
-  context: { where: string; provider?: AiProvider },
+  context: {
+    where: string;
+    provider?: AiProvider;
+    finishReason?: string;
+  } = { where: "unknown" },
 ): { code: AiErrorCode; message: string } {
-  const code = classifyAiError(error);
+  const finishReason =
+    context.finishReason ?? (failureFinishReason(error) || undefined);
+  const code = isLengthFinish(finishReason)
+    ? "token_limit"
+    : classifyAiError(error);
   const last = RetryError.isInstance(error) ? error.lastError : error;
 
   console.error("[ai]", {
